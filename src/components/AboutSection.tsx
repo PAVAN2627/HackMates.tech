@@ -32,7 +32,7 @@ const AboutSection = () => {
               <img 
                 src="/hackmatesroundlogo.png" 
                 alt="HackMates Logo" 
-                className="w-20 h-20 rounded-full shadow-lg"
+                className="w-28 h-20 rounded-full shadow-lg object-cover"
               />
               <div>
                 <h3 className="text-2xl font-bold font-display">

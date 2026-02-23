@@ -6,7 +6,7 @@ const services = [
     icon: ShoppingCart,
     title: "Pre-Built Projects",
     description: "Ready-made academic projects with source code, documentation, and setup support.",
-    features: ["Source code + docs", "Setup assistance", "Architecture walkthrough", "BE/BTech ready"],
+    features: ["Source code + docs", "Setup assistance", "Architecture walkthrough", "Diploma/BE/BTech ready"],
     highlight: "Popular",
   },
   {

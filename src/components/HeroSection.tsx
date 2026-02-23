@@ -21,36 +21,7 @@ const HeroSection = () => {
       {/* Animated particles overlay */}
       <div className="absolute inset-0 particles-bg pointer-events-none" />
 
-      {/* Floating geometric shapes */}
-      <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        className="absolute top-1/4 right-[15%] w-20 h-20 border border-primary/20 rounded-lg hidden lg:block"
-      />
-      <motion.div
-        animate={{ y: [-15, 15, -15] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute bottom-1/3 left-[10%] w-12 h-12 border border-accent/20 rounded-full hidden lg:block"
-      />
-      <motion.div
-        animate={{ rotate: -360 }}
-        transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-        className="absolute top-[60%] right-[8%] w-16 h-16 border border-primary/10 hidden lg:block"
-        style={{ clipPath: "polygon(50% 0%, 0% 100%, 100% 100%)" }}
-      />
-
       <div className="container mx-auto px-6 relative z-10 text-center">
-        {/* Terminal-style badge */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/30 bg-primary/5 mb-8"
-        >
-          <span className="w-2 h-2 rounded-full bg-primary animate-pulse-glow" />
-          <span className="font-mono text-xs text-primary">Student Innovation Ecosystem</span>
-        </motion.div>
-
         <motion.h1
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}

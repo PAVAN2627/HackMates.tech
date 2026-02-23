@@ -37,13 +37,13 @@ const Navbar = () => {
       }`}
     >
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-        <a href="#home" className="flex items-center gap-3 group">
+        <a href="#home" className="flex items-center gap-4 group">
           <img 
             src="/hackmatesroundlogo.png" 
             alt="HackMates Logo" 
-            className="w-16 h-16 md:w-20 md:h-20 rounded-full group-hover:shadow-[0_0_15px_hsl(var(--glow-primary)/0.4)] transition-shadow"
+            className="w-18 h-12 md:w-26 md:h-18 rounded-full group-hover:shadow-[0_0_15px_hsl(var(--glow-primary)/0.4)] transition-shadow object-cover"
           />
-          <span className="font-display text-xl md:text-2xl font-bold text-foreground">
+          <span className="font-display text-2xl md:text-3xl font-bold text-foreground">
             Hack<span className="text-primary">Mates</span>
           </span>
         </a>
