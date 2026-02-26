@@ -85,9 +85,9 @@ const HeroSection = () => {
           className="grid grid-cols-3 gap-8 max-w-lg mx-auto"
         >
           {[
-            { icon: Trophy, label: "Hackathons", value: "15+" },
-            { icon: Zap, label: "Projects", value: "30+" },
-            { icon: Users, label: "Members", value: "12+" },
+            { icon: Trophy, label: "Hackathons", value: "10+" },
+            { icon: Zap, label: "Projects", value: "15+" },
+            { icon: Users, label: "Members", value: "6+" },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}
