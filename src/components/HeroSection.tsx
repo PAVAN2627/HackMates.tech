@@ -26,7 +26,7 @@ const HeroSection = () => {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-6xl md:text-8xl lg:text-9xl font-bold font-display mb-6 leading-none"
+          className="text-5xl md:text-7xl lg:text-8xl font-bold font-display mb-6 leading-none"
         >
           <span className="gradient-text">Hack</span>
           <span className="text-foreground">Mates</span>
