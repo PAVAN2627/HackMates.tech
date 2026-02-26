@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Linkedin, Globe, Code2, Star, Award, Instagram } from "lucide-react";
+import { Linkedin, Globe, Code2, Star, Award, Instagram, X } from "lucide-react";
 import { useState } from "react";
 import teamMember1 from "@/assets/team-member-1.jpg";
 import teamMember2 from "@/assets/team-member-2.jpg";
@@ -24,17 +24,17 @@ interface TeamMember {
 
 const team: TeamMember[] = [
   {
-    name: "Rahul Sharma",
+    name: "Pavan Mali",
     role: "Founder & Team Lead",
-    bio: "Full-stack developer with a passion for building products that solve real problems. Founded HackMates to empower student innovators.",
-    skills: ["React", "Node.js", "AWS", "TypeScript", "Python"],
-    photo: teamMember1,
+    bio: "Full-Stack & DevOps Engineer passionate about building scalable, production-ready applications. Experienced in designing REST APIs, deploying cloud-native systems, and implementing CI/CD pipelines. Strong focus on performance, automation, and real-world problem solving.",
+    skills: ["React", "Node.js", "TypeScript", "Python", "AWS", "Docker", "MySQL", "CI/CD"],
+    photo: "/Pavan/ProffesionalPhoto.jpeg",
     isFounder: true,
-    contributions: "15+ projects led",
+    contributions: "15+ Projects Built & Deployed",
     hackathons: 12,
-    portfolio: "#",
-    linkedin: "#",
-    instagram: "#",
+    portfolio: "https://pavanmaliportfolio.vercel.app/",
+    linkedin: "https://www.linkedin.com/in/pavan-mali-1808b6273/",
+    instagram: "https://www.instagram.com/its_me_pavanmali",
   },
   {
     name: "Priya Patel",
@@ -128,40 +128,40 @@ const TeamSection = () => {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="max-w-3xl mx-auto mb-12"
+          className="max-w-4xl mx-auto mb-12"
         >
           <div
             className="card-elevated rounded-2xl overflow-hidden hover:border-glow transition-all duration-300 cursor-pointer"
             onClick={() => setSelectedMember(founder)}
           >
             <div className="flex flex-col md:flex-row">
-              <div className="relative md:w-1/3">
-                <img src={founder.photo} alt={founder.name} className="w-full h-64 md:h-full object-cover" />
+              <div className="relative md:w-2/5 flex items-center justify-center bg-muted/20">
+                <img src={founder.photo} alt={founder.name} className="w-full h-80 md:h-auto md:max-h-[500px] object-contain" />
                 <div className="absolute top-3 left-3">
                   <span className="font-mono text-[10px] px-2.5 py-1 rounded-full bg-accent/90 text-accent-foreground flex items-center gap-1">
                     <Star className="w-3 h-3" /> Founder
                   </span>
                 </div>
               </div>
-              <div className="p-6 md:w-2/3 flex flex-col justify-center">
-                <h3 className="font-display text-2xl font-bold text-foreground mb-1">{founder.name}</h3>
-                <p className="font-mono text-sm text-primary mb-3">{founder.role}</p>
-                <p className="text-muted-foreground text-sm mb-4 leading-relaxed">{founder.bio}</p>
-                <div className="flex flex-wrap gap-1.5 mb-4">
+              <div className="p-8 md:w-3/5 flex flex-col justify-center">
+                <h3 className="font-display text-3xl font-bold text-foreground mb-2">{founder.name}</h3>
+                <p className="font-mono text-sm text-primary mb-4">{founder.role}</p>
+                <p className="text-muted-foreground text-sm mb-6 leading-relaxed">{founder.bio}</p>
+                <div className="flex flex-wrap gap-2 mb-6">
                   {founder.skills.map((skill) => (
-                    <span key={skill} className="font-mono text-[10px] px-2.5 py-1 rounded-full bg-primary/10 text-primary">
+                    <span key={skill} className="font-mono text-[11px] px-3 py-1.5 rounded-full bg-primary/10 text-primary">
                       {skill}
                     </span>
                   ))}
                 </div>
-                <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1"><Code2 className="w-3.5 h-3.5" /> {founder.contributions}</span>
-                  <span className="flex items-center gap-1"><Award className="w-3.5 h-3.5" /> {founder.hackathons} hackathons</span>
+                <div className="flex items-center gap-6 text-sm text-muted-foreground mb-4">
+                  <span className="flex items-center gap-1.5"><Code2 className="w-4 h-4" /> {founder.contributions}</span>
+                  <span className="flex items-center gap-1.5"><Award className="w-4 h-4" /> {founder.hackathons} hackathons</span>
                 </div>
-                <div className="flex gap-3 mt-4">
-                  {founder.portfolio && <a href={founder.portfolio} className="text-muted-foreground hover:text-primary transition-colors" aria-label="Portfolio"><Globe className="w-5 h-5" /></a>}
-                  {founder.linkedin && <a href={founder.linkedin} className="text-muted-foreground hover:text-primary transition-colors" aria-label="LinkedIn"><Linkedin className="w-5 h-5" /></a>}
-                  {founder.instagram && <a href={founder.instagram} className="text-muted-foreground hover:text-primary transition-colors" aria-label="Instagram"><Instagram className="w-5 h-5" /></a>}
+                <div className="flex gap-4 mt-2">
+                  {founder.portfolio && <a href={founder.portfolio} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" aria-label="Portfolio"><Globe className="w-6 h-6" /></a>}
+                  {founder.linkedin && <a href={founder.linkedin} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" aria-label="LinkedIn"><Linkedin className="w-6 h-6" /></a>}
+                  {founder.instagram && <a href={founder.instagram} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" aria-label="Instagram"><Instagram className="w-6 h-6" /></a>}
                 </div>
               </div>
             </div>
@@ -219,59 +219,61 @@ const TeamSection = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 modal-overlay flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center p-4"
             onClick={() => setSelectedMember(null)}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: "spring", damping: 25 }}
-              className="card-elevated rounded-2xl max-w-lg w-full overflow-hidden"
+              className="bg-card/90 backdrop-blur-md rounded-3xl max-w-xl w-full overflow-hidden border border-border/50 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="relative h-56">
-                <img src={selectedMember.photo} alt={selectedMember.name} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
+              <div className="relative h-80 flex items-center justify-center bg-muted/20">
+                <img src={selectedMember.photo} alt={selectedMember.name} className="w-full h-full object-contain" />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-card/80" />
                 <button
                   onClick={() => setSelectedMember(null)}
-                  className="absolute top-4 right-4 w-8 h-8 rounded-full bg-card/80 flex items-center justify-center text-foreground hover:bg-card transition-colors"
+                  className="absolute top-6 right-6 w-10 h-10 rounded-full bg-background/20 backdrop-blur-sm flex items-center justify-center text-foreground hover:bg-background/40 transition-colors"
                 >
-                  ✕
+                  <X className="w-5 h-5" />
                 </button>
+                {selectedMember.isFounder && (
+                  <div className="absolute top-6 left-6">
+                    <span className="font-mono text-xs px-3 py-1.5 rounded-full bg-accent text-accent-foreground inline-flex items-center gap-1.5 shadow-lg">
+                      <Star className="w-3.5 h-3.5" /> Founder
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="p-6 -mt-12 relative z-10">
-                {selectedMember.isFounder && (
-                  <span className="font-mono text-[10px] px-2.5 py-1 rounded-full bg-accent/20 text-accent inline-flex items-center gap-1 mb-2">
-                    <Star className="w-3 h-3" /> Founder
-                  </span>
-                )}
-                <h3 className="font-display text-2xl font-bold text-foreground">{selectedMember.name}</h3>
-                <p className="font-mono text-sm text-primary mb-3">{selectedMember.role}</p>
-                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{selectedMember.bio}</p>
-                <div className="flex flex-wrap gap-1.5 mb-4">
+                <h3 className="font-display text-3xl font-bold text-foreground mb-1">{selectedMember.name}</h3>
+                <p className="text-primary text-base mb-4">{selectedMember.role}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4">{selectedMember.bio}</p>
+                <div className="flex flex-wrap gap-2 mb-4">
                   {selectedMember.skills.map((skill) => (
-                    <span key={skill} className="font-mono text-[10px] px-2.5 py-1 rounded-full bg-primary/10 text-primary">
+                    <span key={skill} className="font-mono text-xs px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
                       {skill}
                     </span>
                   ))}
                 </div>
-                <div className="flex items-center gap-6 text-sm text-muted-foreground mb-4 pb-4 border-b border-border">
-                  <span className="flex items-center gap-1"><Code2 className="w-3.5 h-3.5" /> {selectedMember.contributions}</span>
-                  <span className="flex items-center gap-1"><Award className="w-3.5 h-3.5" /> {selectedMember.hackathons} hackathons</span>
+                <div className="flex items-center gap-6 text-sm text-muted-foreground mb-4 pb-4 border-b border-border/50">
+                  <span className="flex items-center gap-2"><Code2 className="w-4 h-4" /> {selectedMember.contributions}</span>
+                  <span className="flex items-center gap-2"><Award className="w-4 h-4" /> {selectedMember.hackathons} hackathons</span>
                 </div>
-                <div className="flex gap-4">
+                <div className="flex gap-6">
                   {selectedMember.portfolio && (
-                    <a href={selectedMember.portfolio} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
+                    <a href={selectedMember.portfolio} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
                       <Globe className="w-4 h-4" /> Portfolio
                     </a>
                   )}
                   {selectedMember.linkedin && (
-                    <a href={selectedMember.linkedin} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
+                    <a href={selectedMember.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
                       <Linkedin className="w-4 h-4" /> LinkedIn
                     </a>
                   )}
                   {selectedMember.instagram && (
-                    <a href={selectedMember.instagram} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
+                    <a href={selectedMember.instagram} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
                       <Instagram className="w-4 h-4" /> Instagram
                     </a>
                   )}
