@@ -194,8 +194,8 @@ const TeamSection = () => {
               onClick={() => setSelectedMember(member)}
               className="card-elevated rounded-xl overflow-hidden cursor-pointer hover:border-glow transition-all duration-300"
             >
-              <div className="relative h-48">
-                <img src={member.photo} alt={member.name} className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" />
+              <div className="relative h-48 flex items-center justify-center bg-muted/20">
+                <img src={member.photo} alt={member.name} className="w-full h-full object-contain" />
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
               </div>
               <div className="p-5 -mt-8 relative z-10">
