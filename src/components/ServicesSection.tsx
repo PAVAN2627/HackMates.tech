@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ShoppingCart, Wrench, GraduationCap, ArrowRight } from "lucide-react";
+import { ShoppingCart, Wrench, GraduationCap, Briefcase, Users, ArrowRight } from "lucide-react";
 
 const services = [
   {
@@ -8,6 +8,7 @@ const services = [
     description: "Ready-made academic projects with source code, documentation, and setup support.",
     features: ["Source code + docs", "Setup assistance", "Architecture walkthrough", "Diploma/BE/BTech ready"],
     highlight: "Popular",
+    available: true,
   },
   {
     icon: Wrench,
@@ -15,13 +16,31 @@ const services = [
     description: "Custom academic projects, startup MVPs, and AI integrations tailored to your needs.",
     features: ["Custom academic projects", "Startup MVPs", "AI integrations", "College-compliant"],
     highlight: "Recommended",
+    available: true,
   },
   {
     icon: GraduationCap,
     title: "Mentorship & Support",
     description: "Idea validation, tech stack guidance, pitch deck preparation, and demo support.",
     features: ["Idea validation", "Tech stack guidance", "Pitch deck prep", "Demo support"],
+    highlight: "Available",
+    available: true,
+  },
+  {
+    icon: Briefcase,
+    title: "Internship Program",
+    description: "Hands-on internship opportunities to work on real projects and gain industry experience.",
+    features: ["Real project experience", "Mentorship included", "Certificate provided", "Skill development"],
     highlight: "Coming Soon",
+    available: false,
+  },
+  {
+    icon: Users,
+    title: "Workshops & Training",
+    description: "Technical workshops on latest technologies, hackathon preparation, and skill-building sessions.",
+    features: ["Tech workshops", "Hackathon prep", "Live coding sessions", "Industry insights"],
+    highlight: "Coming Soon",
+    available: false,
   },
 ];
 
@@ -40,7 +59,7 @@ const ServicesSection = () => (
         </h2>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
         {services.map((service, i) => (
           <motion.div
             key={service.title}
@@ -49,10 +68,16 @@ const ServicesSection = () => (
             viewport={{ once: true }}
             transition={{ delay: i * 0.15 }}
             whileHover={{ y: -8 }}
-            className="card-elevated rounded-xl p-6 hover:border-glow transition-all duration-300 flex flex-col relative overflow-hidden"
+            className={`card-elevated rounded-xl p-6 hover:border-glow transition-all duration-300 flex flex-col relative overflow-hidden ${
+              !service.available ? "opacity-75" : ""
+            }`}
           >
             {/* Highlight badge */}
-            <span className="font-mono text-[10px] px-2.5 py-0.5 rounded-full bg-accent/10 text-accent self-start mb-4">
+            <span className={`font-mono text-[10px] px-2.5 py-0.5 rounded-full self-start mb-4 ${
+              service.available 
+                ? "bg-accent/10 text-accent" 
+                : "bg-muted text-muted-foreground"
+            }`}>
               {service.highlight}
             </span>
 
@@ -69,9 +94,15 @@ const ServicesSection = () => (
                 </li>
               ))}
             </ul>
-            <a href="#contact" className="flex items-center gap-1 font-mono text-xs text-primary hover:gap-2 transition-all">
-              Get Started <ArrowRight className="w-3 h-3" />
-            </a>
+            {service.available ? (
+              <a href="#contact" className="flex items-center gap-1 font-mono text-xs text-primary hover:gap-2 transition-all">
+                Get Started <ArrowRight className="w-3 h-3" />
+              </a>
+            ) : (
+              <div className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
+                Coming Soon
+              </div>
+            )}
           </motion.div>
         ))}
       </div>

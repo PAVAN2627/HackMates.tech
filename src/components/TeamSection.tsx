@@ -101,6 +101,19 @@ const team: TeamMember[] = [
     linkedin: "https://www.linkedin.com/in/purva-mohite-656086317/",
     instagram: "https://www.instagram.com/__pvxx__45",
   },
+  {
+    name: "Prajkta Lohar",
+    role: "ML Engineer | Full-Stack Java Developer",
+    bio: "Passionate ML and Full-Stack Java developer skilled in building responsive web applications and intelligent ML-based systems.",
+    skills: ["Java", "Python", "React", "MySQL", "Machine Learning", "HTML", "CSS", "JavaScript"],
+    photo: "/Pavan/prajkta photo (1).jpg",
+    isFounder: false,
+    contributions: "5+ Projects",
+    hackathons: 3,
+    portfolio: "#",
+    linkedin: "#",
+    instagram: "#",
+  },
 ];
 
 const TeamSection = () => {
