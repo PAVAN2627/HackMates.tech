@@ -1,9 +1,33 @@
 import { motion } from "framer-motion";
-import { Mail, MessageSquare, MapPin, Send, Instagram, Linkedin } from "lucide-react";
+import { Mail, MessageSquare, MapPin, Send, Instagram, Linkedin, ChevronDown } from "lucide-react";
 import { useState } from "react";
+
+const faqs = [
+  {
+    question: "How do I purchase a pre-built project?",
+    answer: "Contact us via email or the form above with your requirements. We'll share project details, demo, and pricing. Once confirmed, we'll deliver the complete source code with documentation."
+  },
+  {
+    question: "Can you build a custom project for my college?",
+    answer: "Yes! We specialize in custom academic projects for Diploma, BE, and BTech students. Share your requirements, and we'll create a tailored solution that meets your college guidelines."
+  },
+  {
+    question: "Do you provide project support after delivery?",
+    answer: "Absolutely! We offer setup assistance, code walkthrough, and post-delivery support to ensure you understand and can present your project confidently."
+  },
+  {
+    question: "How long does it take to complete a custom project?",
+    answer: "Typically 1-2 weeks depending on complexity. We work closely with you throughout the development process and ensure timely delivery."
+  },
+  {
+    question: "Can I join the HackMates team?",
+    answer: "We're always looking for passionate developers! If you love hackathons, building projects, and innovation, reach out to us with your portfolio and skills."
+  }
+];
 
 const ContactSection = () => {
   const [submitted, setSubmitted] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   return (
     <section id="contact" className="py-24 bg-secondary/30 particles-bg">
@@ -27,7 +51,7 @@ const ContactSection = () => {
             viewport={{ once: true }}
             className="space-y-6"
           >
-            <p className="text-muted-foreground leading-relaxed">
+            <p className="text-foreground font-bold leading-relaxed text-lg">
               Have a project idea? Need a custom solution? Want to join the team?
               We'd love to hear from you.
             </p>
@@ -37,10 +61,10 @@ const ContactSection = () => {
                 whileHover={{ x: 4 }}
                 className="flex items-center gap-3 group cursor-pointer"
               >
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <Mail className="w-4 h-4 text-primary" />
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:scale-110 transition-all shadow-sm">
+                  <Mail className="w-5 h-5 text-primary group-hover:text-white transition-colors" />
                 </div>
-                <span className="text-sm text-foreground group-hover:text-primary transition-colors">hackmates.tech@gmail.com</span>
+                <span className="text-base text-foreground font-bold group-hover:text-primary transition-colors">hackmates.tech@gmail.com</span>
               </motion.a>
 
               <motion.a
@@ -50,10 +74,10 @@ const ContactSection = () => {
                 whileHover={{ x: 4 }}
                 className="flex items-center gap-3 group cursor-pointer"
               >
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <Instagram className="w-4 h-4 text-primary" />
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center group-hover:scale-110 transition-all shadow-sm">
+                  <Instagram className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-sm text-foreground group-hover:text-primary transition-colors">hackmates.tech</span>
+                <span className="text-base text-foreground font-bold group-hover:text-primary transition-colors">hackmates.tech</span>
               </motion.a>
 
               <motion.a
@@ -63,20 +87,20 @@ const ContactSection = () => {
                 whileHover={{ x: 4 }}
                 className="flex items-center gap-3 group cursor-pointer"
               >
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <Linkedin className="w-4 h-4 text-primary" />
+                <div className="w-12 h-12 rounded-xl bg-[#0077B5] flex items-center justify-center group-hover:scale-110 transition-all shadow-sm">
+                  <Linkedin className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-sm text-foreground group-hover:text-primary transition-colors">hackmates.tech</span>
+                <span className="text-base text-foreground font-bold group-hover:text-primary transition-colors">hackmates.tech</span>
               </motion.a>
 
               <motion.div
                 whileHover={{ x: 4 }}
                 className="flex items-center gap-3 group"
               >
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <MapPin className="w-4 h-4 text-primary" />
+                <div className="w-12 h-12 rounded-xl bg-red-500 flex items-center justify-center group-hover:scale-110 transition-all shadow-sm">
+                  <MapPin className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-sm text-foreground group-hover:text-primary transition-colors">India</span>
+                <span className="text-base text-foreground font-bold group-hover:text-primary transition-colors">Maharashtra, India</span>
               </motion.div>
             </div>
           </motion.div>
@@ -158,6 +182,55 @@ const ContactSection = () => {
             )}
           </motion.div>
         </div>
+
+        {/* FAQ Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mt-20 max-w-3xl mx-auto"
+        >
+          <div className="text-center mb-10">
+            <p className="font-mono text-sm text-primary mb-3">faq.help()</p>
+            <h3 className="text-3xl md:text-4xl font-bold font-display text-foreground">
+              Frequently Asked <span className="text-primary">Questions</span>
+            </h3>
+          </div>
+
+          <div className="space-y-4">
+            {faqs.map((faq, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="card-elevated rounded-xl overflow-hidden"
+              >
+                <button
+                  onClick={() => setOpenFaq(openFaq === index ? null : index)}
+                  className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-muted/50 transition-colors"
+                >
+                  <span className="font-display font-semibold text-foreground pr-4">{faq.question}</span>
+                  <ChevronDown 
+                    className={`w-5 h-5 text-primary flex-shrink-0 transition-transform ${
+                      openFaq === index ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                <motion.div
+                  initial={false}
+                  animate={{ height: openFaq === index ? "auto" : 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-6 pb-4 text-muted-foreground leading-relaxed">
+                    {faq.answer}
+                  </div>
+                </motion.div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
       </div>
     </section>
   );

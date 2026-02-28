@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Trophy, Lightbulb, Users, Code, Rocket, GraduationCap } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const AboutSection = () => {
   return (
@@ -169,18 +170,18 @@ const AboutSection = () => {
               Whether you need a project, want custom development, or seek mentorship—we're here to help you succeed.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <a
-                href="#projects"
+              <Link
+                to="/projects"
                 className="gradient-primary text-primary-foreground font-mono text-sm px-8 py-3.5 rounded-lg hover:opacity-90 transition-all border-glow hover-scale"
               >
                 Browse Projects →
-              </a>
-              <a
-                href="#contact"
+              </Link>
+              <Link
+                to="/contact"
                 className="border border-primary/50 text-primary font-mono text-sm px-8 py-3.5 rounded-lg hover:bg-primary/10 transition-all hover-scale"
               >
                 Get in Touch
-              </a>
+              </Link>
             </div>
           </div>
         </motion.div>

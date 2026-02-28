@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { ArrowDown, Zap, Trophy, Users, Code } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const HeroSection = () => {
   return (
@@ -63,18 +64,18 @@ const HeroSection = () => {
           transition={{ delay: 0.9 }}
           className="flex flex-wrap justify-center gap-4 mb-20"
         >
-          <a
-            href="#projects"
+          <Link
+            to="/projects"
             className="gradient-primary text-primary-foreground font-mono text-sm px-8 py-3.5 rounded-lg hover:opacity-90 transition-all border-glow hover-scale"
           >
             Explore Projects →
-          </a>
-          <a
-            href="#contact"
-            className="border border-primary/50 text-primary font-mono text-sm px-8 py-3.5 rounded-lg hover:bg-primary/10 transition-all hover-scale"
+          </Link>
+          <Link
+            to="/contact"
+            className="border border-primary/50 text-white font-mono text-sm px-8 py-3.5 rounded-lg hover:bg-primary/10 transition-all hover-scale"
           >
-            Join the Team
-          </a>
+            Get in Touch
+          </Link>
         </motion.div>
 
         {/* Stats with animation */}
@@ -87,7 +88,7 @@ const HeroSection = () => {
           {[
             { icon: Trophy, label: "Hackathons", value: "10+" },
             { icon: Zap, label: "Projects", value: "15+" },
-            { icon: Users, label: "Members", value: "6+" },
+            { icon: Users, label: "Members", value: "7+" },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}
