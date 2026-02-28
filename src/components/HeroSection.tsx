@@ -11,11 +11,11 @@ const HeroSection = () => {
           loop
           muted
           playsInline
-          className="w-full h-full object-cover opacity-40 dark:opacity-50"
+          className="w-full h-full object-cover opacity-90 dark:opacity-60"
         >
           <source src="/cinematic-hackathon-scene-generation_3sPFUDst.mp4" type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/60 to-background" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-background/90" />
       </div>
 
       {/* Animated particles overlay */}
@@ -26,17 +26,17 @@ const HeroSection = () => {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-5xl md:text-7xl lg:text-8xl font-bold font-display mb-6 leading-none"
+          className="text-5xl md:text-7xl lg:text-8xl font-bold font-display mb-6 leading-none drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]"
         >
           <span className="gradient-text">Hack</span>
-          <span className="text-foreground">Mates</span>
+          <span className="text-white">Mates</span>
         </motion.h1>
 
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-4 font-light leading-relaxed"
+          className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto mb-4 font-light leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
         >
           Where ideas transform into impactful products through hackathons,
           collaboration, and relentless building.
@@ -46,7 +46,7 @@ const HeroSection = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
-          className="font-mono text-xs text-primary/60 mb-12 flex items-center justify-center gap-2"
+          className="font-mono text-xs text-white/70 mb-12 flex items-center justify-center gap-2 drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)]"
         >
           <Code className="w-3 h-3" />
           <span>Build</span>
@@ -99,8 +99,8 @@ const HeroSection = () => {
               <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center mx-auto mb-3 group-hover:bg-accent/20 transition-colors">
                 <stat.icon className="w-5 h-5 text-accent" />
               </div>
-              <p className="text-3xl font-bold text-foreground">{stat.value}</p>
-              <p className="font-mono text-xs text-muted-foreground mt-1">{stat.label}</p>
+              <p className="text-3xl font-bold text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)]">{stat.value}</p>
+              <p className="font-mono text-xs text-white/80 mt-1 drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)]">{stat.label}</p>
             </motion.div>
           ))}
         </motion.div>
