@@ -11,11 +11,11 @@ const HeroSection = () => {
           loop
           muted
           playsInline
-          className="w-full h-full object-cover opacity-90 dark:opacity-60"
+          className="w-full h-full object-cover"
         >
           <source src="/cinematic-hackathon-scene-generation_3sPFUDst.mp4" type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-background/90" />
+        <div className="absolute inset-0 bg-black/50" />
       </div>
 
       {/* Animated particles overlay */}

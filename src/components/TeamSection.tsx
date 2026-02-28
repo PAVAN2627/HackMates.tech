@@ -135,7 +135,7 @@ const TeamSection = () => {
             onClick={() => setSelectedMember(founder)}
           >
             <div className="flex flex-col md:flex-row">
-              <div className="relative md:w-2/5 flex items-center justify-center bg-muted/20">
+              <div className="relative md:w-2/5 flex items-center justify-center bg-background">
                 <img src={founder.photo} alt={founder.name} className="w-full h-80 md:h-auto md:max-h-[500px] object-contain" />
                 <div className="absolute top-3 left-3">
                   <span className="font-mono text-[10px] px-2.5 py-1 rounded-full bg-accent/90 text-accent-foreground flex items-center gap-1">
@@ -181,11 +181,10 @@ const TeamSection = () => {
               onClick={() => setSelectedMember(member)}
               className="card-elevated rounded-xl overflow-hidden cursor-pointer hover:border-glow transition-all duration-300"
             >
-              <div className="relative h-48 flex items-center justify-center bg-muted/20">
+              <div className="relative h-40 flex items-center justify-center bg-background">
                 <img src={member.photo} alt={member.name} className="w-full h-full object-contain" />
-                <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
               </div>
-              <div className="p-5 -mt-8 relative z-10">
+              <div className="p-5 pt-6">
                 <h3 className="font-display font-semibold text-foreground">{member.name}</h3>
                 <p className="font-mono text-xs text-accent mb-3">{member.role}</p>
                 <div className="flex flex-wrap gap-1 mb-3">
@@ -229,9 +228,8 @@ const TeamSection = () => {
               className="bg-card/90 backdrop-blur-md rounded-3xl max-w-xl w-full overflow-hidden border border-border/50 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="relative h-80 flex items-center justify-center bg-muted/20">
+              <div className="relative h-80 flex items-center justify-center bg-background">
                 <img src={selectedMember.photo} alt={selectedMember.name} className="w-full h-full object-contain" />
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-card/80" />
                 <button
                   onClick={() => setSelectedMember(null)}
                   className="absolute top-6 right-6 w-10 h-10 rounded-full bg-background/20 backdrop-blur-sm flex items-center justify-center text-foreground hover:bg-background/40 transition-colors"
@@ -246,7 +244,7 @@ const TeamSection = () => {
                   </div>
                 )}
               </div>
-              <div className="p-6 -mt-12 relative z-10">
+              <div className="p-6">
                 <h3 className="font-display text-3xl font-bold text-foreground mb-1">{selectedMember.name}</h3>
                 <p className="text-primary text-base mb-4">{selectedMember.role}</p>
                 <p className="text-sm text-muted-foreground leading-relaxed mb-4">{selectedMember.bio}</p>

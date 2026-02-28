@@ -165,18 +165,17 @@ const JourneySection = () => {
                         alt={m.title}
                         className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
-                      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-                        <span className={`font-mono text-[10px] px-2 py-0.5 rounded-full ${badge.className}`}>
-                          {badge.label}
-                        </span>
-                        <span className="font-mono text-[10px] text-foreground/80 bg-card/60 px-2 py-0.5 rounded-full backdrop-blur-sm">
-                          {m.month} {m.year}
-                        </span>
-                      </div>
                     </div>
 
                     <div className="p-5">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className={`font-mono text-[10px] px-2 py-0.5 rounded-full ${badge.className}`}>
+                          {badge.label}
+                        </span>
+                        <span className="font-mono text-[10px] text-muted-foreground">
+                          {m.month} {m.year}
+                        </span>
+                      </div>
                       <p className="font-mono text-[10px] text-accent mb-1 uppercase tracking-wider">{m.event}</p>
                       <h3 className="font-display font-semibold text-foreground mb-2 text-left">{m.title}</h3>
                       <p className="text-sm text-muted-foreground text-left leading-relaxed">{m.description}</p>

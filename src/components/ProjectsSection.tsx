@@ -137,19 +137,16 @@ const ProjectsSection = () => {
                     alt={project.title}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-transparent" />
-                  <div className="absolute top-3 right-3">
+                </div>
+                <div className="p-5">
+                  <div className="flex items-center justify-between mb-2">
                     <span className={`font-mono text-[10px] px-2 py-0.5 rounded-full ${badge.className}`}>
                       {badge.label}
                     </span>
-                  </div>
-                  <div className="absolute bottom-3 left-3">
-                    <div className="w-9 h-9 rounded-lg bg-card/80 backdrop-blur-sm flex items-center justify-center">
-                      <project.icon className="w-4 h-4 text-primary" />
+                    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <project.icon className="w-3.5 h-3.5 text-primary" />
                     </div>
                   </div>
-                </div>
-                <div className="p-5">
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-mono text-[10px] text-accent uppercase tracking-wider">{project.category}</span>
                     <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -194,14 +191,16 @@ const ProjectsSection = () => {
               >
                 <div className="relative h-64">
                   <img src={selectedProject.image} alt={selectedProject.title} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
                   <button
                     onClick={() => setSelectedProject(null)}
                     className="absolute top-4 right-4 w-8 h-8 rounded-full bg-card/80 flex items-center justify-center text-foreground hover:bg-card transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
-                  <div className="absolute bottom-4 left-4 flex items-center gap-3">
+                </div>
+
+                <div className="p-6">
+                  <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center">
                       <selectedProject.icon className="w-6 h-6 text-primary-foreground" />
                     </div>
@@ -210,9 +209,6 @@ const ProjectsSection = () => {
                       <h3 className="font-display text-xl font-bold text-foreground">{selectedProject.title}</h3>
                     </div>
                   </div>
-                </div>
-
-                <div className="p-6">
                   <div className="mb-4">
                     <span className={`font-mono text-[10px] px-2.5 py-1 rounded-full ${statusBadge[selectedProject.status].className}`}>
                       {statusBadge[selectedProject.status].label}

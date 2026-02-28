@@ -54,7 +54,7 @@ const Navbar = () => {
             <a
               key={item.href}
               href={item.href}
-              className="font-mono text-xs text-muted-foreground hover:text-primary transition-colors relative group uppercase tracking-wider"
+              className="font-mono text-sm text-white font-bold hover:text-primary transition-colors relative group uppercase tracking-wider"
             >
               {item.label}
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full" />
@@ -102,7 +102,7 @@ const Navbar = () => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
+                  className="font-mono text-sm text-white font-bold hover:text-primary transition-colors"
                 >
                   {item.label}
                 </motion.a>
