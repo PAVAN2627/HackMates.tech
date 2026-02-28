@@ -110,9 +110,9 @@ const team: TeamMember[] = [
     isFounder: false,
     contributions: "5+ Projects",
     hackathons: 3,
-    portfolio: "#",
-    linkedin: "#",
-    instagram: "#",
+    portfolio: "https://prajkta-lohar-portfolio.vercel.app/",
+    linkedin: "https://www.linkedin.com/in/prajkta-lohar-875180229/",
+    instagram: "https://www.instagram.com/prajkta_8421",
   },
 ];
 
