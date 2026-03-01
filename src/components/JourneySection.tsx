@@ -122,7 +122,7 @@ const JourneySection = () => {
           <h2 className="text-4xl md:text-5xl font-bold font-display">
             The <span className="gradient-text">Timeline</span>
           </h2>
-          <p className="text-muted-foreground mt-4 max-w-lg mx-auto">
+          <p className="text-foreground mt-4 max-w-lg mx-auto">
             From a small team of dreamers to hackathon winners — every milestone matters.
           </p>
         </motion.div>
