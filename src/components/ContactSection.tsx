@@ -100,7 +100,7 @@ const ContactSection = () => {
                 <div className="w-12 h-12 rounded-xl bg-red-500 flex items-center justify-center group-hover:scale-110 transition-all shadow-sm">
                   <MapPin className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-base text-foreground font-bold group-hover:text-primary transition-colors">Maharashtra, India</span>
+                <span className="text-base text-foreground font-bold group-hover:text-primary transition-colors">Pune, Maharashtra, India</span>
               </motion.div>
             </div>
           </motion.div>

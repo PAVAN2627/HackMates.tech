@@ -1,41 +1,41 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
-import hackathonEvent1 from "@/assets/hackathon-event-1.jpg";
-import hackathonEvent2 from "@/assets/hackathon-event-2.jpg";
-import hackathonEvent3 from "@/assets/hackathon-event-3.jpg";
 
 interface Hackathon {
   name: string;
   year: string;
+  location: string;
   coverImage: string;
   images: string[];
 }
 
 const hackathons: Hackathon[] = [
   {
-    name: "Smart India Hackathon 2023",
-    year: "2023",
-    coverImage: hackathonEvent1,
-    images: [hackathonEvent1, hackathonEvent2, hackathonEvent3],
+    name: "RIFT Hackathon",
+    year: "2026",
+    location: "PW Pune",
+    coverImage: "/gallery/rift/rift1.jpeg",
+    images: [
+      "/gallery/rift/rift1.jpeg",
+      "/gallery/rift/rift2.jpeg",
+      "/gallery/rift/rift3.jpeg",
+      "/gallery/rift/rift4.jpeg",
+      "/gallery/rift/rift5.jpeg",
+    ],
   },
   {
-    name: "CodeStorm 2023",
-    year: "2023",
-    coverImage: hackathonEvent2,
-    images: [hackathonEvent2, hackathonEvent1, hackathonEvent3],
-  },
-  {
-    name: "HackOverflow National",
-    year: "2024",
-    coverImage: hackathonEvent3,
-    images: [hackathonEvent3, hackathonEvent1, hackathonEvent2],
-  },
-  {
-    name: "Smart India Hackathon 2024",
-    year: "2024",
-    coverImage: hackathonEvent1,
-    images: [hackathonEvent1, hackathonEvent3, hackathonEvent2],
+    name: "Techathon 3.0",
+    year: "2026",
+    location: "AISSMS IOIT",
+    coverImage: "/gallery/techathon/tech1.jpeg",
+    images: [
+      "/gallery/techathon/tech1.jpeg",
+      "/gallery/techathon/tech2.jpeg",
+      "/gallery/techathon/tech3.jpeg",
+      "/gallery/techathon/tech4.jpeg",
+      "/gallery/techathon/tech5.jpeg",
+    ],
   },
 ];
 
@@ -105,7 +105,7 @@ const GallerySection = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <p className="font-mono text-xs text-accent mb-1">{hackathon.year}</p>
+                  <p className="font-mono text-xs text-accent mb-1">{hackathon.year} • {hackathon.location}</p>
                   <h3 className="font-display font-semibold text-white text-sm">{hackathon.name}</h3>
                   <p className="font-mono text-xs text-white/70 mt-2">
                     {hackathon.images.length} photos
@@ -178,7 +178,7 @@ const GallerySection = () => {
 
                 {/* Hackathon Info */}
                 <div className="mt-4 text-center">
-                  <p className="font-mono text-xs text-accent mb-1">{selectedHackathon.year}</p>
+                  <p className="font-mono text-xs text-accent mb-1">{selectedHackathon.year} • {selectedHackathon.location}</p>
                   <h3 className="font-display text-xl font-bold text-white">{selectedHackathon.name}</h3>
                 </div>
 

@@ -135,24 +135,24 @@ const Verify = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 className="card-elevated rounded-xl p-8 border-2 border-green-500/50"
               >
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                <div className="flex flex-col md:flex-row items-start gap-4">
+                  <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0 mx-auto md:mx-0">
                     <CheckCircle className="w-6 h-6 text-green-500" />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-green-500 mb-2">Verified Successfully</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
+                  <div className="flex-1 w-full">
+                    <h3 className="text-xl font-bold text-green-500 mb-2 text-center md:text-left">Verified Successfully</h3>
+                    <p className="text-sm text-muted-foreground mb-4 text-center md:text-left">
                       This offer letter is authentic and issued by HackMates.
                     </p>
                     
                     <div className="space-y-3 bg-secondary/50 rounded-lg p-4">
-                      <div className="flex justify-between">
+                      <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                         <span className="text-sm text-muted-foreground">Name:</span>
                         <span className="text-sm font-semibold text-foreground">{result.name}</span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                         <span className="text-sm text-muted-foreground">Type:</span>
-                        <span className={`text-sm font-semibold px-2 py-0.5 rounded ${
+                        <span className={`text-sm font-semibold px-2 py-0.5 rounded w-fit ${
                           result.type === "Employee" 
                             ? "bg-blue-500/20 text-blue-500" 
                             : "bg-purple-500/20 text-purple-500"
@@ -160,23 +160,23 @@ const Verify = () => {
                           {result.type}
                         </span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                         <span className="text-sm text-muted-foreground">Position:</span>
                         <span className="text-sm font-semibold text-foreground">{result.position}</span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                         <span className="text-sm text-muted-foreground">Issue Date:</span>
                         <span className="text-sm font-semibold text-foreground">{result.issueDate}</span>
                       </div>
                       {result.validUntil && (
-                        <div className="flex justify-between">
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                           <span className="text-sm text-muted-foreground">Valid Until:</span>
                           <span className="text-sm font-semibold text-foreground">{result.validUntil}</span>
                         </div>
                       )}
-                      <div className="flex justify-between">
+                      <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                         <span className="text-sm text-muted-foreground">Status:</span>
-                        <span className={`text-sm font-semibold px-2 py-0.5 rounded ${
+                        <span className={`text-sm font-semibold px-2 py-0.5 rounded w-fit ${
                           result.status === "Active" 
                             ? "bg-green-500/20 text-green-500" 
                             : "bg-red-500/20 text-red-500"
@@ -197,16 +197,16 @@ const Verify = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 className="card-elevated rounded-xl p-8 border-2 border-red-500/50"
               >
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                <div className="flex flex-col md:flex-row items-start gap-4">
+                  <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0 mx-auto md:mx-0">
                     <XCircle className="w-6 h-6 text-red-500" />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-red-500 mb-2">Not Verified</h3>
-                    <p className="text-sm text-muted-foreground mb-2">
+                  <div className="flex-1 w-full">
+                    <h3 className="text-xl font-bold text-red-500 mb-2 text-center md:text-left">Not Verified</h3>
+                    <p className="text-sm text-muted-foreground mb-2 text-center md:text-left">
                       The offer letter ID you entered could not be verified.
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground text-center md:text-left">
                       Please check the ID and try again, or contact us at{" "}
                       <a href="mailto:hackmates.tech@gmail.com" className="text-primary hover:underline">
                         hackmates.tech@gmail.com
