@@ -10,10 +10,12 @@ interface VerificationData {
   id: string;
   name: string;
   type: "Employee" | "Intern";
+  certificateType: "Offer Letter" | "Completion Certificate";
   position: string;
   issueDate: string;
   validUntil?: string;
-  status: "Active" | "Expired";
+  completionDate?: string;
+  status: "Active" | "Expired" | "Completed";
 }
 
 const Verify = () => {
@@ -74,10 +76,10 @@ const Verify = () => {
             <div className="text-center mb-12">
               <p className="font-mono text-sm text-primary mb-3">verify.authenticate()</p>
               <h1 className="text-4xl md:text-5xl font-bold font-display text-primary mb-4">
-                Verify Offer Letter
+                Verify Certificate
               </h1>
               <p className="text-foreground font-bold">
-                Enter the Offer Letter ID to verify authenticity
+                Enter the Certificate ID to verify authenticity
               </p>
             </div>
 
@@ -91,14 +93,14 @@ const Verify = () => {
               <form onSubmit={handleVerify} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Offer Letter ID
+                    Certificate ID
                   </label>
                   <div className="relative">
                     <input
                       type="text"
                       value={offerId}
                       onChange={(e) => setOfferId(e.target.value.toUpperCase())}
-                      placeholder="e.g., HM-EMP-2024-001"
+                      placeholder="e.g., HM-EMP-2024-001 or HM-INT-2024-001"
                       className="w-full px-4 py-3 pl-12 rounded-lg bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_hsl(var(--primary)/0.1)] font-mono text-sm transition-all uppercase"
                       required
                     />
@@ -142,10 +144,14 @@ const Verify = () => {
                   <div className="flex-1 w-full">
                     <h3 className="text-xl font-bold text-green-500 mb-2 text-center md:text-left">Verified Successfully</h3>
                     <p className="text-sm text-muted-foreground mb-4 text-center md:text-left">
-                      This offer letter is authentic and issued by HackMates.
+                      This certificate is authentic and issued by HackMates.
                     </p>
                     
                     <div className="space-y-3 bg-secondary/50 rounded-lg p-4">
+                      <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                        <span className="text-sm text-muted-foreground">Certificate Type:</span>
+                        <span className="text-sm font-semibold text-foreground">{result.certificateType}</span>
+                      </div>
                       <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                         <span className="text-sm text-muted-foreground">Name:</span>
                         <span className="text-sm font-semibold text-foreground">{result.name}</span>
@@ -174,11 +180,19 @@ const Verify = () => {
                           <span className="text-sm font-semibold text-foreground">{result.validUntil}</span>
                         </div>
                       )}
+                      {result.completionDate && (
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                          <span className="text-sm text-muted-foreground">Completion Date:</span>
+                          <span className="text-sm font-semibold text-foreground">{result.completionDate}</span>
+                        </div>
+                      )}
                       <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                         <span className="text-sm text-muted-foreground">Status:</span>
                         <span className={`text-sm font-semibold px-2 py-0.5 rounded w-fit ${
                           result.status === "Active" 
                             ? "bg-green-500/20 text-green-500" 
+                            : result.status === "Completed"
+                            ? "bg-blue-500/20 text-blue-500"
                             : "bg-red-500/20 text-red-500"
                         }`}>
                           {result.status}
@@ -204,7 +218,7 @@ const Verify = () => {
                   <div className="flex-1 w-full">
                     <h3 className="text-xl font-bold text-red-500 mb-2 text-center md:text-left">Not Verified</h3>
                     <p className="text-sm text-muted-foreground mb-2 text-center md:text-left">
-                      The offer letter ID you entered could not be verified.
+                      The certificate ID you entered could not be verified.
                     </p>
                     <p className="text-sm text-muted-foreground text-center md:text-left">
                       Please check the ID and try again, or contact us at{" "}
@@ -225,7 +239,7 @@ const Verify = () => {
               className="mt-8 text-center"
             >
               <p className="text-foreground font-bold leading-relaxed">
-                All offer letters issued by HackMates contain a unique verification ID.
+                All certificates issued by HackMates contain a unique verification ID.
                 <br />
                 If you have any questions, please contact us.
               </p>
