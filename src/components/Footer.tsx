@@ -115,9 +115,14 @@ const Footer = () => (
       {/* Bottom Bar */}
       <div className="pt-8 border-t border-border">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} HackMates. All rights reserved.
-          </p>
+          <div className="text-center md:text-left">
+            <p className="text-sm text-muted-foreground">
+              © {new Date().getFullYear()} HackMates. All rights reserved.
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              UDYAM Registration: <span className="font-mono">UDYAM-MH-30-0185921</span>
+            </p>
+          </div>
           <div className="flex gap-6 text-sm text-muted-foreground">
             <Link to="/privacy-policy" className="hover:text-primary transition-colors">Privacy Policy</Link>
             <Link to="/terms-of-service" className="hover:text-primary transition-colors">Terms of Service</Link>

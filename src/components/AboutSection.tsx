@@ -108,25 +108,43 @@ const AboutSection = () => {
             What We <span className="gradient-text">Offer</span>
           </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
                 icon: Rocket,
                 title: "Pre-Built Projects",
-                desc: "Ready-to-use projects for students at affordable rates. Perfect for learning, submissions, or quick deployment.",
-                features: ["Fully documented", "Source code included", "Student-friendly pricing"],
+                desc: "Ready-made academic projects with source code, documentation, and setup support.",
+                features: ["Source code + docs", "Setup assistance", "Diploma/BE/BTech ready"],
               },
               {
                 icon: Code,
                 title: "Custom Development",
-                desc: "Need something unique? We build custom solutions tailored to your specific requirements and vision.",
-                features: ["Tailored solutions", "Modern tech stack", "Ongoing support"],
+                desc: "Custom academic projects, startup MVPs, and AI integrations tailored to your needs.",
+                features: ["Custom projects", "Startup MVPs", "AI integrations"],
               },
               {
                 icon: GraduationCap,
-                title: "Mentorship & Guidance",
-                desc: "Learn from experienced hackathon winners. Get guidance on projects, hackathons, and career growth.",
-                features: ["1-on-1 mentoring", "Hackathon prep", "Career guidance"],
+                title: "Mentorship & Support",
+                desc: "Idea validation, tech stack guidance, pitch deck preparation, and demo support.",
+                features: ["Idea validation", "Tech stack guidance", "Demo support"],
+              },
+              {
+                icon: Trophy,
+                title: "Hackathon",
+                desc: "Organizing hackathons, team formation, judging mentorship, and technical guidance.",
+                features: ["Hackathon organizing", "Team matching", "Technical guidance"],
+              },
+              {
+                icon: Users,
+                title: "Internship Program",
+                desc: "12-week Full Stack Web Development internship for Diploma students.",
+                features: ["Real project experience", "Certificate provided", "Mentorship included"],
+              },
+              {
+                icon: Lightbulb,
+                title: "Workshops & Training",
+                desc: "Hands-on workshops on AI, career guidance, and latest technologies.",
+                features: ["Tech workshops", "Career guidance", "Live coding sessions"],
               },
             ].map((service, i) => (
               <motion.div
