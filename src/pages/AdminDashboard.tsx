@@ -13,7 +13,7 @@ interface VerificationEntry {
   position: string;
   issueDate: string;
   validUntil?: string;
-  status: "Active" | "Expired";
+  status: "Active" | "Expired" | "Completed";
 }
 
 const AdminDashboard = () => {
@@ -35,7 +35,7 @@ const AdminDashboard = () => {
     position: "",
     issueDate: "",
     validUntil: "",
-    status: "Active" as "Active" | "Expired",
+    status: "Active" as "Active" | "Expired" | "Completed",
   });
 
   // Check if running locally
@@ -333,11 +333,12 @@ const AdminDashboard = () => {
                 <label className="block text-sm font-medium text-foreground mb-2">Status *</label>
                 <select
                   value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as "Active" | "Expired" })}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as "Active" | "Expired" | "Completed" })}
                   className="w-full px-4 py-2 rounded-lg bg-card border border-border text-foreground focus:outline-none focus:border-primary"
                 >
                   <option value="Active">Active</option>
                   <option value="Expired">Expired</option>
+                  <option value="Completed">Completed</option>
                 </select>
               </div>
               <div className="md:col-span-2 flex gap-3">
@@ -400,6 +401,8 @@ const AdminDashboard = () => {
                         <span className={`text-xs px-2 py-0.5 rounded ${
                           entry.status === "Active" 
                             ? "bg-green-500/20 text-green-500" 
+                            : entry.status === "Completed"
+                            ? "bg-blue-500/20 text-blue-500"
                             : "bg-red-500/20 text-red-500"
                         }`}>
                           {entry.status}
