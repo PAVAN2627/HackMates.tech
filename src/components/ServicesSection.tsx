@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingCart, Wrench, GraduationCap, Briefcase, Users, ArrowRight, Trophy, X, MessageCircle, Mail } from "lucide-react";
-import { useState } from "react";
+import { ShoppingCart, Wrench, GraduationCap, Briefcase, Users, ArrowRight, Trophy, X, MessageCircle, Mail, FileText } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 
 interface Service {
   icon: typeof ShoppingCart;
@@ -13,6 +14,7 @@ interface Service {
     pricing: string;
     terms: string[];
     support: string;
+    brochure?: string;
   };
 }
 
@@ -110,6 +112,7 @@ const services: Service[] = [
         "Mentorship throughout the program",
       ],
       support: "For detailed information about internship pricing, complete syllabus, and enrollment process, please contact us via WhatsApp or Email.",
+      brochure: "/Program broucher.pdf",
     },
   },
   {
@@ -136,6 +139,17 @@ const services: Service[] = [
 
 const ServicesSection = () => {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const open = searchParams.get("open");
+    if (open) {
+      const match = services.find(
+        (s) => s.title.toLowerCase() === decodeURIComponent(open).toLowerCase()
+      );
+      if (match) setSelectedService(match);
+    }
+  }, [searchParams]);
 
   return (
     <section id="services" className="py-24">
@@ -265,6 +279,20 @@ const ServicesSection = () => {
                     {selectedService.detailedInfo.support}
                   </p>
                 </div>
+
+                {selectedService.detailedInfo.brochure && (
+                  <div className="mb-6">
+                    <a
+                      href={selectedService.detailedInfo.brochure}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary text-sm font-medium transition-colors"
+                    >
+                      <FileText className="w-4 h-4" />
+                      View Program Brochure
+                    </a>
+                  </div>
+                )}
 
                 <div className="space-y-3 pt-4 border-t border-border">
                   <p className="text-sm text-muted-foreground text-center mb-3">

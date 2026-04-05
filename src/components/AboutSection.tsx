@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Trophy, Lightbulb, Users, Code, Rocket, GraduationCap } from "lucide-react";
 import { Link } from "react-router-dom";
+import LiveProjectsSection from "@/components/LiveProjectsSection";
 
 const AboutSection = () => {
   return (
@@ -153,25 +154,32 @@ const AboutSection = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.15 }}
-                className="card-elevated rounded-xl p-8 hover:shadow-2xl transition-all group"
               >
-                <div className="w-14 h-14 rounded-xl gradient-primary flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <service.icon className="w-7 h-7 text-primary-foreground" />
-                </div>
-                <h4 className="text-xl font-bold font-display text-foreground mb-3">{service.title}</h4>
-                <p className="text-muted-foreground mb-6 leading-relaxed">{service.desc}</p>
-                <ul className="space-y-2">
-                  {service.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2 text-sm text-foreground">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
+                <Link
+                  to={`/services?open=${encodeURIComponent(service.title)}`}
+                  className="block card-elevated rounded-xl p-8 hover:shadow-2xl hover:border-glow transition-all group cursor-pointer"
+                >
+                  <div className="w-14 h-14 rounded-xl gradient-primary flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <service.icon className="w-7 h-7 text-primary-foreground" />
+                  </div>
+                  <h4 className="text-xl font-bold font-display text-foreground mb-3">{service.title}</h4>
+                  <p className="text-muted-foreground mb-6 leading-relaxed">{service.desc}</p>
+                  <ul className="space-y-2">
+                    {service.features.map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 text-sm text-foreground">
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                </Link>
               </motion.div>
             ))}
           </div>
         </motion.div>
+
+        {/* Live Projects */}
+        <LiveProjectsSection />
 
         {/* CTA */}
         <motion.div
