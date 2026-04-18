@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Moon, Sun } from "lucide-react";
+import { Menu, X, Moon, Sun, LogIn, LayoutDashboard } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+
+import { Button } from "@/components/ui/button";
+import { usePlatform } from "@/context/PlatformContext";
 
 const navItems = [
   { label: "Home", href: "/" },
@@ -17,6 +20,7 @@ const navItems = [
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { sessionUser } = usePlatform();
   const [dark, setDark] = useState(() => {
     // Initialize from localStorage or default to true
     const saved = localStorage.getItem('theme');
@@ -78,6 +82,21 @@ const Navbar = () => {
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full" />
             </Link>
           ))}
+          <Button asChild className="h-10 px-4">
+            <Link to={sessionUser ? (sessionUser.role === "Admin" ? "/admin" : "/dashboard") : "/login"}>
+              {sessionUser ? (
+                <>
+                  <LayoutDashboard className="w-4 h-4" />
+                  Dashboard
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-4 h-4" />
+                  Login
+                </>
+              )}
+            </Link>
+          </Button>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -139,6 +158,11 @@ const Navbar = () => {
                   </Link>
                 </motion.div>
               ))}
+              <Button asChild className="w-full justify-center">
+                <Link to={sessionUser ? (sessionUser.role === "Admin" ? "/admin" : "/dashboard") : "/login"} onClick={() => setIsOpen(false)}>
+                  {sessionUser ? "Open dashboard" : "Login"}
+                </Link>
+              </Button>
             </div>
           </motion.div>
         )}

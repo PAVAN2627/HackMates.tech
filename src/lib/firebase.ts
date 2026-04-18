@@ -1,6 +1,7 @@
-import { initializeApp } from 'firebase/app';
+import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
+import { getFunctions } from 'firebase/functions';
 
 // Firebase configuration from environment variables
 const firebaseConfig = {
@@ -13,12 +14,15 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
-// Initialize Firestore
+const adminApp = getApps().some((existingApp) => existingApp.name === "admin-users")
+  ? getApp("admin-users")
+  : initializeApp(firebaseConfig, "admin-users");
+
 export const db = getFirestore(app);
-
-// Initialize Auth
 export const auth = getAuth(app);
+export const adminAuth = getAuth(adminApp);
+export const functionsClient = getFunctions(app);
 
 export default app;

@@ -1,0 +1,149 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function profile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasRole(role) {
+      return isSignedIn() && profile().role == role;
+    }
+
+    function isAdmin() {
+      return hasRole("Admin");
+    }
+
+    function isMentor() {
+      return hasRole("Mentor");
+    }
+
+    function isIntern() {
+      return hasRole("Intern");
+    }
+
+    function isOwnInternDoc() {
+      return isIntern() && request.auth.uid == resource.data.internId;
+    }
+
+    function isOwnInternDocOnCreate() {
+      return isIntern() && request.auth.uid == request.resource.data.internId;
+    }
+
+    function isOwnSubmissionDoc() {
+      return isIntern() && request.auth.uid == resource.data.internId;
+    }
+
+    function isOwnMentorFeedbackDoc() {
+      return isMentor() && request.auth.uid == resource.data.mentorId;
+    }
+
+    function isOwnMentorFeedbackAsIntern() {
+      return isIntern() && request.auth.uid == resource.data.internId;
+    }
+
+    function internAllowedSubmissionUpdate() {
+      return isOwnSubmissionDoc()
+        && request.resource.data.internId == resource.data.internId
+        && request.resource.data.status == "Pending";
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+      allow update: if isAdmin()
+        || (
+          isSignedIn()
+          && request.auth.uid == userId
+          && request.resource.data.id == resource.data.id
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.name == resource.data.name
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.email == resource.data.email
+        );
+      allow delete: if isAdmin();
+    }
+
+    match /performance/{docId} {
+      allow read: if isAdmin() || isMentor() || isOwnInternDoc();
+      allow create, update, delete: if isAdmin() || isMentor();
+    }
+
+    match /fees/{docId} {
+      allow read: if isAdmin() || isMentor() || isOwnInternDoc();
+      allow create, update, delete: if isAdmin() || isMentor();
+    }
+
+    match /dailyNotes/{docId} {
+      allow read: if isAdmin() || isMentor() || isOwnInternDoc();
+      allow create: if isAdmin() || isMentor();
+      allow update, delete: if isAdmin() || isMentor();
+    }
+
+    match /feedback/{docId} {
+      allow read: if isAdmin() || isMentor() || isOwnInternDoc();
+      allow create, update, delete: if isAdmin() || isMentor();
+    }
+
+    match /mentorFeedback/{docId} {
+      allow read: if isAdmin() || isMentor() || isOwnMentorFeedbackAsIntern();
+      allow create, update: if isAdmin() || isMentor();
+      allow delete: if isAdmin();
+    }
+
+    match /doubts/{docId} {
+      allow read: if isAdmin() || isMentor() || isOwnInternDoc();
+      allow create: if isIntern() && isOwnInternDocOnCreate();
+      allow update: if isAdmin() || isMentor();
+      allow delete: if isAdmin();
+    }
+
+    match /submissions/{docId} {
+      allow read: if isAdmin() || isMentor() || isOwnInternDoc();
+      allow create: if isAdmin() || isMentor() || (isIntern() && isOwnInternDocOnCreate());
+      allow update: if isAdmin() || isMentor() || internAllowedSubmissionUpdate();
+      allow delete: if isAdmin();
+    }
+
+    match /attendanceSessions/{docId} {
+      allow read: if isAdmin()
+        || isMentor()
+        || (isIntern() && request.auth.uid in resource.data.internIds);
+      allow create, update, delete: if isAdmin() || isMentor();
+    }
+
+    match /verifications/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /feedbackForms/{docId} {
+      allow read: if isAdmin() || isMentor() || isIntern();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /feedbackFormSubmissions/{docId} {
+      allow read: if isAdmin() || isMentor() || (isIntern() && request.auth.uid == resource.data.internId);
+      allow create: if isIntern() && request.auth.uid == request.resource.data.internId;
+      allow update: if isAdmin() || isMentor();
+      allow delete: if isAdmin();
+    }
+
+    match /mentorFeedbackForms/{docId} {
+      allow read: if isAdmin() || isMentor() || (isIntern() && (resource.data.targetInternIds.size() == 0 || request.auth.uid in resource.data.targetInternIds));
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /mentorFeedbackSubmissions/{docId} {
+      allow read: if isAdmin() || isMentor() || (isIntern() && request.auth.uid == resource.data.internId);
+      allow create: if isIntern() && request.auth.uid == request.resource.data.internId;
+      allow update: if isAdmin() || isMentor();
+      allow delete: if isAdmin();
+    }
+
+  }
+}
