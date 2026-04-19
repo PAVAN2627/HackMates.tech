@@ -14,7 +14,6 @@ import {
   BookOpen,
   ClipboardCheck,
   BadgeCheck,
-  Shield,
   Home,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -131,12 +130,12 @@ export default function DashboardSidebar({
       <div className="hidden lg:block w-64 shrink-0" />
 
       {/* Mobile Menu Button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
+      <div className="lg:hidden fixed top-3 left-3 z-50">
         <Button
           variant="outline"
           size="icon"
           onClick={() => setIsOpen(!isOpen)}
-          className="bg-background border-white/10"
+          className="bg-slate-950/90 border-white/15 text-white hover:bg-slate-900 shadow-lg"
         >
           {isOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
         </Button>
@@ -147,32 +146,32 @@ export default function DashboardSidebar({
         initial={{ x: -300 }}
         animate={{ x: isMobile ? (isOpen ? 0 : -300) : 0 }}
         transition={{ type: "spring", damping: 20, stiffness: 100 }}
-        className="fixed left-0 top-0 h-screen w-64 bg-slate-950 border-r border-white/10 z-40 lg:fixed lg:left-0 lg:top-0 lg:translate-x-0 flex flex-col overflow-y-auto"
+        className="fixed left-0 top-0 h-screen w-64 bg-slate-950 border-r border-white/10 z-40 lg:fixed lg:left-0 lg:top-0 lg:translate-x-0 flex flex-col"
       >
         {/* Header */}
-        <div className="p-6 border-b border-white/10">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
-                <Shield className="w-5 h-5" />
+        <div className="p-4 border-b border-white/10">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3 min-w-0">
+              <img
+                src="/hackmatesroundlogo.png"
+                alt="HackMates"
+                className="w-9 h-9 rounded-full object-cover shrink-0"
+              />
+              <div className="min-w-0">
+                <h2 className="font-bold text-white leading-tight">Hack<span className="text-primary">Mates</span></h2>
+                <p className="text-xs text-white/50 leading-tight">Platform</p>
               </div>
-              <div>
-                <h2 className="font-bold text-white">HackMates</h2>
-                <p className="text-xs text-white/50">Platform</p>
-              </div>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsOpen(false)}
-                className="lg:hidden text-white/80 hover:text-white hover:bg-white/10"
-                aria-label="Close sidebar"
-              >
-                <X className="w-4 h-4" />
-              </Button>
             </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsOpen(false)}
+              className="lg:hidden shrink-0 text-white/80 hover:text-white hover:bg-white/10"
+              aria-label="Close sidebar"
+            >
+              <X className="w-4 h-4" />
+            </Button>
           </div>
         </div>
 
@@ -188,7 +187,7 @@ export default function DashboardSidebar({
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="p-4 space-y-2 overflow-y-auto">
           {navItems.map((item) => (
             <button
               key={item.id}

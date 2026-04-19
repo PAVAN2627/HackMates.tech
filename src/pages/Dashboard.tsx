@@ -822,10 +822,10 @@ const Dashboard = () => {
     .filter((entry) => entry.mentorName === sessionUser.name)
     .slice()
     .sort((a, b) => b.date.localeCompare(a.date));
-  const receivedMentorFeedback = mentorFeedback
+  const receivedMentorFeedback = (mentorFeedbackSubmissions ?? [])
     .filter((entry) => entry.mentorId === sessionUser.uid)
     .slice()
-    .sort((a, b) => b.date.localeCompare(a.date));
+    .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
   const internGaveMentorFeedback = mentorFeedback
     .filter((entry) => entry.internId === sessionUser.uid)
     .slice()
@@ -1330,12 +1330,16 @@ const Dashboard = () => {
                             <div key={entry.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
                               <div className="flex items-center justify-between gap-3">
                                 <div>
-                                  <p className="font-semibold">{entry.mentorName}</p>
-                                  <p className="text-xs text-white/55 mt-1">{entry.date}</p>
+                                  <p className="font-semibold">{entry.internName}</p>
+                                  <p className="text-xs text-white/55 mt-1">{new Date(entry.submittedAt).toLocaleDateString()}</p>
                                 </div>
-                                <Badge className="bg-primary/15 text-primary border-primary/20">{entry.rating}/10</Badge>
+                                <div className="flex items-center gap-1">
+                                  {[1,2,3,4,5].map((n) => (
+                                    <Star key={n} className={`w-4 h-4 ${entry.rating >= n ? "fill-yellow-400 text-yellow-400" : "text-white/20"}`} />
+                                  ))}
+                                </div>
                               </div>
-                              <p className="text-sm text-white/75 mt-3">{entry.comment}</p>
+                              <p className="text-sm text-white/75 mt-3">{entry.review}</p>
                             </div>
                           ))
                         )}
@@ -1371,15 +1375,30 @@ const Dashboard = () => {
                                   <h3 className="font-semibold text-lg">Rating: {form.mentorNames.join(", ")}</h3>
 
                                   {form.mentorIds.map((mentorId, idx) => {
+                                    const myInternId = sessionUser.uid || sessionUser.id;
                                     const alreadySubmitted = mentorFeedbackSubmissions?.some(
-                                      (s) => s.mentorId === mentorId && s.formId === form.id,
+                                      (s) => s.mentorId === mentorId && s.formId === form.id && s.internId === myInternId,
+                                    );
+                                    const previousSubmission = mentorFeedbackSubmissions?.find(
+                                      (s) => s.mentorId === mentorId && s.formId === form.id && s.internId === myInternId,
                                     );
 
                                     return (
                                       <div key={mentorId} className="rounded-lg border border-white/10 bg-white/5 p-4 space-y-3">
                                         <h4 className="font-semibold text-white">{form.mentorNames[idx]}</h4>
-                                        {alreadySubmitted ? (
-                                          <Badge className="bg-green-500/20 text-green-300">Already Submitted</Badge>
+                                        {alreadySubmitted && previousSubmission ? (
+                                          <div className="space-y-2">
+                                            <Badge className="bg-green-500/20 text-green-300">Already Submitted</Badge>
+                                            <div className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-1">
+                                              <div className="flex items-center gap-2">
+                                                {[1,2,3,4,5].map((n) => (
+                                                  <Star key={n} className={`w-4 h-4 ${previousSubmission.rating >= n ? "fill-yellow-400 text-yellow-400" : "text-white/20"}`} />
+                                                ))}
+                                                <span className="text-xs text-white/50">{new Date(previousSubmission.submittedAt).toLocaleDateString()}</span>
+                                              </div>
+                                              <p className="text-sm text-white/70">{previousSubmission.review}</p>
+                                            </div>
+                                          </div>
                                         ) : (
                                           <>
                                             <div className="space-y-2">
@@ -1422,17 +1441,28 @@ const Dashboard = () => {
                                                     formId: form.id,
                                                     mentorId,
                                                     mentorName: form.mentorNames[idx],
-                                                    internId: sessionUser.uid || sessionUser.id,
+                                                    internId: myInternId,
                                                     internName: sessionUser.name,
                                                     internEmail: sessionUser.email,
                                                     rating: mentorRatings[mentorId],
                                                     review: mentorReviews[mentorId],
                                                   });
 
-                                                  alert("Thank you! Your feedback has been submitted");
-                                                  setMentorRatings({});
-                                                  setMentorReviews({});
-                                                  setSelectedMentorForm(null);
+                                                  setMentorRatings((prev) => { const n = { ...prev }; delete n[mentorId]; return n; });
+                                                  setMentorReviews((prev) => { const n = { ...prev }; delete n[mentorId]; return n; });
+
+                                                  // Auto-close form if all mentors in this form are now submitted
+                                                  const allDone = form.mentorIds.every((mid) =>
+                                                    mid === mentorId || mentorFeedbackSubmissions?.some(
+                                                      (s) => s.mentorId === mid && s.formId === form.id && s.internId === myInternId,
+                                                    )
+                                                  );
+                                                  if (allDone) {
+                                                    alert("All feedback submitted. Thank you!");
+                                                    setSelectedMentorForm(null);
+                                                  } else {
+                                                    alert("Feedback submitted!");
+                                                  }
                                                 } catch (error) {
                                                   console.error("Error submitting feedback:", error);
                                                   alert("Failed to submit feedback");
@@ -1455,24 +1485,33 @@ const Dashboard = () => {
                           </div>
                         ) : (
                           <div className="space-y-3">
-                            {mentorFeedbackForms.map((form) => (
-                              <motion.div
-                                key={form.id}
-                                whileHover={{ scale: 1.02 }}
-                                onClick={() => setSelectedMentorForm(form.id)}
-                                className="p-4 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 cursor-pointer transition"
-                              >
-                                <div className="flex justify-between items-start">
-                                  <div>
-                                    <p className="font-semibold">Rate: {form.mentorNames.join(", ")}</p>
-                                    <p className="text-sm text-white/60 mt-1">
-                                      {form.mentorIds.length} mentor{form.mentorIds.length !== 1 ? "s" : ""}
-                                    </p>
+                            {mentorFeedbackForms.map((form) => {
+                              const myInternId = sessionUser.uid || sessionUser.id;
+                              const submittedCount = form.mentorIds.filter((mid) =>
+                                mentorFeedbackSubmissions?.some((s) => s.mentorId === mid && s.formId === form.id && s.internId === myInternId)
+                              ).length;
+                              const allSubmitted = submittedCount === form.mentorIds.length;
+                              return (
+                                <motion.div
+                                  key={form.id}
+                                  whileHover={{ scale: 1.02 }}
+                                  onClick={() => setSelectedMentorForm(form.id)}
+                                  className="p-4 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 cursor-pointer transition"
+                                >
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <p className="font-semibold">Rate: {form.mentorNames.join(", ")}</p>
+                                      <p className="text-sm text-white/60 mt-1">
+                                        {submittedCount}/{form.mentorIds.length} submitted
+                                      </p>
+                                    </div>
+                                    <Badge className={allSubmitted ? "bg-green-500/20 text-green-300" : "bg-blue-500/20 text-blue-300"}>
+                                      {allSubmitted ? "Completed" : "View Form"}
+                                    </Badge>
                                   </div>
-                                  <Badge className="bg-blue-500/20 text-blue-300">View Form</Badge>
-                                </div>
-                              </motion.div>
-                            ))}
+                                </motion.div>
+                              );
+                            })}
                           </div>
                         )}
                       </CardContent>
@@ -2178,12 +2217,16 @@ const Dashboard = () => {
                             <div key={entry.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
                               <div className="flex items-center justify-between gap-3">
                                 <div>
-                                  <p className="font-semibold">{entry.mentorName}</p>
-                                  <p className="text-xs text-white/55 mt-1">{entry.date}</p>
+                                  <p className="font-semibold">{entry.internName}</p>
+                                  <p className="text-xs text-white/55 mt-1">{new Date(entry.submittedAt).toLocaleDateString()}</p>
                                 </div>
-                                <Badge className="bg-primary/15 text-primary border-primary/20">{entry.rating}/10</Badge>
+                                <div className="flex items-center gap-1">
+                                  {[1,2,3,4,5].map((n) => (
+                                    <Star key={n} className={`w-4 h-4 ${entry.rating >= n ? "fill-yellow-400 text-yellow-400" : "text-white/20"}`} />
+                                  ))}
+                                </div>
                               </div>
-                              <p className="text-sm text-white/75 mt-3">{entry.comment}</p>
+                              <p className="text-sm text-white/75 mt-3">{entry.review}</p>
                             </div>
                           ))
                         )}
@@ -2219,8 +2262,12 @@ const Dashboard = () => {
                                   <h3 className="font-semibold text-lg">Rating: {form.mentorNames.join(", ")}</h3>
 
                                   {form.mentorIds.map((mentorId, idx) => {
+                                    const myInternId = sessionUser.uid || sessionUser.id;
                                     const alreadySubmitted = mentorFeedbackSubmissions?.some(
-                                      (s) => s.mentorId === mentorId && s.formId === form.id
+                                      (s) => s.mentorId === mentorId && s.formId === form.id && s.internId === myInternId,
+                                    );
+                                    const previousSubmission = mentorFeedbackSubmissions?.find(
+                                      (s) => s.mentorId === mentorId && s.formId === form.id && s.internId === myInternId,
                                     );
 
                                     return (
@@ -2229,8 +2276,19 @@ const Dashboard = () => {
                                         className="rounded-lg border border-white/10 bg-white/5 p-4 space-y-3"
                                       >
                                         <h4 className="font-semibold text-white">{form.mentorNames[idx]}</h4>
-                                        {alreadySubmitted ? (
-                                          <Badge className="bg-green-500/20 text-green-300">Already Submitted</Badge>
+                                        {alreadySubmitted && previousSubmission ? (
+                                          <div className="space-y-2">
+                                            <Badge className="bg-green-500/20 text-green-300">Already Submitted</Badge>
+                                            <div className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-1">
+                                              <div className="flex items-center gap-2">
+                                                {[1,2,3,4,5].map((n) => (
+                                                  <Star key={n} className={`w-4 h-4 ${previousSubmission.rating >= n ? "fill-yellow-400 text-yellow-400" : "text-white/20"}`} />
+                                                ))}
+                                                <span className="text-xs text-white/50">{new Date(previousSubmission.submittedAt).toLocaleDateString()}</span>
+                                              </div>
+                                              <p className="text-sm text-white/70">{previousSubmission.review}</p>
+                                            </div>
+                                          </div>
                                         ) : (
                                           <>
                                             <div className="space-y-2">
@@ -2272,17 +2330,27 @@ const Dashboard = () => {
                                                     formId: form.id,
                                                     mentorId,
                                                     mentorName: form.mentorNames[idx],
-                                                    internId: sessionUser.uid || sessionUser.id,
+                                                    internId: myInternId,
                                                     internName: sessionUser.name,
                                                     internEmail: sessionUser.email,
                                                     rating: mentorRatings[mentorId],
                                                     review: mentorReviews[mentorId],
                                                   });
 
-                                                  alert("Thank you! Your feedback has been submitted");
-                                                  setMentorRatings({});
-                                                  setMentorReviews({});
-                                                  setSelectedMentorForm(null);
+                                                  setMentorRatings((prev) => { const n = { ...prev }; delete n[mentorId]; return n; });
+                                                  setMentorReviews((prev) => { const n = { ...prev }; delete n[mentorId]; return n; });
+
+                                                  const allDone = form.mentorIds.every((mid) =>
+                                                    mid === mentorId || mentorFeedbackSubmissions?.some(
+                                                      (s) => s.mentorId === mid && s.formId === form.id && s.internId === myInternId,
+                                                    )
+                                                  );
+                                                  if (allDone) {
+                                                    alert("All feedback submitted. Thank you!");
+                                                    setSelectedMentorForm(null);
+                                                  } else {
+                                                    alert("Feedback submitted!");
+                                                  }
                                                 } catch (error) {
                                                   console.error("Error submitting feedback:", error);
                                                   alert("Failed to submit feedback");
@@ -2305,24 +2373,33 @@ const Dashboard = () => {
                           </div>
                         ) : (
                           <div className="space-y-3">
-                            {mentorFeedbackForms.map((form) => (
-                              <motion.div
-                                key={form.id}
-                                whileHover={{ scale: 1.02 }}
-                                onClick={() => setSelectedMentorForm(form.id)}
-                                className="p-4 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 cursor-pointer transition"
-                              >
-                                <div className="flex justify-between items-start">
-                                  <div>
-                                    <p className="font-semibold">Rate: {form.mentorNames.join(", ")}</p>
-                                    <p className="text-sm text-white/60 mt-1">
-                                      {form.mentorIds.length} mentor{form.mentorIds.length !== 1 ? "s" : ""}
-                                    </p>
+                            {mentorFeedbackForms.map((form) => {
+                              const myInternId = sessionUser.uid || sessionUser.id;
+                              const submittedCount = form.mentorIds.filter((mid) =>
+                                mentorFeedbackSubmissions?.some((s) => s.mentorId === mid && s.formId === form.id && s.internId === myInternId)
+                              ).length;
+                              const allSubmitted = submittedCount === form.mentorIds.length;
+                              return (
+                                <motion.div
+                                  key={form.id}
+                                  whileHover={{ scale: 1.02 }}
+                                  onClick={() => setSelectedMentorForm(form.id)}
+                                  className="p-4 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 cursor-pointer transition"
+                                >
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <p className="font-semibold">Rate: {form.mentorNames.join(", ")}</p>
+                                      <p className="text-sm text-white/60 mt-1">
+                                        {submittedCount}/{form.mentorIds.length} submitted
+                                      </p>
+                                    </div>
+                                    <Badge className={allSubmitted ? "bg-green-500/20 text-green-300" : "bg-blue-500/20 text-blue-300"}>
+                                      {allSubmitted ? "Completed" : "View Form"}
+                                    </Badge>
                                   </div>
-                                  <Badge className="bg-blue-500/20 text-blue-300">View Form</Badge>
-                                </div>
-                              </motion.div>
-                            ))}
+                                </motion.div>
+                              );
+                            })}
                           </div>
                         )}
                       </CardContent>
