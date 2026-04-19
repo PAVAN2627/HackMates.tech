@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { browserLocalPersistence, onAuthStateChanged, setPersistence, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, type User } from "firebase/auth";
-import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, orderBy, query, setDoc, updateDoc, where, type DocumentData, type QueryDocumentSnapshot, type Timestamp } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, orderBy, query, setDoc, updateDoc, where, type DocumentData, type QueryDocumentSnapshot, type Timestamp } from "firebase/firestore";
 import { adminAuth, auth, db } from "@/lib/firebase";
 import { sendPlatformEmail } from "@/lib/email";
 
@@ -918,9 +918,48 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
   }, [sendWelcomeEmail]);
 
   const deleteUserAccount = useCallback(async (uid: string) => {
-    // Firebase Auth deletion requires Admin SDK (Cloud Functions / Blaze plan).
-    // On Spark plan we delete the Firestore profile — the user is immediately
-    // blocked from logging in because login checks for a profile doc.
+    // Get user profile first to know role and IDs
+    const userSnap = await getDoc(doc(db, "users", uid));
+    const userData = userSnap.exists() ? userSnap.data() : null;
+    const role = userData?.role as string | undefined;
+    const internId = userData?.internId as string | undefined;
+    const mentorId = userData?.mentorId as string | undefined;
+
+    // Helper: delete all docs matching a query
+    const deleteWhere = async (col: string, field: string, value: string) => {
+      const snap = await getDocs(query(collection(db, col), where(field, "==", value)));
+      await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+    };
+
+    if (role === "Intern") {
+      await Promise.all([
+        deleteWhere("performance", "internId", uid),
+        deleteWhere("fees", "internId", uid),
+        deleteWhere("dailyNotes", "internId", uid),
+        deleteWhere("feedback", "internId", uid),
+        deleteWhere("doubts", "internId", uid),
+        deleteWhere("submissions", "internId", uid),
+        deleteWhere("feedbackFormSubmissions", "internId", uid),
+        deleteWhere("mentorFeedbackSubmissions", "internId", uid),
+        // Delete verification record by internId
+        ...(internId ? [deleteWhere("verifications", "offerId", internId.toUpperCase())] : []),
+      ]);
+    } else if (role === "Mentor") {
+      await Promise.all([
+        // Intern ratings submitted about this mentor (by mentorId)
+        deleteWhere("mentorFeedbackSubmissions", "mentorId", uid),
+        // Mentor's own feedback entries in mentorFeedback collection (by mentorId)
+        deleteWhere("mentorFeedback", "mentorId", uid),
+        // Attendance sessions created by this mentor (by mentorId)
+        deleteWhere("attendanceSessions", "mentorId", uid),
+        // Mentor feedback forms created by this mentor (by mentorId)
+        deleteWhere("mentorFeedbackForms", "mentorId", uid),
+        // Verification record by mentorId
+        ...(mentorId ? [deleteWhere("verifications", "offerId", mentorId.toUpperCase())] : []),
+      ]);
+    }
+
+    // Finally delete the user profile
     await deleteDoc(doc(db, "users", uid));
   }, []);
 
