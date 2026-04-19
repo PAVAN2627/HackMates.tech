@@ -851,6 +851,12 @@ const Dashboard = () => {
               <div className="flex items-center gap-3 mb-2">
                 <Badge className="bg-white/10 text-white border-white/10">{sessionUser.role}</Badge>
                 <Badge variant="outline" className="border-primary/30 text-primary">{sessionUser.name}</Badge>
+                {!isMentor && sessionUser.internId && (
+                  <Badge variant="outline" className="border-white/20 text-white/60 font-mono text-xs">{sessionUser.internId}</Badge>
+                )}
+                {isMentor && sessionUser.mentorId && (
+                  <Badge variant="outline" className="border-white/20 text-white/60 font-mono text-xs">{sessionUser.mentorId}</Badge>
+                )}
               </div>
               <h1 className="text-3xl md:text-4xl font-bold font-display text-white">
                 {isMentor ? "Mentor Command Center" : "Intern Learning Dashboard"}
@@ -878,32 +884,39 @@ const Dashboard = () => {
         </header>
 
         <main className="w-full px-6 py-8 space-y-8">
-          {(showInternOverview || showMentorOverview) && (
-            <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="grid gap-4 md:grid-cols-4">
-              {[
-                { label: "Performance", value: sessionUser.role === "Intern" ? `${internMonthlyOverallRating || 0}/10` : `${mentorData.performance.length}`, helper: sessionUser.role === "Intern" ? `Weekly avg ${internWeeklyAverageRating || 0}/10` : "Recorded reviews", icon: BadgeCheck },
-                ...(sessionUser.role === "Intern" ? [{ label: "Fees", value: `${pendingFees}`, helper: "Pending items", icon: FileText }] : []),
-                { label: "Doubts", value: `${openDoubts}`, helper: "Open questions", icon: MessageSquareMore },
-                { label: "Submissions", value: `${pendingSubmissions}`, helper: "Awaiting review", icon: Send },
-              ].map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Card key={item.label} className="border-white/10 bg-white/5 text-white backdrop-blur-sm">
-                    <CardContent className="p-5 flex items-start justify-between gap-4">
-                      <div>
-                        <p className="text-sm text-white/60">{item.label}</p>
-                        <p className="text-3xl font-bold mt-2">{item.value}</p>
-                        <p className="text-sm text-white/65 mt-1">{item.helper}</p>
-                      </div>
-                      <div className="w-11 h-11 rounded-2xl bg-primary/15 text-primary flex items-center justify-center">
-                        <Icon className="w-5 h-5" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </motion.section>
-          )}
+          {(showInternOverview || showMentorOverview) && (() => {
+            const overviewCards = sessionUser.role === "Mentor" ? [
+              { label: "Submission Forms Open", value: `${mentorActiveSubmissionForms.length}`, helper: "Awaiting intern completion", icon: Send },
+              { label: "Attendance Sessions", value: `${mentorLectureCount}`, helper: "Sessions created", icon: ClipboardCheck },
+              { label: "Open Doubts", value: `${openDoubts}`, helper: "Unanswered questions", icon: MessageSquareMore },
+            ] : [
+              { label: "Performance", value: `${internMonthlyOverallRating || 0}/10`, helper: `Weekly avg ${internWeeklyAverageRating || 0}/10`, icon: BadgeCheck },
+              { label: "Fees", value: `${pendingFees}`, helper: "Pending items", icon: FileText },
+              { label: "Doubts", value: `${openDoubts}`, helper: "Open questions", icon: MessageSquareMore },
+              { label: "Submissions", value: `${pendingSubmissions}`, helper: "Awaiting review", icon: Send },
+            ];
+            return (
+              <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="grid gap-4 md:grid-cols-4">
+                {overviewCards.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Card key={item.label} className="border-white/10 bg-white/5 text-white backdrop-blur-sm">
+                      <CardContent className="p-5 flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-sm text-white/60">{item.label}</p>
+                          <p className="text-3xl font-bold mt-2">{item.value}</p>
+                          <p className="text-sm text-white/65 mt-1">{item.helper}</p>
+                        </div>
+                        <div className="w-11 h-11 rounded-2xl bg-primary/15 text-primary flex items-center justify-center">
+                          <Icon className="w-5 h-5" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </motion.section>
+            );
+          })()}
 
           {sessionUser.role === "Intern" ? (
             <Tabs value={internTabValue} onValueChange={setActiveSection} className="space-y-6">

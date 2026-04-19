@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Loader2, LogIn } from "lucide-react";
-import { useNavigate, Navigate } from "react-router-dom";
+import { ArrowRight, Loader2, LogIn, Home } from "lucide-react";
+import { useNavigate, Navigate, Link } from "react-router-dom";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -156,6 +156,11 @@ const Login = () => {
                       </>
                     )}
                   </Button>
+
+                  <Link to="/" className="flex items-center justify-center gap-2 w-full h-10 rounded-lg border border-white/10 bg-white/5 text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors">
+                    <Home className="w-4 h-4" />
+                    Back to home
+                  </Link>
 
                   <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/70 leading-relaxed">
                     Admin users can add interns or mentors from the admin panel. The app reads live profile data from Firestore after sign-in.

@@ -2,9 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from "react";
 import { browserLocalPersistence, onAuthStateChanged, setPersistence, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, type User } from "firebase/auth";
 import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, orderBy, query, setDoc, updateDoc, where, type DocumentData, type QueryDocumentSnapshot, type Timestamp } from "firebase/firestore";
-import { httpsCallable } from "firebase/functions";
-
-import { adminAuth, auth, db, functionsClient } from "@/lib/firebase";
+import { adminAuth, auth, db } from "@/lib/firebase";
 import { sendPlatformEmail } from "@/lib/email";
 
 export type UserRole = "Admin" | "Mentor" | "Intern";
@@ -15,6 +13,8 @@ export interface AuthUserProfile {
   name: string;
   role: UserRole;
   email: string;
+  internId?: string;
+  mentorId?: string;
   createdAt?: string;
   firstLoginAt?: string;
   lastLoginAt?: string;
@@ -214,6 +214,11 @@ export interface NewUserInput {
   role: Exclude<UserRole, "Admin">;
   email: string;
   password: string;
+  internId?: string;
+  mentorId?: string;
+  position?: string;
+  issueDate?: string;
+  validUntil?: string;
 }
 
 export interface NewDoubtInput {
@@ -800,9 +805,26 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     setAttendanceSessions([]);
   }, []);
 
-  const sendWelcomeEmail = useCallback(async (profile: AuthUserProfile, password: string) => {
+  const sendWelcomeEmail = useCallback(async (profile: AuthUserProfile, password: string, verificationDetails?: { offerId: string; position: string; issueDate: string; validUntil: string }) => {
     const safeName = profile.name || "there";
     const loginUrl = "https://www.hackmates.tech/login";
+    const verifyUrl = "https://www.hackmates.tech/verify";
+
+    const verificationRows = verificationDetails ? `
+              <tr><td style="padding:10px 12px;border:1px solid #e2e8f0;background:#f8fafc;"><strong>Certificate ID</strong></td><td style="padding:10px 12px;border:1px solid #e2e8f0;font-family:monospace;font-weight:700;color:#0f766e;">${verificationDetails.offerId}</td></tr>
+              <tr><td style="padding:10px 12px;border:1px solid #e2e8f0;background:#f8fafc;"><strong>Position</strong></td><td style="padding:10px 12px;border:1px solid #e2e8f0;">${verificationDetails.position}</td></tr>
+              <tr><td style="padding:10px 12px;border:1px solid #e2e8f0;background:#f8fafc;"><strong>Issue Date</strong></td><td style="padding:10px 12px;border:1px solid #e2e8f0;">${verificationDetails.issueDate}</td></tr>
+              ${verificationDetails.validUntil ? `<tr><td style="padding:10px 12px;border:1px solid #e2e8f0;background:#f8fafc;"><strong>Valid Until</strong></td><td style="padding:10px 12px;border:1px solid #e2e8f0;">${verificationDetails.validUntil}</td></tr>` : ""}
+    ` : "";
+
+    const verificationSection = verificationDetails ? `
+            <div style="margin:18px 0;padding:14px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;">
+              <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:#166534;">Your Certificate ID</p>
+              <p style="margin:0 0 4px;font-size:22px;font-family:monospace;font-weight:700;color:#0f766e;letter-spacing:0.05em;">${verificationDetails.offerId}</p>
+              <p style="margin:6px 0 0;font-size:12px;color:#166534;">Use this ID at <a href="${verifyUrl}" style="color:#0f766e;">${verifyUrl}</a> to verify your certificate.</p>
+            </div>
+    ` : "";
+
     const html = `
       <div style="font-family:Segoe UI,Arial,sans-serif;background:#f8fafc;padding:24px;color:#0f172a;">
         <div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0;box-shadow:0 8px 24px rgba(15,23,42,0.08);">
@@ -812,12 +834,14 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
           </div>
           <div style="padding:24px;line-height:1.7;">
             <p style="margin:0 0 10px;">Hi ${safeName},</p>
-            <p style="margin:0 0 16px;">Your account has been created for the internship portal. Use these credentials to sign in.</p>
+            <p style="margin:0 0 16px;">Your account has been created for the HackMates platform. Use these credentials to sign in.</p>
             <table style="width:100%;border-collapse:collapse;margin:0 0 18px;">
               <tr><td style="padding:10px 12px;border:1px solid #e2e8f0;background:#f8fafc;"><strong>Role</strong></td><td style="padding:10px 12px;border:1px solid #e2e8f0;">${profile.role}</td></tr>
               <tr><td style="padding:10px 12px;border:1px solid #e2e8f0;background:#f8fafc;"><strong>Email</strong></td><td style="padding:10px 12px;border:1px solid #e2e8f0;">${profile.email}</td></tr>
               <tr><td style="padding:10px 12px;border:1px solid #e2e8f0;background:#f8fafc;"><strong>Password</strong></td><td style="padding:10px 12px;border:1px solid #e2e8f0;">${password}</td></tr>
+              ${verificationRows}
             </table>
+            ${verificationSection}
             <a href="${loginUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#0f766e;color:#ffffff;text-decoration:none;padding:11px 16px;border-radius:10px;font-weight:600;">Open Login Page</a>
             <p style="margin:16px 0 0;font-size:13px;color:#475569;">Security tip: change your password after first sign-in.</p>
             <p style="margin:18px 0 0;">Regards,<br/>HackMates Team</p>
@@ -829,7 +853,7 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     await sendPlatformEmail({
       email: profile.email,
       subject: "Welcome to HackMates - Your login credentials",
-      message: `Welcome to HackMates. Role: ${profile.role}. Email: ${profile.email}, Password: ${password}, Login URL: ${loginUrl}. Please change your password after first sign-in.`,
+      message: `Welcome to HackMates. Role: ${profile.role}. Email: ${profile.email}, Password: ${password}${verificationDetails ? `, Certificate ID: ${verificationDetails.offerId}` : ""}, Login URL: ${loginUrl}. Please change your password after first sign-in.`,
       html,
     });
   }, []);
@@ -842,15 +866,43 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
       name: input.name.trim(),
       role: input.role,
       email: input.email.trim().toLowerCase(),
+      ...(input.internId?.trim() ? { internId: input.internId.trim().toUpperCase() } : {}),
+      ...(input.mentorId?.trim() ? { mentorId: input.mentorId.trim().toUpperCase() } : {}),
       createdAt: new Date().toISOString(),
       firstLoginAt: new Date().toISOString(),
       lastLoginAt: new Date().toISOString(),
     };
 
     await setDoc(doc(db, "users", profile.uid), profile);
+
+    // Auto-create verification record for Intern
+    const verificationDetails = (() => {
+      const offerId = input.role === "Intern" ? input.internId?.trim().toUpperCase() : input.role === "Mentor" ? input.mentorId?.trim().toUpperCase() : undefined;
+      if (!offerId) return undefined;
+      return {
+        offerId,
+        position: input.position?.trim() || (input.role === "Intern" ? "Intern" : "Mentor"),
+        issueDate: input.issueDate || new Date().toISOString().slice(0, 10),
+        validUntil: input.validUntil || "",
+      };
+    })();
+
+    if (verificationDetails) {
+      await addDoc(collection(db, "verifications"), {
+        offerId: verificationDetails.offerId,
+        name: profile.name,
+        type: input.role === "Mentor" ? "Employee" : "Intern",
+        certificateType: "Offer Letter",
+        position: verificationDetails.position,
+        issueDate: verificationDetails.issueDate,
+        validUntil: verificationDetails.validUntil,
+        status: "Active",
+      });
+    }
+
     let emailFailureReason = "";
     try {
-      await sendWelcomeEmail(profile, input.password);
+      await sendWelcomeEmail(profile, input.password, verificationDetails);
     } catch (error) {
       emailFailureReason = error instanceof Error ? error.message : "Unknown email service error";
       console.error("Welcome email failed:", error);
@@ -866,8 +918,10 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
   }, [sendWelcomeEmail]);
 
   const deleteUserAccount = useCallback(async (uid: string) => {
-    const callable = httpsCallable<{ uid: string }, { success: boolean }>(functionsClient, "deleteUserWithProfile");
-    await callable({ uid });
+    // Firebase Auth deletion requires Admin SDK (Cloud Functions / Blaze plan).
+    // On Spark plan we delete the Firestore profile — the user is immediately
+    // blocked from logging in because login checks for a profile doc.
+    await deleteDoc(doc(db, "users", uid));
   }, []);
 
   const setupAdmin = useCallback(async () => {

@@ -200,18 +200,29 @@ const AdminFeedback = () => {
                   sortedInternSubmissions.map((sub, i) => (
                     <motion.div key={sub.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
                       <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                        <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <span className="font-semibold text-white text-sm">{sub.internName}</span>
-                          <Badge variant="outline" className="border-white/10 text-white/50 text-xs">Intern</Badge>
-                          <span className="text-white/40 text-xs">rated</span>
-                          <span className="font-medium text-white/80 text-sm">{sub.mentorName}</span>
-                        </div>
-                        <p className="text-white/70 text-sm leading-relaxed">{sub.review}</p>
-                        <div className="flex items-center gap-3 mt-2 text-xs text-white/40">
-                          <span>{new Date(sub.submittedAt).toLocaleDateString()}</span>
-                          <span className={`flex items-center gap-1 font-medium ${starColor(sub.rating)}`}>
-                            <Star className="w-3 h-3 fill-current" />{sub.rating}/5
-                          </span>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
+                              <span className="font-semibold text-white text-sm">{sub.internName}</span>
+                              <Badge variant="outline" className="border-white/10 text-white/50 text-xs">Intern</Badge>
+                              <span className="text-white/40 text-xs">rated</span>
+                              <span className="font-medium text-white/80 text-sm">{sub.mentorName}</span>
+                            </div>
+                            <p className="text-white/70 text-sm leading-relaxed">{sub.review}</p>
+                            <div className="flex items-center gap-3 mt-2 text-xs text-white/40">
+                              <span>{new Date(sub.submittedAt).toLocaleDateString()}</span>
+                              <span className={`flex items-center gap-1 font-medium ${starColor(sub.rating)}`}>
+                                <Star className="w-3 h-3 fill-current" />{sub.rating}/5
+                              </span>
+                            </div>
+                          </div>
+                          <Button size="sm" variant="destructive" className="h-8 px-3 shrink-0"
+                            onClick={async () => {
+                              if (!window.confirm("Delete this feedback?")) return;
+                              await deleteDoc(doc(db, "mentorFeedbackSubmissions", sub.id));
+                            }}>
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
                         </div>
                       </div>
                     </motion.div>

@@ -10,12 +10,22 @@ interface VerificationData {
   id: string;
   name: string;
   type: "Employee" | "Intern";
-  certificateType: "Offer Letter" | "Completion Certificate";
+  certificateType: string;
   position: string;
   issueDate: string;
   validUntil?: string;
   completionDate?: string;
   status: "Active" | "Expired" | "Completed";
+}
+
+function calcDuration(issueDate: string, validUntil: string): string {
+  if (!issueDate || !validUntil) return "";
+  const start = new Date(issueDate);
+  const end = new Date(validUntil);
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return "";
+  const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+  if (months <= 0) return "";
+  return months === 1 ? "1 month" : `${months} months`;
 }
 
 const Verify = () => {
@@ -149,48 +159,43 @@ const Verify = () => {
                     
                     <div className="space-y-3 bg-secondary/50 rounded-lg p-4">
                       <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                        <span className="text-sm text-muted-foreground">Certificate Type:</span>
-                        <span className="text-sm font-semibold text-foreground">{result.certificateType}</span>
+                        <span className="text-sm text-muted-foreground">Certificate ID:</span>
+                        <span className="text-sm font-semibold text-foreground font-mono">{result.id}</span>
                       </div>
                       <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                         <span className="text-sm text-muted-foreground">Name:</span>
                         <span className="text-sm font-semibold text-foreground">{result.name}</span>
                       </div>
                       <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                        <span className="text-sm text-muted-foreground">Type:</span>
+                        <span className="text-sm text-muted-foreground">Role:</span>
                         <span className={`text-sm font-semibold px-2 py-0.5 rounded w-fit ${
-                          result.type === "Employee" 
-                            ? "bg-blue-500/20 text-blue-500" 
+                          result.type === "Employee"
+                            ? "bg-blue-500/20 text-blue-500"
                             : "bg-purple-500/20 text-purple-500"
                         }`}>
-                          {result.type}
+                          {result.type === "Employee" ? "Mentor / Employee" : "Intern"}
                         </span>
                       </div>
-                      <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                        <span className="text-sm text-muted-foreground">Position:</span>
-                        <span className="text-sm font-semibold text-foreground">{result.position}</span>
-                      </div>
-                      <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                        <span className="text-sm text-muted-foreground">Issue Date:</span>
-                        <span className="text-sm font-semibold text-foreground">{result.issueDate}</span>
-                      </div>
-                      {result.validUntil && (
+                      {result.type === "Intern" && result.issueDate && (
                         <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                          <span className="text-sm text-muted-foreground">Valid Until:</span>
-                          <span className="text-sm font-semibold text-foreground">{result.validUntil}</span>
+                          <span className="text-sm text-muted-foreground">Issue Date:</span>
+                          <span className="text-sm font-semibold text-foreground">{result.issueDate}</span>
                         </div>
                       )}
-                      {result.completionDate && (
-                        <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                          <span className="text-sm text-muted-foreground">Completion Date:</span>
-                          <span className="text-sm font-semibold text-foreground">{result.completionDate}</span>
-                        </div>
-                      )}
+                      {result.type === "Intern" && (() => {
+                        const dur = calcDuration(result.issueDate, result.validUntil || "");
+                        return dur ? (
+                          <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                            <span className="text-sm text-muted-foreground">Duration:</span>
+                            <span className="text-sm font-semibold text-foreground">{dur}</span>
+                          </div>
+                        ) : null;
+                      })()}
                       <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                         <span className="text-sm text-muted-foreground">Status:</span>
                         <span className={`text-sm font-semibold px-2 py-0.5 rounded w-fit ${
-                          result.status === "Active" 
-                            ? "bg-green-500/20 text-green-500" 
+                          result.status === "Active"
+                            ? "bg-green-500/20 text-green-500"
                             : result.status === "Completed"
                             ? "bg-blue-500/20 text-blue-500"
                             : "bg-red-500/20 text-red-500"
