@@ -8,6 +8,7 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 
 interface VerificationData {
   id: string;
+  offerId: string;
   name: string;
   type: "Employee" | "Intern";
   certificateType: string;
@@ -160,7 +161,7 @@ const Verify = () => {
                     <div className="space-y-3 bg-secondary/50 rounded-lg p-4">
                       <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                         <span className="text-sm text-muted-foreground">Certificate ID:</span>
-                        <span className="text-sm font-semibold text-foreground font-mono">{result.id}</span>
+                        <span className="text-sm font-semibold text-foreground font-mono">{result.offerId || result.id}</span>
                       </div>
                       <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                         <span className="text-sm text-muted-foreground">Name:</span>
@@ -176,12 +177,6 @@ const Verify = () => {
                           {result.type === "Employee" ? "Mentor / Employee" : "Intern"}
                         </span>
                       </div>
-                      {result.type === "Intern" && result.issueDate && (
-                        <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                          <span className="text-sm text-muted-foreground">Issue Date:</span>
-                          <span className="text-sm font-semibold text-foreground">{result.issueDate}</span>
-                        </div>
-                      )}
                       {result.type === "Intern" && (() => {
                         const dur = calcDuration(result.issueDate, result.validUntil || "");
                         return dur ? (
