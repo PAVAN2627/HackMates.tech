@@ -842,13 +842,13 @@ const Dashboard = () => {
           setActiveSection(section);
         }}
       />
-      <div className="flex-1 min-h-screen">
+      <div className="flex-1 min-h-screen min-w-0">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.18),_transparent_24%),radial-gradient(circle_at_bottom_left,_rgba(249,115,22,0.18),_transparent_22%),linear-gradient(180deg,_rgba(8,15,33,0.96),_rgba(2,6,23,0.98))]" />
         <div className="relative z-10 min-h-screen flex flex-col">
         <header className="border-b border-white/10 bg-slate-950/60 backdrop-blur-xl sticky top-0 z-20">
-          <div className="w-full px-6 py-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="w-full px-4 lg:px-6 py-4 pl-16 lg:pl-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
                 <Badge className="bg-white/10 text-white border-white/10">{sessionUser.role}</Badge>
                 <Badge variant="outline" className="border-primary/30 text-primary">{sessionUser.name}</Badge>
                 {!isMentor && sessionUser.internId && (
@@ -883,7 +883,7 @@ const Dashboard = () => {
           </div>
         </header>
 
-        <main className="w-full px-6 py-8 space-y-8">
+        <main className="w-full px-4 lg:px-6 py-6 lg:py-8 space-y-6 lg:space-y-8 min-w-0">
           {(showInternOverview || showMentorOverview) && (() => {
             const overviewCards = sessionUser.role === "Mentor" ? [
               { label: "Submission Forms Open", value: `${mentorActiveSubmissionForms.length}`, helper: "Awaiting intern completion", icon: Send },
@@ -896,7 +896,7 @@ const Dashboard = () => {
               { label: "Submissions", value: `${pendingSubmissions}`, helper: "Awaiting review", icon: Send },
             ];
             return (
-              <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="grid gap-4 md:grid-cols-4">
+              <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="grid gap-4 grid-cols-2 lg:grid-cols-4">
                 {overviewCards.map((item) => {
                   const Icon = item.icon;
                   return (
