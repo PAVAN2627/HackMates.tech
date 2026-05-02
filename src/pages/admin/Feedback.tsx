@@ -1,6 +1,6 @@
 ﻿import { Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Star, Trash2, Plus, X, MessageSquare, Users, ClipboardList } from "lucide-react";
+import { Star, Trash2, Plus, X, MessageSquare, Users, ClipboardList, FileEdit } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,8 @@ const AdminFeedback = () => {
     loading, sessionUser, logout,
     feedback, mentorFeedbackSubmissions, users,
     mentorFeedbackForms, createMentorFeedbackForm, updateMentorFeedbackFormStatus,
+    mentorToInternFeedbackForms, mentorToInternFeedbackSubmissions,
+    createMentorToInternFeedbackForm, updateMentorToInternFeedbackFormStatus,
   } = usePlatform();
 
   const [activeTab, setActiveTab] = useState("mentor-to-intern");
@@ -28,6 +30,12 @@ const AdminFeedback = () => {
   const [selectedMentors, setSelectedMentors] = useState<string[]>([]);
   const [selectedInterns, setSelectedInterns] = useState<string[]>([]);
   const [formCreating, setFormCreating] = useState(false);
+
+  // Mentor-to-intern form creator state
+  const [showMtiFormCreator, setShowMtiFormCreator] = useState(false);
+  const [mtiSelectedInterns, setMtiSelectedInterns] = useState<string[]>([]);
+  const [mtiSelectedMentors, setMtiSelectedMentors] = useState<string[]>([]);
+  const [mtiFormCreating, setMtiFormCreating] = useState(false);
 
   const internUsers = useMemo(() => users.filter((u) => u.role === "Intern"), [users]);
   const mentorUsers = useMemo(() => users.filter((u) => u.role === "Mentor"), [users]);
@@ -86,11 +94,12 @@ const AdminFeedback = () => {
 
           {/* Stats */}
           <div className="mx-auto max-w-5xl w-full px-6 pt-6">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               {[
                 { label: "Mentor → Intern", count: sortedMentorFeedback.length, icon: <MessageSquare className="w-4 h-4" /> },
                 { label: "Intern → Mentor", count: sortedInternSubmissions.length, icon: <Users className="w-4 h-4" /> },
-                { label: "Rating Forms", count: mentorFeedbackForms?.length ?? 0, icon: <ClipboardList className="w-4 h-4" /> },
+                { label: "Intern Rating Forms", count: mentorFeedbackForms?.length ?? 0, icon: <ClipboardList className="w-4 h-4" /> },
+                { label: "Mentor Feedback Forms", count: mentorToInternFeedbackForms?.length ?? 0, icon: <FileEdit className="w-4 h-4" /> },
               ].map((s) => (
                 <div key={s.label} className="rounded-xl border border-white/10 bg-white/5 p-4 flex items-center gap-3">
                   <div className="text-primary">{s.icon}</div>
@@ -105,7 +114,7 @@ const AdminFeedback = () => {
 
           <main className="mx-auto max-w-5xl w-full px-6 py-6 flex-1">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
-              <TabsList className="bg-white/5 border border-white/10 text-white grid grid-cols-3 h-auto p-1">
+              <TabsList className="bg-white/5 border border-white/10 text-white grid grid-cols-4 h-auto p-1">
                 <TabsTrigger value="mentor-to-intern" className="flex items-center gap-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-white text-sm">
                   <MessageSquare className="w-4 h-4" />
                   Mentor → Intern
@@ -116,7 +125,11 @@ const AdminFeedback = () => {
                 </TabsTrigger>
                 <TabsTrigger value="rating-forms" className="flex items-center gap-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-white text-sm">
                   <ClipboardList className="w-4 h-4" />
-                  Rating Forms
+                  Intern Rating Forms
+                </TabsTrigger>
+                <TabsTrigger value="mentor-feedback-forms" className="flex items-center gap-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-white text-sm">
+                  <FileEdit className="w-4 h-4" />
+                  Mentor Feedback Forms
                 </TabsTrigger>
               </TabsList>
 
@@ -343,6 +356,153 @@ const AdminFeedback = () => {
                         </div>
                       </motion.div>
                     ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* ── Tab 4: Mentor Feedback Forms (admin creates, mentor fills) ── */}
+              <TabsContent value="mentor-feedback-forms" className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-white/50 text-sm">Forms that mentors use to give structured feedback about interns.</p>
+                  <Button size="sm" className="bg-primary hover:bg-primary/80"
+                    onClick={() => setShowMtiFormCreator(!showMtiFormCreator)}>
+                    <Plus className="w-4 h-4 mr-1" />
+                    New Form
+                  </Button>
+                </div>
+
+                {showMtiFormCreator && (
+                  <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+                    className="rounded-xl border border-primary/30 bg-white/5 p-5 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-white text-sm">Create Mentor Feedback Form</h3>
+                      <X className="w-4 h-4 cursor-pointer text-white/50 hover:text-red-400"
+                        onClick={() => { setShowMtiFormCreator(false); setMtiSelectedInterns([]); setMtiSelectedMentors([]); }} />
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-white/60 text-xs uppercase tracking-wide">Interns to be reviewed</Label>
+                        <div className="space-y-2 max-h-40 overflow-y-auto rounded-lg border border-white/10 bg-white/5 p-3">
+                          {internUsers.length === 0 && <p className="text-white/30 text-sm">No interns found</p>}
+                          {internUsers.map((intern) => (
+                            <Label key={intern.id} className="flex items-center gap-2 cursor-pointer text-white/80 font-normal text-sm">
+                              <input type="checkbox" className="w-4 h-4 accent-primary"
+                                checked={mtiSelectedInterns.includes(intern.id)}
+                                onChange={(e) => setMtiSelectedInterns(e.target.checked
+                                  ? [...mtiSelectedInterns, intern.id]
+                                  : mtiSelectedInterns.filter((id) => id !== intern.id))} />
+                              {intern.name}
+                            </Label>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-white/60 text-xs uppercase tracking-wide">Mentors who will give feedback (empty = all)</Label>
+                        <div className="space-y-2 max-h-40 overflow-y-auto rounded-lg border border-white/10 bg-white/5 p-3">
+                          {mentorUsers.length === 0 && <p className="text-white/30 text-sm">No mentors found</p>}
+                          {mentorUsers.map((m) => (
+                            <Label key={m.id} className="flex items-center gap-2 cursor-pointer text-white/80 font-normal text-sm">
+                              <input type="checkbox" className="w-4 h-4 accent-primary"
+                                checked={mtiSelectedMentors.includes(m.id)}
+                                onChange={(e) => setMtiSelectedMentors(e.target.checked
+                                  ? [...mtiSelectedMentors, m.id]
+                                  : mtiSelectedMentors.filter((id) => id !== m.id))} />
+                              {m.name}
+                            </Label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <Button disabled={mtiFormCreating || mtiSelectedInterns.length === 0}
+                      className="w-full bg-primary hover:bg-primary/80"
+                      onClick={async () => {
+                        if (mtiSelectedInterns.length === 0) { alert("Select at least one intern"); return; }
+                        setMtiFormCreating(true);
+                        try {
+                          const internNames = mtiSelectedInterns
+                            .map((id) => internUsers.find((u) => u.id === id)?.name)
+                            .filter(Boolean) as string[];
+                          await createMentorToInternFeedbackForm({
+                            internIds: mtiSelectedInterns,
+                            internNames,
+                            targetMentorIds: mtiSelectedMentors.length === 0 ? [] : mtiSelectedMentors,
+                          });
+                          setShowMtiFormCreator(false);
+                          setMtiSelectedInterns([]);
+                          setMtiSelectedMentors([]);
+                        } catch (err) {
+                          console.error(err);
+                          alert("Failed to create form");
+                        } finally {
+                          setMtiFormCreating(false);
+                        }
+                      }}>
+                      {mtiFormCreating ? "Creating..." : "Create Form"}
+                    </Button>
+                  </motion.div>
+                )}
+
+                {(!mentorToInternFeedbackForms || mentorToInternFeedbackForms.length === 0) ? (
+                  <div className="rounded-xl border border-white/10 bg-white/5 py-16 text-center text-white/40 text-sm">
+                    No mentor feedback forms created yet
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {mentorToInternFeedbackForms.map((form, i) => {
+                      const formSubmissions = (mentorToInternFeedbackSubmissions ?? []).filter((s) => s.formId === form.id);
+                      return (
+                        <motion.div key={form.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+                          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                            <div className="flex items-center justify-between gap-4 mb-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2 mb-1">
+                                  <span className="font-semibold text-white text-sm">{form.internNames.join(", ")}</span>
+                                  <Badge className={form.status === "Active"
+                                    ? "bg-green-500/20 text-green-300 border-green-500/30"
+                                    : "bg-red-500/20 text-red-300 border-red-500/30"}>
+                                    {form.status}
+                                  </Badge>
+                                </div>
+                                <p className="text-xs text-white/40">
+                                  Mentors: {form.targetMentorIds.length === 0 ? "All mentors" : `${form.targetMentorIds.length} mentor(s)`}
+                                  {" · "}{formSubmissions.length} submission(s)
+                                  {" · "}Created {new Date(form.createdAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                              <Button size="sm" variant="outline"
+                                className="border-white/20 text-white hover:bg-white/10 shrink-0"
+                                onClick={() => updateMentorToInternFeedbackFormStatus(form.id, form.status === "Active" ? "Closed" : "Active")}>
+                                {form.status === "Active" ? "Close" : "Reopen"}
+                              </Button>
+                            </div>
+                            {formSubmissions.length > 0 && (
+                              <div className="space-y-2 pt-3 border-t border-white/10">
+                                <p className="text-xs text-white/40 uppercase tracking-wide">Submissions</p>
+                                {formSubmissions.map((sub) => (
+                                  <div key={sub.id} className="rounded-lg border border-white/10 bg-white/5 p-3">
+                                    <div className="flex items-center justify-between gap-2 mb-1">
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <span className="text-sm font-medium text-white">{sub.internName}</span>
+                                        <Badge variant="outline" className="border-white/10 text-white/50 text-xs">Intern</Badge>
+                                        <span className="text-white/40 text-xs">by {sub.mentorName}</span>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        {[1,2,3,4,5].map((n) => (
+                                          <Star key={n} className={`w-3 h-3 ${sub.rating >= n ? "fill-yellow-400 text-yellow-400" : "text-white/20"}`} />
+                                        ))}
+                                        <span className="text-xs text-white/40 ml-1">{sub.rating}/5</span>
+                                      </div>
+                                    </div>
+                                    <p className="text-sm text-white/70">{sub.comment}</p>
+                                    <p className="text-xs text-white/35 mt-1">{new Date(sub.submittedAt).toLocaleDateString()}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 )}
               </TabsContent>

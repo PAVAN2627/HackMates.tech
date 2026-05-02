@@ -145,5 +145,21 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    match /mentorToInternFeedbackForms/{docId} {
+      allow read: if isAdmin()
+        || (isMentor() && (resource.data.targetMentorIds.size() == 0 || request.auth.uid in resource.data.targetMentorIds))
+        || (isIntern() && request.auth.uid in resource.data.internIds);
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /mentorToInternFeedbackSubmissions/{docId} {
+      allow read: if isAdmin()
+        || (isMentor() && request.auth.uid == resource.data.mentorId)
+        || (isIntern() && request.auth.uid == resource.data.internId);
+      allow create: if isMentor() && request.auth.uid == request.resource.data.mentorId;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
   }
 }

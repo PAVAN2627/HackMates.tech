@@ -290,6 +290,47 @@ export interface NewMentorFeedbackFormInput {
   targetInternIds?: string[];
 }
 
+// ── Mentor → Intern feedback forms (admin-created, mentor fills) ──────────────
+
+export interface MentorToInternFeedbackForm {
+  id: string;
+  internIds: string[];
+  internNames: string[];
+  targetMentorIds: string[];
+  status: "Active" | "Closed";
+  createdBy: string;
+  createdByName: string;
+  createdAt: string;
+}
+
+export interface MentorToInternFeedbackSubmission {
+  id: string;
+  formId: string;
+  internId: string;
+  internName: string;
+  mentorId: string;
+  mentorName: string;
+  rating: number;
+  comment: string;
+  submittedAt: string;
+}
+
+export interface NewMentorToInternFeedbackFormInput {
+  internIds: string[];
+  internNames: string[];
+  targetMentorIds?: string[];
+}
+
+export interface NewMentorToInternFeedbackSubmissionInput {
+  formId: string;
+  internId: string;
+  internName: string;
+  mentorId: string;
+  mentorName: string;
+  rating: number;
+  comment: string;
+}
+
 export interface NewMentorFeedbackSubmissionInput {
   formId: string;
   mentorId: string;
@@ -400,9 +441,11 @@ interface PlatformContextValue {
   feedbackFormSubmissions: FeedbackFormSubmission[];
   mentorFeedbackForms: MentorFeedbackForm[];
   mentorFeedbackSubmissions: MentorFeedbackSubmission[];
+  mentorToInternFeedbackForms: MentorToInternFeedbackForm[];
+  mentorToInternFeedbackSubmissions: MentorToInternFeedbackSubmission[];
   adminStats: { users: number; interns: number; mentors: number; openDoubts: number; pendingSubmissions: number };
-  internData: { performance: PerformanceEntry[]; fees: FeeEntry[]; dailyNotes: DailyNoteEntry[]; feedback: FeedbackEntry[]; doubts: DoubtEntry[]; submissions: SubmissionEntry[]; attendance: InternAttendanceEntry[]; feedbackForms: FeedbackForm[]; feedbackFormSubmissions: FeedbackFormSubmission[]; mentorFeedbackForms: MentorFeedbackForm[]; mentorFeedbackSubmissions: MentorFeedbackSubmission[] };
-  mentorData: { internCount: number; doubts: DoubtEntry[]; feedback: FeedbackEntry[]; dailyNotes: DailyNoteEntry[]; submissions: SubmissionEntry[]; performance: PerformanceEntry[]; fees: FeeEntry[]; attendanceSessions: AttendanceSession[]; feedbackFormSubmissions: FeedbackFormSubmission[] };
+  internData: { performance: PerformanceEntry[]; fees: FeeEntry[]; dailyNotes: DailyNoteEntry[]; feedback: FeedbackEntry[]; doubts: DoubtEntry[]; submissions: SubmissionEntry[]; attendance: InternAttendanceEntry[]; feedbackForms: FeedbackForm[]; feedbackFormSubmissions: FeedbackFormSubmission[]; mentorFeedbackForms: MentorFeedbackForm[]; mentorFeedbackSubmissions: MentorFeedbackSubmission[]; mentorToInternFeedbackForms: MentorToInternFeedbackForm[]; mentorToInternFeedbackSubmissions: MentorToInternFeedbackSubmission[] };
+  mentorData: { internCount: number; doubts: DoubtEntry[]; feedback: FeedbackEntry[]; dailyNotes: DailyNoteEntry[]; submissions: SubmissionEntry[]; performance: PerformanceEntry[]; fees: FeeEntry[]; attendanceSessions: AttendanceSession[]; feedbackFormSubmissions: FeedbackFormSubmission[]; mentorToInternFeedbackForms: MentorToInternFeedbackForm[]; mentorToInternFeedbackSubmissions: MentorToInternFeedbackSubmission[] };
   login: (email: string, password: string) => Promise<AuthUserProfile | null>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -430,6 +473,9 @@ interface PlatformContextValue {
   createMentorFeedbackForm: (input: NewMentorFeedbackFormInput) => Promise<MentorFeedbackForm>;
   updateMentorFeedbackFormStatus: (formId: string, status: "Active" | "Closed") => Promise<void>;
   submitMentorFeedbackForm: (input: NewMentorFeedbackSubmissionInput) => Promise<MentorFeedbackSubmission>;
+  createMentorToInternFeedbackForm: (input: NewMentorToInternFeedbackFormInput) => Promise<MentorToInternFeedbackForm>;
+  updateMentorToInternFeedbackFormStatus: (formId: string, status: "Active" | "Closed") => Promise<void>;
+  submitMentorToInternFeedbackForm: (input: NewMentorToInternFeedbackSubmissionInput) => Promise<MentorToInternFeedbackSubmission>;
 }
 
 const PlatformContext = createContext<PlatformContextValue | null>(null);
@@ -448,6 +494,8 @@ const collections = {
   feedbackFormSubmissions: collection(db, "feedbackFormSubmissions"),
   mentorFeedbackForms: collection(db, "mentorFeedbackForms"),
   mentorFeedbackSubmissions: collection(db, "mentorFeedbackSubmissions"),
+  mentorToInternFeedbackForms: collection(db, "mentorToInternFeedbackForms"),
+  mentorToInternFeedbackSubmissions: collection(db, "mentorToInternFeedbackSubmissions"),
 } as const;
 
 function toIsoDate(value: unknown) {
@@ -519,6 +567,8 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
   const [feedbackFormSubmissions, setFeedbackFormSubmissions] = useState<FeedbackFormSubmission[]>([]);
   const [mentorFeedbackForms, setMentorFeedbackForms] = useState<MentorFeedbackForm[]>([]);
   const [mentorFeedbackSubmissions, setMentorFeedbackSubmissions] = useState<MentorFeedbackSubmission[]>([]);
+  const [mentorToInternFeedbackForms, setMentorToInternFeedbackForms] = useState<MentorToInternFeedbackForm[]>([]);
+  const [mentorToInternFeedbackSubmissions, setMentorToInternFeedbackSubmissions] = useState<MentorToInternFeedbackSubmission[]>([]);
 
   const refresh = useCallback(async () => {
     if (!auth.currentUser) {
@@ -734,6 +784,26 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
       setMentorFeedbackSubmissions(filtered);
     });
 
+    const unsubscribeMentorToInternFeedbackForms = onSnapshot(collections.mentorToInternFeedbackForms, (snapshot) => {
+      const items = snapshot.docs.map((docSnapshot) => mapDoc<MentorToInternFeedbackForm>(docSnapshot));
+      const filtered = sessionUser.role === "Mentor"
+        ? items.filter((form) => form.status === "Active" && (form.targetMentorIds.length === 0 || form.targetMentorIds.includes(sessionUser.uid)))
+        : sessionUser.role === "Intern"
+          ? items.filter((form) => form.internIds.includes(sessionUser.uid))
+          : items;
+      setMentorToInternFeedbackForms(filtered);
+    });
+
+    const unsubscribeMentorToInternFeedbackSubmissions = onSnapshot(collections.mentorToInternFeedbackSubmissions, (snapshot) => {
+      const items = snapshot.docs.map((docSnapshot) => mapDoc<MentorToInternFeedbackSubmission>(docSnapshot));
+      const filtered = sessionUser.role === "Intern"
+        ? items.filter((sub) => sub.internId === sessionUser.uid)
+        : sessionUser.role === "Mentor"
+          ? items.filter((sub) => sub.mentorId === sessionUser.uid)
+          : items;
+      setMentorToInternFeedbackSubmissions(filtered);
+    });
+
     return () => {
       userUnsubscribe();
       unsubscribePerformance();
@@ -748,6 +818,8 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
       unsubscribeFeedbackFormSubmissions();
       unsubscribeMentorFeedbackForms();
       unsubscribeMentorFeedbackSubmissions();
+      unsubscribeMentorToInternFeedbackForms();
+      unsubscribeMentorToInternFeedbackSubmissions();
     };
   }, [sessionUser]);
 
@@ -1550,6 +1622,48 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     return { id: result.id, ...payload } as MentorFeedbackSubmission;
   }, []);
 
+  /**
+   * Create mentor-to-intern feedback form (admin creates, mentor fills)
+   */
+  const createMentorToInternFeedbackForm = useCallback(async (input: NewMentorToInternFeedbackFormInput) => {
+    const payload = {
+      internIds: input.internIds,
+      internNames: input.internNames,
+      targetMentorIds: input.targetMentorIds || [],
+      status: "Active" as const,
+      createdBy: sessionUser?.uid || "",
+      createdByName: sessionUser?.name || "Admin",
+      createdAt: new Date().toISOString(),
+    };
+    const result = await addDoc(collections.mentorToInternFeedbackForms, payload);
+    return { id: result.id, ...payload } as MentorToInternFeedbackForm;
+  }, [sessionUser]);
+
+  /**
+   * Update mentor-to-intern feedback form status
+   */
+  const updateMentorToInternFeedbackFormStatus = useCallback(async (formId: string, status: "Active" | "Closed") => {
+    await updateDoc(doc(db, "mentorToInternFeedbackForms", formId), { status });
+  }, []);
+
+  /**
+   * Submit mentor-to-intern feedback form (mentor submits feedback about intern)
+   */
+  const submitMentorToInternFeedbackForm = useCallback(async (input: NewMentorToInternFeedbackSubmissionInput) => {
+    const payload = {
+      formId: input.formId,
+      internId: input.internId,
+      internName: input.internName,
+      mentorId: input.mentorId,
+      mentorName: input.mentorName,
+      rating: input.rating,
+      comment: input.comment,
+      submittedAt: new Date().toISOString(),
+    };
+    const result = await addDoc(collections.mentorToInternFeedbackSubmissions, payload);
+    return { id: result.id, ...payload } as MentorToInternFeedbackSubmission;
+  }, []);
+
   const adminStats = useMemo(() => ({
     users: users.length,
     interns: users.filter((user) => user.role === "Intern").length,
@@ -1560,7 +1674,7 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
 
   const internData = useMemo(() => {
     if (!sessionUser) {
-      return { performance: [], fees: [], dailyNotes: [], feedback: [], doubts: [], submissions: [], attendance: [], feedbackForms: [], feedbackFormSubmissions: [], mentorFeedbackForms: [], mentorFeedbackSubmissions: [] };
+      return { performance: [], fees: [], dailyNotes: [], feedback: [], doubts: [], submissions: [], attendance: [], feedbackForms: [], feedbackFormSubmissions: [], mentorFeedbackForms: [], mentorFeedbackSubmissions: [], mentorToInternFeedbackForms: [], mentorToInternFeedbackSubmissions: [] };
     }
 
     const attendance = attendanceSessions.flatMap((session) => {
@@ -1592,8 +1706,14 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
       feedbackFormSubmissions,
       mentorFeedbackForms,
       mentorFeedbackSubmissions,
+      mentorToInternFeedbackForms: mentorToInternFeedbackForms.filter((form) =>
+        form.internIds.includes(sessionUser.uid) || form.internIds.includes(sessionUser.id)
+      ),
+      mentorToInternFeedbackSubmissions: mentorToInternFeedbackSubmissions.filter((sub) =>
+        sub.internId === sessionUser.uid || sub.internId === sessionUser.id
+      ),
     };
-  }, [attendanceSessions, dailyNotes, feedback, fees, performance, sessionUser, doubts, submissions, feedbackForms, feedbackFormSubmissions, mentorFeedbackForms, mentorFeedbackSubmissions]);
+  }, [attendanceSessions, dailyNotes, feedback, fees, performance, sessionUser, doubts, submissions, feedbackForms, feedbackFormSubmissions, mentorFeedbackForms, mentorFeedbackSubmissions, mentorToInternFeedbackForms, mentorToInternFeedbackSubmissions]);
 
   const mentorData = useMemo(() => ({
     internCount: users.filter((user) => user.role === "Intern").length,
@@ -1605,7 +1725,13 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     fees,
     attendanceSessions,
     feedbackFormSubmissions,
-  }), [attendanceSessions, dailyNotes, feedback, fees, performance, doubts, submissions, users, feedbackFormSubmissions]);
+    mentorToInternFeedbackForms: mentorToInternFeedbackForms.filter((form) =>
+      form.targetMentorIds.length === 0 || form.targetMentorIds.includes(sessionUser?.uid || "")
+    ),
+    mentorToInternFeedbackSubmissions: mentorToInternFeedbackSubmissions.filter((sub) =>
+      sub.mentorId === sessionUser?.uid
+    ),
+  }), [attendanceSessions, dailyNotes, feedback, fees, performance, doubts, submissions, users, feedbackFormSubmissions, mentorToInternFeedbackForms, mentorToInternFeedbackSubmissions, sessionUser]);
 
   const value = useMemo<PlatformContextValue>(() => ({
     loading,
@@ -1623,6 +1749,8 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     feedbackFormSubmissions,
     mentorFeedbackForms,
     mentorFeedbackSubmissions,
+    mentorToInternFeedbackForms,
+    mentorToInternFeedbackSubmissions,
     adminStats,
     internData,
     mentorData,
@@ -1653,6 +1781,9 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     createMentorFeedbackForm,
     updateMentorFeedbackFormStatus,
     submitMentorFeedbackForm,
+    createMentorToInternFeedbackForm,
+    updateMentorToInternFeedbackFormStatus,
+    submitMentorToInternFeedbackForm,
   }), [
     addDailyNote,
     addDoubt,
@@ -1682,11 +1813,16 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     createMentorFeedbackForm,
     updateMentorFeedbackFormStatus,
     submitMentorFeedbackForm,
+    createMentorToInternFeedbackForm,
+    updateMentorToInternFeedbackFormStatus,
+    submitMentorToInternFeedbackForm,
     logout,
     mentorData,
     mentorFeedback,
     mentorFeedbackForms,
     mentorFeedbackSubmissions,
+    mentorToInternFeedbackForms,
+    mentorToInternFeedbackSubmissions,
     performance,
     refresh,
     markAttendance,
