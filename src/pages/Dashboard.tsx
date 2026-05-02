@@ -1333,7 +1333,7 @@ const Dashboard = () => {
                     <Card className="border-white/10 bg-slate-950/70 text-white">
                       <CardHeader>
                         <CardTitle>Feedback received</CardTitle>
-                        <CardDescription className="text-white/60">Feedback received from interns about you.</CardDescription>
+                        <CardDescription className="text-white/60">Anonymous ratings and reviews from interns.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         {receivedMentorFeedback.length === 0 ? (
@@ -1343,8 +1343,7 @@ const Dashboard = () => {
                             <div key={entry.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
                               <div className="flex items-center justify-between gap-3">
                                 <div>
-                                  <p className="font-semibold">{entry.internName}</p>
-                                  <p className="text-xs text-white/55 mt-1">{new Date(entry.submittedAt).toLocaleDateString()}</p>
+                                  <p className="text-xs text-white/55">{new Date(entry.submittedAt).toLocaleDateString()}</p>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   {[1,2,3,4,5].map((n) => (
@@ -2220,7 +2219,7 @@ const Dashboard = () => {
                     <Card className="border-white/10 bg-slate-950/70 text-white">
                       <CardHeader>
                         <CardTitle>Feedback received</CardTitle>
-                        <CardDescription className="text-white/60">Admin-created mentor feedback for you.</CardDescription>
+                        <CardDescription className="text-white/60">Anonymous ratings and reviews from interns.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         {receivedMentorFeedback.length === 0 ? (
@@ -2230,8 +2229,7 @@ const Dashboard = () => {
                             <div key={entry.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
                               <div className="flex items-center justify-between gap-3">
                                 <div>
-                                  <p className="font-semibold">{entry.internName}</p>
-                                  <p className="text-xs text-white/55 mt-1">{new Date(entry.submittedAt).toLocaleDateString()}</p>
+                                  <p className="text-xs text-white/55">{new Date(entry.submittedAt).toLocaleDateString()}</p>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   {[1,2,3,4,5].map((n) => (
