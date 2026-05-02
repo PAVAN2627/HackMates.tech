@@ -106,7 +106,6 @@ const Dashboard = () => {
     mentorFeedbackSubmissions,
     submitMentorFeedbackForm,
     submitMentorToInternFeedbackForm,
-    mentorData,
   } = usePlatform();
 
   const [doubtTopic, setDoubtTopic] = useState("");
