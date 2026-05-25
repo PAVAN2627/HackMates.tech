@@ -80,7 +80,8 @@ service cloud.firestore {
 
     match /dailyNotes/{docId} {
       allow read: if isAdmin() || isMentor() || isOwnInternDoc();
-      allow create: if isAdmin() || isMentor();
+      // Allow interns to create their own daily notes (interns may create notes for themselves)
+      allow create: if isAdmin() || isMentor() || (isIntern() && isOwnInternDocOnCreate());
       allow update, delete: if isAdmin() || isMentor();
     }
 

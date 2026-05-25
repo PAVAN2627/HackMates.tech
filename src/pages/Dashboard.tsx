@@ -555,11 +555,21 @@ const Dashboard = () => {
 
   const handleMentorNoteSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (noteInternIds.length === 0 || !noteTitle.trim() || !noteBody.trim()) {
+    // Allow interns to submit notes for themselves even if the mentor-only UI path isn't used.
+    const targetInternIds = sessionUser.role === "Intern" ? [sessionUser.id] : noteInternIds;
+
+    if (targetInternIds.length === 0 || !noteTitle.trim()) {
+      // Require a title at minimum; note body and attachments are optional.
       return;
     }
 
-    const selectedInterns = internUsers.filter((user) => noteInternIds.includes(user.id));
+    const selectedInterns = internUsers.filter((user) => targetInternIds.includes(user.id));
+    // If the current user is an intern but not yet in internUsers list, ensure their own id is used.
+    if (sessionUser.role === "Intern" && !selectedInterns.some((i) => i.id === sessionUser.id)) {
+      const self = users.find((u) => u.id === sessionUser.id);
+      if (self) selectedInterns.push(self);
+    }
+
     if (selectedInterns.length === 0) {
       return;
     }
@@ -572,7 +582,7 @@ const Dashboard = () => {
           date: noteLectureDate,
           lectureTime: noteLectureTime,
           title: noteTitle,
-          note: noteBody,
+          note: noteBody, // body may be empty; attachments are optional
           mentorName: sessionUser.name,
           files: noteFiles,
           links: noteLinks.filter((link) => link.url.trim()).map((link) => ({ label: link.label.trim(), url: link.url.trim() })),
