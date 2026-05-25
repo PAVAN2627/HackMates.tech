@@ -1249,7 +1249,7 @@ const Dashboard = () => {
                           <select value={selectedMentorTaskId} onChange={(event) => setSelectedMentorTaskId(event.target.value)} className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white">
                             <option value="">Select task</option>
                             {mentorTasks.map((task) => (
-                              <option key={task.id} value={task.id} className="text-black">{task.title} â€¢ Due {task.dueDate}</option>
+                              <option key={task.id} value={task.id} className="text-black">{task.title} · Due {task.dueDate}</option>
                             ))}
                           </select>
                         </div>
@@ -1375,7 +1375,7 @@ const Dashboard = () => {
                           </div>
                           {(submission.lectureDate || submission.lectureTime) && (
                             <p className="text-sm text-white/60 mt-2">
-                              Lecture: {submission.lectureDate || "-"}{submission.lectureTime ? ` â€¢ ${submission.lectureTime}` : ""}
+                              Lecture: {submission.lectureDate || "-"}{submission.lectureTime ? ` · ${submission.lectureTime}` : ""}
                             </p>
                           )}
                           {!!submission.description && <p className="text-sm text-white/70 mt-2">{submission.description}</p>}
@@ -2246,13 +2246,13 @@ const Dashboard = () => {
                         <div className="flex items-center justify-between gap-3">
                           <div>
                             <p className="font-semibold">{submission.title}</p>
-                            <p className="text-sm text-white/60">{submission.internName} â€¢ {submission.type}</p>
+                            <p className="text-sm text-white/60">{submission.internName} · {submission.type}</p>
                           </div>
                           <Badge className={submissionStatusBadgeClass(submission.status)}>{submission.status}</Badge>
                         </div>
                         <p className="text-sm text-white/60">Due {submission.dueDate}</p>
                         {(submission.lectureDate || submission.lectureTime) && (
-                          <p className="text-sm text-white/60">Lecture: {submission.lectureDate || "-"}{submission.lectureTime ? ` â€¢ ${submission.lectureTime}` : ""}</p>
+                          <p className="text-sm text-white/60">Lecture: {submission.lectureDate || "-"}{submission.lectureTime ? ` · ${submission.lectureTime}` : ""}</p>
                         )}
                         {!!submission.description && <p className="text-sm text-white/70">{submission.description}</p>}
                         {!!submission.techStack && <p className="text-sm text-white/60">Tech stack: {submission.techStack}</p>}
@@ -2347,7 +2347,7 @@ const Dashboard = () => {
                               <div className="flex items-start justify-between gap-3">
                                 <div>
                                   <p className="font-semibold">{internName}</p>
-                                  <p className="text-xs text-white/60 mt-1">{entry.date} â€¢ {entry.rating}/10</p>
+                                  <p className="text-xs text-white/60 mt-1">{entry.date} · {entry.rating}/10</p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <Button
@@ -2652,7 +2652,7 @@ const Dashboard = () => {
                       <select value={selectedAttendanceSessionId} onChange={(event) => setSelectedAttendanceSessionId(event.target.value)} className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white">
                         <option value="">Select attendance session</option>
                         {mentorData.attendanceSessions.map((session) => (
-                          <option key={session.id} value={session.id} className="text-black">{session.date} â€¢ {session.title} â€¢ {session.status === "Closed" ? "Closed" : "Active"}</option>
+                          <option key={session.id} value={session.id} className="text-black">{session.date} · {session.title} · {session.status === "Closed" ? "Closed" : "Active"}</option>
                         ))}
                       </select>
                       {selectedAttendanceSession?.notes && (
