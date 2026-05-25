@@ -722,6 +722,7 @@ const Dashboard = () => {
 
   const handleUpdateAttendanceSession = async () => {
     if (!selectedAttendanceSessionId || !attendanceTitle.trim() || !attendanceDate || !attendanceStartTime) {
+      alert("Please select a session and ensure title, date, and start time are set before saving.");
       return;
     }
 
@@ -735,6 +736,8 @@ const Dashboard = () => {
       alert("Please mark Present or Absent for every intern before saving.");
       return;
     }
+
+    console.log("handleUpdateAttendanceSession called", { selectedAttendanceSessionId, attendanceDrafts, attendanceTitle, attendanceDate, attendanceStartTime });
 
     const records = internUsers.map((intern) => ({
       internId: intern.id,
