@@ -2,7 +2,7 @@
 import type { FormEvent } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { AlertCircle, ArrowUpRight, BadgeCheck, BookOpen, CalendarDays, CheckCircle2, ClipboardCheck, FileText, Home, Link2, LogOut, MessageSquareMore, Pencil, Plus, Send, Sparkles, Star, Trash2, UserCheck, UserX, X } from "lucide-react";
+import { AlertCircle, ArrowUpRight, BadgeCheck, BookOpen, CalendarDays, CheckCircle2, ClipboardCheck, Clock, FileText, Home, Link2, LogOut, MessageSquareMore, Pencil, Plus, Send, Sparkles, Star, Trash2, UserCheck, UserX, X } from "lucide-react";
 import { deleteDoc, doc, updateDoc } from "firebase/firestore";
 
 import { Badge } from "@/components/ui/badge";
@@ -1745,7 +1745,7 @@ const Dashboard = () => {
                           <div className="flex items-center justify-between gap-3">
                             <div>
                               <p className="font-semibold">{entry.sessionTitle}</p>
-                              <p className="text-sm text-white/60">{entry.date} â€¢ {entry.startTime || "Session time not set"}</p>
+                              <p className="text-sm text-white/60">{entry.date} <Clock className="inline-block w-3 h-3 text-white/60 mx-2" /> {entry.startTime || "Session time not set"}</p>
                             </div>
                             <Badge variant={entry.status === "Present" ? "default" : "destructive"}>{entry.status}</Badge>
                           </div>
@@ -2747,7 +2747,7 @@ const Dashboard = () => {
                                 }`}
                               >
                                 <p className="font-medium text-white">{session.title}</p>
-                                <p className="text-xs text-white/60 mt-1">{session.date} {session.startTime ? `â€¢ ${session.startTime}` : ""}</p>
+                                <p className="text-xs text-white/60 mt-1">{session.date}{session.startTime ? <><Clock className="inline-block w-3 h-3 text-white/60 mx-2" />{session.startTime}</> : ""}</p>
                               </button>
                             ))}
                           </div>
@@ -2762,7 +2762,7 @@ const Dashboard = () => {
                           <>
                             <div className="rounded-xl border border-white/10 bg-slate-950/40 p-3">
                               <p className="font-medium text-white">{selectedClosedAttendanceSession.title}</p>
-                              <p className="text-xs text-white/60 mt-1">{selectedClosedAttendanceSession.date} {selectedClosedAttendanceSession.startTime ? `â€¢ ${selectedClosedAttendanceSession.startTime}` : ""}</p>
+                              <p className="text-xs text-white/60 mt-1">{selectedClosedAttendanceSession.date}{selectedClosedAttendanceSession.startTime ? <><Clock className="inline-block w-3 h-3 text-white/60 mx-2" />{selectedClosedAttendanceSession.startTime}</> : ""}</p>
                             </div>
                             {selectedClosedAttendanceSession.records.length === 0 ? (
                               <p className="text-sm text-white/60">No attendance records stored for this session.</p>
