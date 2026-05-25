@@ -167,6 +167,7 @@ const Dashboard = () => {
   const [noteBody, setNoteBody] = useState("");
   const [noteFiles, setNoteFiles] = useState<File[]>([]);
   const [noteLinks, setNoteLinks] = useState<NoteLinkDraft[]>([{ label: "", url: "" }]);
+  const [noteSaving, setNoteSaving] = useState(false);
   const [noteSearch, setNoteSearch] = useState("");
   const [feedbackInternId, setFeedbackInternId] = useState("");
   const [feedbackRating, setFeedbackRating] = useState(7);
@@ -556,34 +557,46 @@ const Dashboard = () => {
   const handleMentorNoteSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (noteInternIds.length === 0 || !noteTitle.trim() || !noteBody.trim()) {
+      alert("Please select at least one intern and provide both title and note body.");
       return;
     }
 
     const selectedInterns = internUsers.filter((user) => noteInternIds.includes(user.id));
     if (selectedInterns.length === 0) {
+      alert("No valid interns selected. Please reselect.");
       return;
     }
 
-    await Promise.all(
-      selectedInterns.map((intern) =>
-        addDailyNote({
-          internId: intern.id,
-          internName: intern.name,
-          date: noteLectureDate,
-          lectureTime: noteLectureTime,
-          title: noteTitle,
-          note: noteBody,
-          mentorName: sessionUser.name,
-          files: noteFiles,
-          links: noteLinks.filter((link) => link.url.trim()).map((link) => ({ label: link.label.trim(), url: link.url.trim() })),
-        }),
-      ),
-    );
+    setNoteSaving(true);
+    try {
+      console.log("Submitting daily note", { noteTitle, noteBody, noteLectureDate, noteLectureTime, noteFiles, noteLinks, noteInternIds });
+      await Promise.all(
+        selectedInterns.map((intern) =>
+          addDailyNote({
+            internId: intern.id,
+            internName: intern.name,
+            date: noteLectureDate,
+            lectureTime: noteLectureTime,
+            title: noteTitle,
+            note: noteBody,
+            mentorName: sessionUser.name,
+            files: noteFiles,
+            links: noteLinks.filter((link) => link.url.trim()).map((link) => ({ label: link.label.trim(), url: link.url.trim() })),
+          }),
+        ),
+      );
 
-    setNoteTitle("");
-    setNoteBody("");
-    setNoteFiles([]);
-    setNoteLinks([{ label: "", url: "" }]);
+      setNoteTitle("");
+      setNoteBody("");
+      setNoteFiles([]);
+      setNoteLinks([{ label: "", url: "" }]);
+      alert("Note saved successfully.");
+    } catch (error) {
+      console.error("Failed to save daily note:", error);
+      alert("Unable to save note right now. Check console for errors. If you see 'Missing or insufficient permissions', update Firestore rules.");
+    } finally {
+      setNoteSaving(false);
+    }
   };
 
   const handleMentorFeedbackSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -1989,9 +2002,9 @@ const Dashboard = () => {
                         className="bg-white/5 border-white/10 text-white file:text-white file:border-0 file:bg-white/10 file:rounded-md"
                       />
                     </div>
-                    <Button type="submit" className="w-full">
+                    <Button type="submit" className="w-full" disabled={noteSaving}>
                       <BookOpen className="w-4 h-4" />
-                      Save note
+                      {noteSaving ? "Saving..." : "Save note"}
                     </Button>
                   </form>
 
