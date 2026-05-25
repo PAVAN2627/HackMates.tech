@@ -573,6 +573,14 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
   const [mentorToInternFeedbackForms, setMentorToInternFeedbackForms] = useState<MentorToInternFeedbackForm[]>([]);
   const [mentorToInternFeedbackSubmissions, setMentorToInternFeedbackSubmissions] = useState<MentorToInternFeedbackSubmission[]>([]);
 
+  const currentInternIdentifiers = useMemo(() => {
+    if (!sessionUser || sessionUser.role !== "Intern") {
+      return [];
+    }
+
+    return Array.from(new Set([sessionUser.uid, sessionUser.id].filter((value): value is string => Boolean(value))));
+  }, [sessionUser]);
+
   const refresh = useCallback(async () => {
     if (!auth.currentUser) {
       setSessionUser(null);
@@ -659,7 +667,7 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
       ? query(collections.submissions, where("internId", "==", sessionUser.uid))
       : collections.submissions;
     const attendanceQuery = sessionUser.role === "Intern"
-      ? query(collections.attendanceSessions, where("internIds", "array-contains", sessionUser.uid))
+      ? query(collections.attendanceSessions, where("internIds", "array-contains-any", currentInternIdentifiers))
       : collections.attendanceSessions;
 
     const unsubscribePerformance = onSnapshot(performanceQuery, (snapshot) => {
@@ -749,7 +757,10 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
       });
 
       const filtered = sessionUser.role === "Intern"
-        ? items.filter((session) => session.internIds.includes(sessionUser.uid) || session.internIds.includes(sessionUser.id))
+        ? items.filter((session) =>
+          currentInternIdentifiers.some((identifier) => session.internIds.includes(identifier))
+            || session.records.some((record) => currentInternIdentifiers.includes(record.internId))
+        )
         : items;
 
       setAttendanceSessions(filtered.sort((a, b) => b.date.localeCompare(a.date)));
@@ -824,7 +835,7 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
       unsubscribeMentorToInternFeedbackForms();
       unsubscribeMentorToInternFeedbackSubmissions();
     };
-  }, [sessionUser]);
+  }, [sessionUser, currentInternIdentifiers]);
 
   const login = useCallback(async (email: string, password: string) => {
     await setPersistence(auth, browserLocalPersistence);
@@ -1682,7 +1693,7 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const attendance = attendanceSessions.flatMap((session) => {
-      const record = session.records.find((item) => item.internId === sessionUser.uid || item.internId === sessionUser.id);
+      const record = session.records.find((item) => currentInternIdentifiers.includes(item.internId));
       if (!record) {
         return [];
       }
@@ -1699,25 +1710,25 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return {
-      performance: performance.filter((entry) => entry.internId === sessionUser.uid || entry.internId === sessionUser.id),
-      fees: fees.filter((entry) => entry.internId === sessionUser.uid || entry.internId === sessionUser.id),
-      dailyNotes: dailyNotes.filter((entry) => entry.internId === sessionUser.uid || entry.internId === sessionUser.id),
-      feedback: feedback.filter((entry) => entry.internId === sessionUser.uid || entry.internId === sessionUser.id),
-      doubts: doubts.filter((entry) => entry.internId === sessionUser.uid || entry.internId === sessionUser.id),
-      submissions: submissions.filter((entry) => entry.internId === sessionUser.uid || entry.internId === sessionUser.id),
+      performance: performance.filter((entry) => currentInternIdentifiers.includes(entry.internId)),
+      fees: fees.filter((entry) => currentInternIdentifiers.includes(entry.internId)),
+      dailyNotes: dailyNotes.filter((entry) => currentInternIdentifiers.includes(entry.internId)),
+      feedback: feedback.filter((entry) => currentInternIdentifiers.includes(entry.internId)),
+      doubts: doubts.filter((entry) => currentInternIdentifiers.includes(entry.internId)),
+      submissions: submissions.filter((entry) => currentInternIdentifiers.includes(entry.internId)),
       attendance,
       feedbackForms,
       feedbackFormSubmissions,
       mentorFeedbackForms,
       mentorFeedbackSubmissions,
       mentorToInternFeedbackForms: mentorToInternFeedbackForms.filter((form) =>
-        form.internIds.includes(sessionUser.uid) || form.internIds.includes(sessionUser.id)
+        currentInternIdentifiers.some((identifier) => form.internIds.includes(identifier))
       ),
       mentorToInternFeedbackSubmissions: mentorToInternFeedbackSubmissions.filter((sub) =>
-        sub.internId === sessionUser.uid || sub.internId === sessionUser.id
+        currentInternIdentifiers.includes(sub.internId)
       ),
     };
-  }, [attendanceSessions, dailyNotes, feedback, fees, performance, sessionUser, doubts, submissions, feedbackForms, feedbackFormSubmissions, mentorFeedbackForms, mentorFeedbackSubmissions, mentorToInternFeedbackForms, mentorToInternFeedbackSubmissions]);
+  }, [attendanceSessions, dailyNotes, feedback, fees, performance, sessionUser, doubts, submissions, feedbackForms, feedbackFormSubmissions, mentorFeedbackForms, mentorFeedbackSubmissions, mentorToInternFeedbackForms, mentorToInternFeedbackSubmissions, currentInternIdentifiers]);
 
   const mentorData = useMemo(() => ({
     internCount: users.filter((user) => user.role === "Intern").length,
