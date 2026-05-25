@@ -57,11 +57,13 @@ export interface DailyNoteEntry {
   internId: string;
   internName?: string;
   date: string;
+  createdAt?: string;
   lectureTime?: string;
   title: string;
   note: string;
   mentorName: string;
   attachments?: FileAttachment[];
+  links?: { label: string; url: string }[];
 }
 
 export interface FeedbackEntry {
@@ -351,6 +353,7 @@ export interface NewDailyNoteInput {
   note: string;
   mentorName: string;
   files?: File[];
+  links?: { label: string; url: string }[];
 }
 
 export interface UpdateAttendanceSessionInput {
@@ -1104,6 +1107,7 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
       note: input.note.trim(),
       mentorName: input.mentorName,
       attachments,
+      links: (input.links ?? []).filter((l) => l.url.trim()),
       createdAt: new Date().toISOString(),
     };
 

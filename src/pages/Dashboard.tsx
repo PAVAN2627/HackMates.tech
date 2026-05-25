@@ -2,7 +2,7 @@
 import type { FormEvent } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { AlertCircle, ArrowUpRight, BadgeCheck, BookOpen, CalendarDays, CheckCircle2, ClipboardCheck, FileText, Home, LogOut, MessageSquareMore, Pencil, Send, Sparkles, Star, Trash2, UserCheck, UserX } from "lucide-react";
+import { AlertCircle, ArrowUpRight, BadgeCheck, BookOpen, CalendarDays, CheckCircle2, ClipboardCheck, FileText, Home, Link2, LogOut, MessageSquareMore, Pencil, Plus, Send, Sparkles, Star, Trash2, UserCheck, UserX, X } from "lucide-react";
 import { deleteDoc, doc, updateDoc } from "firebase/firestore";
 
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,8 @@ import { sendPlatformEmail } from "../lib/email";
 import { db } from "@/lib/firebase";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+
+type NoteLinkDraft = { label: string; url: string };
 
 const dashboardMetrics = [
   { key: "performance", label: "Performance", icon: BadgeCheck },
@@ -82,6 +84,37 @@ function formatDateLabel(dateText: string) {
   return date.toLocaleDateString(undefined, { day: "2-digit", month: "short" });
 }
 
+function getNoteSortTime(note: { date: string; createdAt?: string }) {
+  const createdAt = note.createdAt ? new Date(note.createdAt).getTime() : NaN;
+  if (!Number.isNaN(createdAt)) {
+    return createdAt;
+  }
+
+  const noteDate = new Date(note.date).getTime();
+  return Number.isNaN(noteDate) ? 0 : noteDate;
+}
+
+function matchesNoteSearch(note: { title: string; note: string; mentorName: string; internName?: string; lectureTime?: string; date: string; links?: { label: string; url: string }[] }, query: string) {
+  const search = query.trim().toLowerCase();
+  if (!search) {
+    return true;
+  }
+
+  const haystack = [
+    note.title,
+    note.note,
+    note.mentorName,
+    note.internName ?? "",
+    note.lectureTime ?? "",
+    note.date,
+    ...(note.links ?? []).flatMap((link) => [link.label, link.url]),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  return haystack.includes(search);
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const {
@@ -107,6 +140,7 @@ const Dashboard = () => {
     submitMentorFeedbackForm,
     submitMentorToInternFeedbackForm,
   } = usePlatform();
+  const dashboardRole: "Admin" | "Mentor" | "Intern" = sessionUser?.role ?? "Intern";
 
   const [doubtTopic, setDoubtTopic] = useState("");
   const [doubtQuestion, setDoubtQuestion] = useState("");
@@ -132,6 +166,8 @@ const Dashboard = () => {
   const [noteTitle, setNoteTitle] = useState("");
   const [noteBody, setNoteBody] = useState("");
   const [noteFiles, setNoteFiles] = useState<File[]>([]);
+  const [noteLinks, setNoteLinks] = useState<NoteLinkDraft[]>([{ label: "", url: "" }]);
+  const [noteSearch, setNoteSearch] = useState("");
   const [feedbackInternId, setFeedbackInternId] = useState("");
   const [feedbackRating, setFeedbackRating] = useState(7);
   const [feedbackComment, setFeedbackComment] = useState("");
@@ -164,6 +200,14 @@ const Dashboard = () => {
 
   const internUsers = useMemo(() => users.filter((user) => user.role === "Intern"), [users]);
   const currentInternData = sessionUser?.role === "Intern" ? internData : null;
+  const internDailyNotes = useMemo(() => {
+    const notes = [...(currentInternData?.dailyNotes ?? [])].sort((a, b) => getNoteSortTime(b) - getNoteSortTime(a));
+    return notes.filter((note) => matchesNoteSearch(note, noteSearch));
+  }, [currentInternData?.dailyNotes, noteSearch]);
+  const mentorDailyNotes = useMemo(() => {
+    const notes = [...mentorData.dailyNotes].sort((a, b) => getNoteSortTime(b) - getNoteSortTime(a));
+    return notes.filter((note) => matchesNoteSearch(note, noteSearch));
+  }, [mentorData.dailyNotes, noteSearch]);
   const mentorTasks = useMemo(
     () => (currentInternData?.submissions ?? []).filter((entry) => entry.type === "Mentor Task"),
     [currentInternData?.submissions],
@@ -531,6 +575,7 @@ const Dashboard = () => {
           note: noteBody,
           mentorName: sessionUser.name,
           files: noteFiles,
+          links: noteLinks.filter((link) => link.url.trim()).map((link) => ({ label: link.label.trim(), url: link.url.trim() })),
         }),
       ),
     );
@@ -538,6 +583,7 @@ const Dashboard = () => {
     setNoteTitle("");
     setNoteBody("");
     setNoteFiles([]);
+    setNoteLinks([{ label: "", url: "" }]);
   };
 
   const handleMentorFeedbackSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -629,6 +675,51 @@ const Dashboard = () => {
     setAttendanceDrafts((current) => ({ ...current, [internId]: status }));
   };
 
+  const sendAttendanceEmails = async (
+    records: Array<{ internName: string; internEmail: string; status: "Present" | "Absent" }>,
+    sessionTitle: string,
+    sessionDate: string,
+    sessionStartTime: string,
+    sessionStatus: "Open" | "Closed",
+    subjectPrefix = "Attendance",
+    messagePrefix = "Your attendance record has been updated by your mentor.",
+  ) => {
+    const loginUrl = "https://www.hackmates.tech/login";
+
+    await Promise.allSettled(records.map((record) => {
+      const html = `
+        <div style="font-family:Segoe UI,Arial,sans-serif;background:#f8fafc;padding:24px;color:#0f172a;">
+          <div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0;box-shadow:0 8px 24px rgba(15,23,42,0.08);">
+            <div style="padding:20px 24px;background:linear-gradient(135deg,#0f766e,#1d4ed8);color:#ffffff;">
+              <p style="margin:0;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;opacity:0.85;">HackMates</p>
+              <h2 style="margin:8px 0 0;font-size:24px;line-height:1.3;">Attendance ${record.status}</h2>
+            </div>
+            <div style="padding:24px;line-height:1.7;">
+              <p style="margin:0 0 10px;">Hi ${record.internName},</p>
+              <p style="margin:0 0 16px;">${messagePrefix}</p>
+              <table style="width:100%;border-collapse:collapse;margin:0 0 18px;">
+                <tr><td style="padding:10px 12px;border:1px solid #e2e8f0;background:#f8fafc;"><strong>Session</strong></td><td style="padding:10px 12px;border:1px solid #e2e8f0;">${sessionTitle}</td></tr>
+                <tr><td style="padding:10px 12px;border:1px solid #e2e8f0;background:#f8fafc;"><strong>Date</strong></td><td style="padding:10px 12px;border:1px solid #e2e8f0;">${sessionDate}</td></tr>
+                <tr><td style="padding:10px 12px;border:1px solid #e2e8f0;background:#f8fafc;"><strong>Start Time</strong></td><td style="padding:10px 12px;border:1px solid #e2e8f0;">${sessionStartTime}</td></tr>
+                <tr><td style="padding:10px 12px;border:1px solid #e2e8f0;background:#f8fafc;"><strong>Your Status</strong></td><td style="padding:10px 12px;border:1px solid #e2e8f0;">${record.status}</td></tr>
+                <tr><td style="padding:10px 12px;border:1px solid #e2e8f0;background:#f8fafc;"><strong>Session Status</strong></td><td style="padding:10px 12px;border:1px solid #e2e8f0;">${sessionStatus}</td></tr>
+              </table>
+              <a href="${loginUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#0f766e;color:#ffffff;text-decoration:none;padding:11px 16px;border-radius:10px;font-weight:600;">Open Dashboard</a>
+              <p style="margin:18px 0 0;">Regards,<br/>HackMates Team</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      return sendPlatformEmail({
+        email: record.internEmail,
+        subject: `${subjectPrefix} ${record.status} - ${sessionTitle}`,
+        message: `${messagePrefix} Attendance: ${record.status}. Session: ${sessionTitle} on ${sessionDate} ${sessionStartTime}. Session status: ${sessionStatus}.`,
+        html,
+      });
+    }));
+  };
+
   const handleUpdateAttendanceSession = async () => {
     if (!selectedAttendanceSessionId || !attendanceTitle.trim() || !attendanceDate || !attendanceStartTime) {
       return;
@@ -666,39 +757,7 @@ const Dashboard = () => {
         status: attendanceSessionStatus,
       });
 
-      const loginUrl = "https://www.hackmates.tech/login";
-      await Promise.allSettled(records.map((record) => {
-        const html = `
-          <div style="font-family:Segoe UI,Arial,sans-serif;background:#f8fafc;padding:24px;color:#0f172a;">
-            <div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0;box-shadow:0 8px 24px rgba(15,23,42,0.08);">
-              <div style="padding:20px 24px;background:linear-gradient(135deg,#0f766e,#1d4ed8);color:#ffffff;">
-                <p style="margin:0;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;opacity:0.85;">HackMates</p>
-                <h2 style="margin:8px 0 0;font-size:24px;line-height:1.3;">Attendance ${record.status}</h2>
-              </div>
-              <div style="padding:24px;line-height:1.7;">
-                <p style="margin:0 0 10px;">Hi ${record.internName},</p>
-                <p style="margin:0 0 16px;">Your attendance record has been updated by your mentor.</p>
-                <table style="width:100%;border-collapse:collapse;margin:0 0 18px;">
-                  <tr><td style="padding:10px 12px;border:1px solid #e2e8f0;background:#f8fafc;"><strong>Session</strong></td><td style="padding:10px 12px;border:1px solid #e2e8f0;">${attendanceTitle}</td></tr>
-                  <tr><td style="padding:10px 12px;border:1px solid #e2e8f0;background:#f8fafc;"><strong>Date</strong></td><td style="padding:10px 12px;border:1px solid #e2e8f0;">${attendanceDate}</td></tr>
-                  <tr><td style="padding:10px 12px;border:1px solid #e2e8f0;background:#f8fafc;"><strong>Start Time</strong></td><td style="padding:10px 12px;border:1px solid #e2e8f0;">${attendanceStartTime}</td></tr>
-                  <tr><td style="padding:10px 12px;border:1px solid #e2e8f0;background:#f8fafc;"><strong>Your Status</strong></td><td style="padding:10px 12px;border:1px solid #e2e8f0;">${record.status}</td></tr>
-                  <tr><td style="padding:10px 12px;border:1px solid #e2e8f0;background:#f8fafc;"><strong>Session Status</strong></td><td style="padding:10px 12px;border:1px solid #e2e8f0;">${attendanceSessionStatus}</td></tr>
-                </table>
-                <a href="${loginUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#0f766e;color:#ffffff;text-decoration:none;padding:11px 16px;border-radius:10px;font-weight:600;">Open Dashboard</a>
-                <p style="margin:18px 0 0;">Regards,<br/>HackMates Team</p>
-              </div>
-            </div>
-          </div>
-        `;
-
-        return sendPlatformEmail({
-          email: record.internEmail,
-          subject: `Attendance ${record.status} - ${attendanceTitle}`,
-          message: `Attendance: ${record.status}. Session: ${attendanceTitle} on ${attendanceDate} ${attendanceStartTime}. Session status: ${attendanceSessionStatus}.`,
-          html,
-        });
-      }));
+      await sendAttendanceEmails(records, attendanceTitle, attendanceDate, attendanceStartTime, attendanceSessionStatus);
 
       setAttendanceDrafts({});
       if (attendanceSessionStatus === "Closed") {
@@ -727,8 +786,17 @@ const Dashboard = () => {
         internIds: selectedAttendanceSession.internIds,
         status: "Open",
       });
+      await sendAttendanceEmails(
+        selectedAttendanceSession.records,
+        attendanceTitle || selectedAttendanceSession.title,
+        attendanceDate || selectedAttendanceSession.date,
+        attendanceStartTime || selectedAttendanceSession.startTime,
+        "Open",
+        "Attendance session reopened",
+        "Your attendance session has been reopened by your mentor.",
+      );
       setAttendanceSessionStatus("Open");
-      alert("Session reopened. You can now edit Present/Absent.");
+      alert("Session reopened and attendance email sent.");
     } finally {
       setAttendanceUpdating(false);
     }
@@ -1335,7 +1403,7 @@ const Dashboard = () => {
 
               <TabsContent value="feedback">
                 <div className="space-y-6">
-                  {sessionUser.role === "Mentor" && (
+                  {dashboardRole === "Mentor" && (
                     <Card className="border-white/10 bg-slate-950/70 text-white">
                       <CardHeader>
                         <CardTitle>Feedback received</CardTitle>
@@ -1393,7 +1461,7 @@ const Dashboard = () => {
                     </Card>
                   )}
 
-                  {sessionUser.role === "Intern" && mentorFeedbackForms && mentorFeedbackForms.length > 0 && (
+                  {dashboardRole === "Intern" && mentorFeedbackForms && mentorFeedbackForms.length > 0 && (
                     <Card className="border-white/10 bg-slate-950/70 text-white">
                       <CardHeader>
                         <CardTitle>Mentor Rating Forms</CardTitle>
@@ -1573,50 +1641,87 @@ const Dashboard = () => {
                     <CardDescription className="text-white/60">Lecture-end notes added by mentors.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {currentInternData?.dailyNotes.map((entry) => (
-                      <div key={entry.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="font-semibold">{entry.title}</p>
-                          <Badge variant="secondary">{entry.date}</Badge>
-                        </div>
-                        {entry.lectureTime && <p className="text-sm text-white/60 mt-2">Lecture time: {entry.lectureTime}</p>}
-                        <p className="text-sm text-white/70 mt-3">{entry.note}</p>
-                        <p className="text-sm text-white/55 mt-2">Mentor: {entry.mentorName}</p>
-                        {entry.attachments && entry.attachments.length > 0 && (
-                          <div className="mt-3 space-y-2">
-                            <p className="text-xs uppercase tracking-[0.2em] text-white/45">Files</p>
-                            <div className="flex flex-wrap gap-2">
-                              {entry.attachments.map((file) => {
-                                const src = file.dataUrl ?? "";
-                                const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-                                return isPdf ? (
-                                  <a
-                                    key={`${entry.id}-${file.name}`}
-                                    href={src}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs text-red-400 hover:bg-red-500/20 transition-colors"
-                                  >
-                                    ðŸ“„ {file.name}
-                                  </a>
-                                ) : (
-                                  <a
-                                    key={`${entry.id}-${file.name}`}
-                                    href={src}
-                                    download={file.name}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/75 hover:bg-white/10 transition-colors"
-                                  >
-                                    ðŸ“Ž {file.name}
-                                  </a>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
+                    <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                      <div>
+                        <p className="text-sm text-white/70">Lecture notes</p>
+                        <p className="text-xs text-white/45">Search the latest mentor notes by title, link, or keyword.</p>
                       </div>
-                    ))}
+                      <div className="w-full md:max-w-sm space-y-1.5">
+                        <label className="text-xs uppercase tracking-[0.2em] text-white/45">Search notes</label>
+                        <Input
+                          value={noteSearch}
+                          onChange={(event) => setNoteSearch(event.target.value)}
+                          className="bg-white/5 border-white/10 text-white"
+                          placeholder="Search lecture notes"
+                        />
+                      </div>
+                    </div>
+                    {internDailyNotes.length === 0 ? (
+                      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-white/65">
+                        {currentInternData?.dailyNotes.length === 0 ? "No notes have been posted yet." : "No notes match your search."}
+                      </div>
+                    ) : (
+                      internDailyNotes.map((entry) => (
+                        <div key={entry.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="font-semibold">{entry.title}</p>
+                            <Badge variant="secondary">{entry.date}</Badge>
+                          </div>
+                          {entry.lectureTime && <p className="text-sm text-white/60 mt-2">Lecture time: {entry.lectureTime}</p>}
+                          <p className="text-sm text-white/70 mt-3">{entry.note}</p>
+                          <p className="text-sm text-white/55 mt-2">Mentor: {entry.mentorName}</p>
+                          {entry.links && entry.links.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {entry.links.map((link, index) => (
+                                <a
+                                  key={`${entry.id}-link-${index}`}
+                                  href={toAbsoluteUrl(link.url)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs text-cyan-200 hover:bg-cyan-500/20 transition-colors"
+                                >
+                                  <Link2 className="w-3 h-3" />
+                                  {link.label?.trim() || link.url}
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                          {entry.attachments && entry.attachments.length > 0 && (
+                            <div className="mt-3 space-y-2">
+                              <p className="text-xs uppercase tracking-[0.2em] text-white/45">Files</p>
+                              <div className="flex flex-wrap gap-2">
+                                {entry.attachments.map((file) => {
+                                  const src = file.dataUrl ?? "";
+                                  const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+                                  return isPdf ? (
+                                    <a
+                                      key={`${entry.id}-${file.name}`}
+                                      href={src}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs text-red-400 hover:bg-red-500/20 transition-colors"
+                                    >
+                                      📄 {file.name}
+                                    </a>
+                                  ) : (
+                                    <a
+                                      key={`${entry.id}-${file.name}`}
+                                      href={src}
+                                      download={file.name}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/75 hover:bg-white/10 transition-colors"
+                                    >
+                                      📎 {file.name}
+                                    </a>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -1811,6 +1916,47 @@ const Dashboard = () => {
                       <label className="text-sm text-white/70">Title</label>
                       <Input value={noteTitle} onChange={(event) => setNoteTitle(event.target.value)} className="bg-white/5 border-white/10 text-white" placeholder="State management recap" />
                     </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <label className="text-sm text-white/70">Note links</label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-8 border-white/10 bg-white/5 px-3 text-xs text-white hover:bg-white/10"
+                          onClick={() => setNoteLinks((current) => [...current, { label: "", url: "" }])}
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          Add link
+                        </Button>
+                      </div>
+                      <div className="space-y-3">
+                        {noteLinks.map((link, index) => (
+                          <div key={`${index}-${link.url}`} className="grid gap-2 md:grid-cols-[1fr_1.2fr_auto]">
+                            <Input
+                              value={link.label}
+                              onChange={(event) => setNoteLinks((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, label: event.target.value } : item))}
+                              className="bg-white/5 border-white/10 text-white"
+                              placeholder="Label like YouTube recap or Drive notes"
+                            />
+                            <Input
+                              value={link.url}
+                              onChange={(event) => setNoteLinks((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, url: event.target.value } : item))}
+                              className="bg-white/5 border-white/10 text-white"
+                              placeholder="Paste YouTube or Drive link"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="h-10 border-white/10 bg-white/5 px-3 text-xs text-white hover:bg-white/10"
+                              onClick={() => setNoteLinks((current) => current.length === 1 ? [{ label: "", url: "" }] : current.filter((_, itemIndex) => itemIndex !== index))}
+                              disabled={noteLinks.length === 1}
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-sm text-white/70">Lecture date</label>
@@ -1846,21 +1992,54 @@ const Dashboard = () => {
                     </Button>
                   </form>
 
-                  {/* All notes â€” visible to all mentors */}
-                  {mentorData.dailyNotes.length > 0 && (
-                    <div className="mt-6 space-y-3">
-                      <p className="text-sm font-medium text-white/70">All lecture notes</p>
-                      {mentorData.dailyNotes.map((note) => (
+                  <div className="mt-6 space-y-3">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-white/70">All lecture notes</p>
+                        <p className="text-xs text-white/45">Newest notes appear first.</p>
+                      </div>
+                      <div className="w-full md:max-w-sm space-y-1.5">
+                        <label className="text-xs uppercase tracking-[0.2em] text-white/45">Search notes</label>
+                        <Input
+                          value={noteSearch}
+                          onChange={(event) => setNoteSearch(event.target.value)}
+                          className="bg-white/5 border-white/10 text-white"
+                          placeholder="Search by title, mentor, note, or link"
+                        />
+                      </div>
+                    </div>
+                    {mentorDailyNotes.length === 0 ? (
+                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/60">
+                        {mentorData.dailyNotes.length === 0 ? "No lecture notes yet." : "No notes match your search."}
+                      </div>
+                    ) : (
+                      mentorDailyNotes.map((note) => (
                         <div key={note.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-2">
                           <div className="flex items-center justify-between gap-3">
                             <p className="font-semibold text-sm">{note.title}</p>
                             <Badge variant="secondary" className="text-xs">{note.date.slice(0, 10)}</Badge>
                           </div>
                           <p className="text-xs text-white/50">
-                            {note.internName} Â· by {note.mentorName}
-                            {note.lectureTime ? ` Â· ${note.lectureTime}` : ""}
+                            {note.internName} · by {note.mentorName}
+                            {note.lectureTime ? ` · ${note.lectureTime}` : ""}
                           </p>
                           <p className="text-sm text-white/75">{note.note}</p>
+                          {note.links && note.links.length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-1">
+                              {note.links.map((link, index) => (
+                                <a
+                                  key={`${note.id}-link-${index}`}
+                                  href={toAbsoluteUrl(link.url)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs text-cyan-200 hover:bg-cyan-500/20 transition-colors"
+                                >
+                                  <Link2 className="w-3 h-3" />
+                                  {link.label?.trim() || link.url}
+                                </a>
+                              ))}
+                            </div>
+                          )}
                           {note.attachments && note.attachments.length > 0 && (
                             <div className="flex flex-wrap gap-2 pt-1">
                               {note.attachments.map((file) => {
@@ -1879,16 +2058,16 @@ const Dashboard = () => {
                                         : "border-white/10 text-white/70 hover:bg-white/10"
                                     }`}
                                   >
-                                    {pdf ? "ðŸ“„" : "ðŸ“Ž"} {file.name}
+                                    {pdf ? "📄" : "📎"} {file.name}
                                   </a>
                                 );
                               })}
                             </div>
                           )}
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      ))
+                    )}
+                  </div>
                 </CardContent>
               </Card>
               )}
@@ -2392,177 +2571,6 @@ const Dashboard = () => {
                     </Card>
                   )}
 
-                  {sessionUser.role === "Intern" && mentorFeedbackForms && mentorFeedbackForms.length > 0 && (
-                    <Card className="border-white/10 bg-slate-950/70 text-white">
-                      <CardHeader>
-                        <CardTitle>Mentor Rating Forms</CardTitle>
-                        <CardDescription className="text-white/60">Submit your feedback and ratings for your mentors</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        {selectedMentorForm ? (
-                          <div className="space-y-4">
-                            <Button
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedMentorForm(null);
-                                setMentorRatings({});
-                                setMentorReviews({});
-                              }}
-                              className="bg-white/15 border-white/30 text-white hover:bg-white/25"
-                            >
-                              ← Back to Forms
-                            </Button>
-
-                            {mentorFeedbackForms
-                              .filter((f) => f.id === selectedMentorForm)
-                              .map((form) => (
-                                <div key={form.id} className="space-y-4">
-                                  <h3 className="font-semibold text-lg">Rating: {form.mentorNames.join(", ")}</h3>
-
-                                  {form.mentorIds.map((mentorId, idx) => {
-                                    const myInternId = sessionUser.uid || sessionUser.id;
-                                    const alreadySubmitted = mentorFeedbackSubmissions?.some(
-                                      (s) => s.mentorId === mentorId && s.formId === form.id && s.internId === myInternId,
-                                    );
-                                    const previousSubmission = mentorFeedbackSubmissions?.find(
-                                      (s) => s.mentorId === mentorId && s.formId === form.id && s.internId === myInternId,
-                                    );
-
-                                    return (
-                                      <div
-                                        key={mentorId}
-                                        className="rounded-lg border border-white/10 bg-white/5 p-4 space-y-3"
-                                      >
-                                        <h4 className="font-semibold text-white">{form.mentorNames[idx]}</h4>
-                                        {alreadySubmitted && previousSubmission ? (
-                                          <div className="space-y-2">
-                                            <Badge className="bg-green-500/20 text-green-300">Already Submitted</Badge>
-                                            <div className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-1">
-                                              <div className="flex items-center gap-2">
-                                                {[1,2,3,4,5].map((n) => (
-                                                  <Star key={n} className={`w-4 h-4 ${previousSubmission.rating >= n ? "fill-yellow-400 text-yellow-400" : "text-white/20"}`} />
-                                                ))}
-                                                <span className="text-xs text-white/50">{new Date(previousSubmission.submittedAt).toLocaleDateString()}</span>
-                                              </div>
-                                              <p className="text-sm text-white/70">{previousSubmission.review}</p>
-                                            </div>
-                                          </div>
-                                        ) : (
-                                          <>
-                                            <div className="space-y-2">
-                                              <label className="text-sm text-white/70">Rating (1-5 stars)</label>
-                                              <div className="flex gap-2">
-                                                {[1, 2, 3, 4, 5].map((num) => (
-                                                  <button
-                                                    key={num}
-                                                    type="button"
-                                                    onClick={() => setMentorRatings({ ...mentorRatings, [mentorId]: num })}
-                                                    className="transition hover:scale-110"
-                                                  >
-                                                    <Star className={`w-7 h-7 ${(mentorRatings[mentorId] || 0) >= num ? "fill-yellow-400 text-yellow-400" : "text-white/25"}`} />
-                                                  </button>
-                                                ))}
-                                              </div>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                              <label className="text-sm text-white/70">Review</label>
-                                              <Textarea
-                                                placeholder="Your feedback for the mentor..."
-                                                value={mentorReviews[mentorId] || ""}
-                                                onChange={(e) => setMentorReviews({ ...mentorReviews, [mentorId]: e.target.value })}
-                                                className="bg-white/5 border-white/10 text-white min-h-20"
-                                              />
-                                            </div>
-
-                                            <Button
-                                              onClick={async () => {
-                                                if (!mentorRatings[mentorId] || !mentorReviews[mentorId]?.trim()) {
-                                                  alert("Please provide both rating and review");
-                                                  return;
-                                                }
-
-                                                setSubmitMentorFeedbackLoading(true);
-                                                try {
-                                                  await submitMentorFeedbackForm({
-                                                    formId: form.id,
-                                                    mentorId,
-                                                    mentorName: form.mentorNames[idx],
-                                                    internId: myInternId,
-                                                    internName: sessionUser.name,
-                                                    internEmail: sessionUser.email,
-                                                    rating: mentorRatings[mentorId],
-                                                    review: mentorReviews[mentorId],
-                                                  });
-
-                                                  setMentorRatings((prev) => { const n = { ...prev }; delete n[mentorId]; return n; });
-                                                  setMentorReviews((prev) => { const n = { ...prev }; delete n[mentorId]; return n; });
-
-                                                  const allDone = form.mentorIds.every((mid) =>
-                                                    mid === mentorId || mentorFeedbackSubmissions?.some(
-                                                      (s) => s.mentorId === mid && s.formId === form.id && s.internId === myInternId,
-                                                    )
-                                                  );
-                                                  if (allDone) {
-                                                    alert("All feedback submitted. Thank you!");
-                                                    setSelectedMentorForm(null);
-                                                  } else {
-                                                    alert("Feedback submitted!");
-                                                  }
-                                                } catch (error) {
-                                                  console.error("Error submitting feedback:", error);
-                                                  alert("Failed to submit feedback");
-                                                } finally {
-                                                  setSubmitMentorFeedbackLoading(false);
-                                                }
-                                              }}
-                                              disabled={submitMentorFeedbackLoading || !mentorRatings[mentorId] || !mentorReviews[mentorId]?.trim()}
-                                              className="w-full bg-primary hover:bg-primary/80"
-                                            >
-                                              {submitMentorFeedbackLoading ? "Submitting..." : "Submit Feedback"}
-                                            </Button>
-                                          </>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              ))}
-                          </div>
-                        ) : (
-                          <div className="space-y-3">
-                            {mentorFeedbackForms.map((form) => {
-                              const myInternId = sessionUser.uid || sessionUser.id;
-                              const submittedCount = form.mentorIds.filter((mid) =>
-                                mentorFeedbackSubmissions?.some((s) => s.mentorId === mid && s.formId === form.id && s.internId === myInternId)
-                              ).length;
-                              const allSubmitted = submittedCount === form.mentorIds.length;
-                              return (
-                                <motion.div
-                                  key={form.id}
-                                  whileHover={{ scale: 1.02 }}
-                                  onClick={() => setSelectedMentorForm(form.id)}
-                                  className="p-4 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 cursor-pointer transition"
-                                >
-                                  <div className="flex justify-between items-start">
-                                    <div>
-                                      <p className="font-semibold">Rate: {form.mentorNames.join(", ")}</p>
-                                      <p className="text-sm text-white/60 mt-1">
-                                        {submittedCount}/{form.mentorIds.length} submitted
-                                      </p>
-                                    </div>
-                                    <Badge className={allSubmitted ? "bg-green-500/20 text-green-300" : "bg-blue-500/20 text-blue-300"}>
-                                      {allSubmitted ? "Completed" : "View Form"}
-                                    </Badge>
-                                  </div>
-                                </motion.div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  )}
                 </div>
                 )}
 

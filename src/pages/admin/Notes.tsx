@@ -1,13 +1,14 @@
 import { Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { BookOpen, Trash2, Download, FileText, FileIcon, X, ExternalLink } from "lucide-react";
+import { BookOpen, Trash2, Download, FileText, FileIcon, X, ExternalLink, Link2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { usePlatform } from "@/context/PlatformContext";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import { deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { FileAttachment } from "@/context/PlatformContext";
 
 /** Resolve the viewable URL from base64 dataUrl */
@@ -26,10 +27,50 @@ function isDocx(a: FileAttachment) {
   );
 }
 
+function getNoteSortTime(note: { date: string; createdAt?: string }) {
+  const createdAt = note.createdAt ? new Date(note.createdAt).getTime() : NaN;
+  if (!Number.isNaN(createdAt)) {
+    return createdAt;
+  }
+
+  const noteDate = new Date(note.date).getTime();
+  return Number.isNaN(noteDate) ? 0 : noteDate;
+}
+
+function matchesNoteSearch(note: { title: string; note: string; mentorName: string; internName?: string; lectureTime?: string; date: string; links?: { label: string; url: string }[] }, query: string) {
+  const search = query.trim().toLowerCase();
+  if (!search) {
+    return true;
+  }
+
+  return [
+    note.title,
+    note.note,
+    note.mentorName,
+    note.internName ?? "",
+    note.lectureTime ?? "",
+    note.date,
+    ...(note.links ?? []).flatMap((link) => [link.label, link.url]),
+  ].join(" ").toLowerCase().includes(search);
+}
+
+function toAbsoluteUrl(url: string): string {
+  if (!url) return url;
+  if (/^https?:\/\//i.test(url)) return url;
+  return `https://${url}`;
+}
+
 const AdminNotes = () => {
   const { loading, sessionUser, logout, dailyNotes } = usePlatform();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState("");
+  const [search, setSearch] = useState("");
+
+  const sortedNotes = useMemo(() => {
+    return [...dailyNotes]
+      .sort((a, b) => getNoteSortTime(b) - getNoteSortTime(a))
+      .filter((note) => matchesNoteSearch(note, search));
+  }, [dailyNotes, search]);
 
   if (!loading && !sessionUser) return <Navigate to="/login" replace />;
   if (!loading && sessionUser?.role !== "Admin") return <Navigate to="/login" replace />;
@@ -74,12 +115,27 @@ const AdminNotes = () => {
           </header>
 
           <main className="mx-auto max-w-5xl w-full px-6 py-6 flex-1 space-y-3">
-            {dailyNotes.length === 0 ? (
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-sm text-white/60">Search and review the latest mentor notes.</p>
+                <p className="text-xs text-white/40">Sorted by date, newest first.</p>
+              </div>
+              <div className="w-full md:max-w-sm space-y-1.5">
+                <label className="text-xs uppercase tracking-[0.2em] text-white/45">Search notes</label>
+                <Input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  className="bg-white/5 border-white/10 text-white"
+                  placeholder="Search by title, mentor, or link"
+                />
+              </div>
+            </div>
+            {sortedNotes.length === 0 ? (
               <div className="rounded-xl border border-white/10 bg-white/5 py-16 text-center text-white/40 text-sm">
-                No notes yet
+                {dailyNotes.length === 0 ? "No notes yet" : "No notes match your search"}
               </div>
             ) : (
-              dailyNotes.map((note, index) => (
+              sortedNotes.map((note, index) => (
                 <motion.div key={note.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}>
                   <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                     <div className="flex items-start justify-between gap-3 mb-2">
@@ -105,6 +161,23 @@ const AdminNotes = () => {
                     </div>
 
                     <p className="text-white/70 text-sm leading-relaxed">{note.note}</p>
+
+                    {note.links && note.links.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {note.links.map((link, linkIndex) => (
+                          <a
+                            key={`${note.id}-link-${linkIndex}`}
+                            href={toAbsoluteUrl(link.url)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs text-cyan-200 hover:bg-cyan-500/20 transition-colors"
+                          >
+                            <Link2 className="w-3 h-3" />
+                            {link.label?.trim() || link.url}
+                          </a>
+                        ))}
+                      </div>
+                    )}
 
                     {note.attachments && note.attachments.length > 0 && (
                       <div className="mt-3 pt-3 border-t border-white/10 flex flex-wrap gap-2">
