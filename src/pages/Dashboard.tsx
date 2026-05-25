@@ -556,8 +556,20 @@ const Dashboard = () => {
 
   const handleMentorNoteSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (noteInternIds.length === 0 || !noteTitle.trim() || !noteBody.trim()) {
-      alert("Please select at least one intern and provide both title and note body.");
+    console.log("note submit pre-check", { noteInternIds, noteTitle, noteBody });
+
+    if (noteInternIds.length === 0) {
+      alert("Please select at least one intern.");
+      return;
+    }
+
+    if (!noteTitle.trim()) {
+      alert("Please provide a title for the note.");
+      return;
+    }
+
+    if (!noteBody.trim()) {
+      alert("Please provide the note body.");
       return;
     }
 
