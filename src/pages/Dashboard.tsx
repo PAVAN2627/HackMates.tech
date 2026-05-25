@@ -561,11 +561,14 @@ const Dashboard = () => {
       return;
     }
 
-    const selectedInterns = internUsers.filter((user) => noteInternIds.includes(user.id));
-    if (selectedInterns.length === 0) {
-      alert("No valid interns selected. Please reselect.");
-      return;
-    }
+    console.log("note submit debug", { noteInternIds, internCount: internUsers.length, internIdsInState: internUsers.map((u) => u.id) });
+
+    // Build selected interns from the selected ids. If a user is missing from `internUsers` (stale state),
+    // fall back to a minimal object so the note can still be submitted for that id.
+    const selectedInterns = noteInternIds.map((id) => {
+      const found = internUsers.find((user) => user.id === id);
+      return found ?? { id, name: id };
+    });
 
     setNoteSaving(true);
     try {
