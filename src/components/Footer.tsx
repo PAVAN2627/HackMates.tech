@@ -120,7 +120,7 @@ const Footer = () => (
               © {new Date().getFullYear()} HackMates. All rights reserved.
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              UDYAM Registration: <span className="font-mono">UDYAM-MH-30-0185921</span>
+              UDYAM Registration: <span className="font-mono">UDYAM-MH-26-1146095</span>
             </p>
           </div>
           <div className="flex gap-6 text-sm text-muted-foreground">
