@@ -1,11 +1,13 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Users, GraduationCap, UserCheck, MessageSquareMore, Send, Star, Wallet, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { usePlatform } from "@/context/PlatformContext";
 import DashboardSidebar from "@/components/DashboardSidebar";
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const { loading, sessionUser, logout, adminStats, feedback, fees } = usePlatform();
 
   const thisMonthKey = new Date().toISOString().slice(0, 7);
@@ -129,6 +131,15 @@ const AdminDashboard = () => {
                     <p className="text-xs text-white/50 mt-1">{q.label}</p>
                   </div>
                 ))}
+              </div>
+              <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-white">Generate a student report</p>
+                  <p className="text-xs text-white/50">Open the report builder to export attendance and feedback as PDF.</p>
+                </div>
+                <Button type="button" onClick={() => navigate("/admin/reports")} className="bg-primary hover:bg-primary/90">
+                  Open Reports
+                </Button>
               </div>
             </motion.div>
 

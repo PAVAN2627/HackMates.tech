@@ -21,6 +21,7 @@ import AdminDoubts from "./pages/admin/Doubts";
 import AdminNotes from "./pages/admin/Notes";
 import AdminSubmissions from "./pages/admin/Submissions";
 import AdminAttendance from "./pages/admin/Attendance";
+import AdminReports from "./pages/admin/Reports";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
@@ -46,6 +47,7 @@ const App = () => (
           <Route path="/contact" element={<Contact />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/reports" element={<AdminReports />} />
           <Route path="/admin/feedback" element={<AdminFeedback />} />
           <Route path="/admin/doubts" element={<AdminDoubts />} />
           <Route path="/admin/notes" element={<AdminNotes />} />

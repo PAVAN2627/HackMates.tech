@@ -39,6 +39,7 @@ interface DashboardSidebarProps {
 const adminNavItems: NavItem[] = [
      { id: "overview", label: "Dashboard", icon: Home, path: "/admin" },
      { id: "users", label: "Users", icon: Users2, path: "/admin/users" },
+  { id: "reports", label: "Reports", icon: FileText, path: "/admin/reports" },
      { id: "feedback", label: "Feedback", icon: Star, path: "/admin/feedback" },
      { id: "doubts", label: "Doubts", icon: MessageSquare, path: "/admin/doubts" },
      { id: "notes", label: "Notes", icon: BookOpen, path: "/admin/notes" },
