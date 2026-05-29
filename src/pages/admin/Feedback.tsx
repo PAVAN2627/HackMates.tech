@@ -204,7 +204,7 @@ const AdminFeedback = () => {
 
               {/* ── Tab 2: Intern → Mentor submissions ── */}
               <TabsContent value="intern-to-mentor" className="space-y-3">
-                <p className="text-white/50 text-sm">Ratings and reviews submitted by interns about their mentors.</p>
+                <p className="text-white/50 text-sm">Ratings and reviews submitted by interns about their mentors. Admin can see the submitter identity here.</p>
                 {sortedInternSubmissions.length === 0 ? (
                   <div className="rounded-xl border border-white/10 bg-white/5 py-16 text-center text-white/40 text-sm">
                     No intern submissions yet
@@ -224,9 +224,9 @@ const AdminFeedback = () => {
                             <p className="text-white/70 text-sm leading-relaxed">{sub.review}</p>
                             <div className="flex items-center gap-3 mt-2 text-xs text-white/40">
                               <span>{new Date(sub.submittedAt).toLocaleDateString()}</span>
-                              <span className={`flex items-center gap-1 font-medium ${starColor(sub.rating)}`}>
-                                <Star className="w-3 h-3 fill-current" />{sub.rating}/5
-                              </span>
+                                  <span className={`flex items-center gap-1 font-medium ${starColor(sub.rating)}`}>
+                                    <Star className="w-3 h-3 fill-current" />{sub.rating}/10
+                                  </span>
                             </div>
                           </div>
                           <Button size="sm" variant="destructive" className="h-8 px-3 shrink-0"
@@ -486,12 +486,7 @@ const AdminFeedback = () => {
                                         <Badge variant="outline" className="border-white/10 text-white/50 text-xs">Intern</Badge>
                                         <span className="text-white/40 text-xs">by {sub.mentorName}</span>
                                       </div>
-                                      <div className="flex items-center gap-1">
-                                        {[1,2,3,4,5].map((n) => (
-                                          <Star key={n} className={`w-3 h-3 ${sub.rating >= n ? "fill-yellow-400 text-yellow-400" : "text-white/20"}`} />
-                                        ))}
-                                        <span className="text-xs text-white/40 ml-1">{sub.rating}/5</span>
-                                      </div>
+                                      <span className="text-xs text-white/40 ml-1">{sub.rating}/10</span>
                                     </div>
                                     <p className="text-sm text-white/70">{sub.comment}</p>
                                     <p className="text-xs text-white/35 mt-1">{new Date(sub.submittedAt).toLocaleDateString()}</p>

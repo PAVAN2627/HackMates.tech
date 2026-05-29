@@ -94,6 +94,12 @@ function getNoteSortTime(note: { date: string; createdAt?: string }) {
   return Number.isNaN(noteDate) ? 0 : noteDate;
 }
 
+function normalizeTenPointRating(value: number) {
+  return Number.isFinite(value) && value >= 0 && value <= 10
+    ? Number(value.toFixed(1))
+    : Number.NaN;
+}
+
 function matchesNoteSearch(note: { title: string; note: string; mentorName: string; internName?: string; lectureTime?: string; date: string; links?: { label: string; url: string }[] }, query: string) {
   const search = query.trim().toLowerCase();
   if (!search) {
@@ -256,6 +262,19 @@ const Dashboard = () => {
     const total = internWeeklyFeedback.reduce((sum, entry) => sum + entry.avgRating, 0);
     return Number((total / internWeeklyFeedback.length).toFixed(1));
   }, [internWeeklyFeedback]);
+  const internOverallMentorRating = useMemo(() => {
+    const mentorRatings = [
+      ...(currentInternData?.feedback ?? []).map((entry) => entry.rating),
+      ...(currentInternData?.mentorToInternFeedbackSubmissions ?? []).map((entry) => entry.rating),
+    ];
+
+    if (mentorRatings.length === 0) {
+      return 0;
+    }
+
+    const total = mentorRatings.reduce((sum, rating) => sum + rating, 0);
+    return Number((total / mentorRatings.length).toFixed(1));
+  }, [currentInternData?.feedback, currentInternData?.mentorToInternFeedbackSubmissions]);
   const internPerformanceOverallScore = useMemo(() => {
     // Calculate overall performance from monthly records
     const monthlyPerformance = (currentInternData?.performance ?? []);
@@ -626,9 +645,11 @@ const Dashboard = () => {
       return;
     }
 
-    const normalizedRating = Number.isFinite(feedbackRating)
-      ? Math.max(0, Math.min(10, Number(feedbackRating.toFixed(1))))
-      : 0;
+    const normalizedRating = normalizeTenPointRating(feedbackRating);
+    if (Number.isNaN(normalizedRating)) {
+      alert("Please enter a valid rating between 0 and 10.");
+      return;
+    }
 
     try {
       await addFeedback({
@@ -1129,9 +1150,9 @@ const Dashboard = () => {
                         <p className="text-xs text-white/55 mt-2">April, May, June style monthly entries.</p>
                       </div>
                       <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <p className="text-sm text-white/70">Weekly mentor feedback</p>
-                        <p className="text-3xl font-bold mt-1">{internWeeklyAverageRating || 0}/10</p>
-                        <p className="text-xs text-white/55 mt-2">Average of weekly ratings from mentor feedback.</p>
+                        <p className="text-sm text-white/70">Overall mentor rating</p>
+                        <p className="text-3xl font-bold mt-1">{internOverallMentorRating || 0}/10</p>
+                        <p className="text-xs text-white/55 mt-2">Average of all mentor ratings and feedback form scores.</p>
                       </div>
                     </div>
 
@@ -1450,11 +1471,7 @@ const Dashboard = () => {
                                 <div>
                                   <p className="text-xs text-white/55">{new Date(entry.submittedAt).toLocaleDateString()}</p>
                                 </div>
-                                <div className="flex items-center gap-1">
-                                  {[1,2,3,4,5].map((n) => (
-                                    <Star key={n} className={`w-4 h-4 ${entry.rating >= n ? "fill-yellow-400 text-yellow-400" : "text-white/20"}`} />
-                                  ))}
-                                </div>
+                                <span className="rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-xs text-white/80">{entry.rating}/10</span>
                               </div>
                               <p className="text-sm text-white/75 mt-3">{entry.review}</p>
                             </div>
@@ -1480,9 +1497,7 @@ const Dashboard = () => {
                               <div className="flex items-center justify-between gap-3">
                                 <p className="text-xs text-white/55">{new Date(sub.submittedAt).toLocaleDateString()}</p>
                                 <div className="flex items-center gap-1">
-                                  {[1,2,3,4,5].map((n) => (
-                                    <Star key={n} className={`w-4 h-4 ${sub.rating >= n ? "fill-yellow-400 text-yellow-400" : "text-white/20"}`} />
-                                  ))}
+                                    <span className="rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-xs text-white/80">{sub.rating}/10</span>
                                 </div>
                               </div>
                               <p className="text-sm text-white/75 mt-3">{sub.comment}</p>
@@ -1536,9 +1551,7 @@ const Dashboard = () => {
                                             <Badge className="bg-green-500/20 text-green-300">Already Submitted</Badge>
                                             <div className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-1">
                                               <div className="flex items-center gap-2">
-                                                {[1,2,3,4,5].map((n) => (
-                                                  <Star key={n} className={`w-4 h-4 ${previousSubmission.rating >= n ? "fill-yellow-400 text-yellow-400" : "text-white/20"}`} />
-                                                ))}
+                                                <span className="rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-xs text-white/80">{previousSubmission.rating}/10</span>
                                                 <span className="text-xs text-white/50">{new Date(previousSubmission.submittedAt).toLocaleDateString()}</span>
                                               </div>
                                               <p className="text-sm text-white/70">{previousSubmission.review}</p>
@@ -1547,19 +1560,20 @@ const Dashboard = () => {
                                         ) : (
                                           <>
                                             <div className="space-y-2">
-                                              <label className="text-sm text-white/70">Rating (1-5 stars)</label>
-                                              <div className="flex gap-2">
-                                                {[1, 2, 3, 4, 5].map((num) => (
-                                                  <button
-                                                    key={num}
-                                                    type="button"
-                                                    onClick={() => setMentorRatings({ ...mentorRatings, [mentorId]: num })}
-                                                    className="transition hover:scale-110"
-                                                  >
-                                                    <Star className={`w-7 h-7 ${(mentorRatings[mentorId] || 0) >= num ? "fill-yellow-400 text-yellow-400" : "text-white/25"}`} />
-                                                  </button>
-                                                ))}
-                                              </div>
+                                              <label className="text-sm text-white/70">Rating (out of 10)</label>
+                                              <Input
+                                                type="number"
+                                                min={0}
+                                                max={10}
+                                                step="0.1"
+                                                value={mentorRatings[mentorId] ?? ""}
+                                                onChange={(event) => setMentorRatings({
+                                                  ...mentorRatings,
+                                                  [mentorId]: event.target.value === "" ? Number.NaN : Number(event.target.value),
+                                                })}
+                                                className="bg-white/5 border-white/10 text-white"
+                                              />
+                                              <p className="text-xs text-white/45">Enter a score from 0 to 10.</p>
                                             </div>
 
                                             <div className="space-y-2">
@@ -1575,8 +1589,9 @@ const Dashboard = () => {
                                             <Button
                                               type="button"
                                               onClick={async () => {
-                                                if (!mentorRatings[mentorId] || !mentorReviews[mentorId]?.trim()) {
-                                                  alert("Please provide both rating and review");
+                                                const rating = normalizeTenPointRating(mentorRatings[mentorId]);
+                                                if (Number.isNaN(rating) || !mentorReviews[mentorId]?.trim()) {
+                                                  alert("Please provide a valid rating between 0 and 10 and a review.");
                                                   return;
                                                 }
 
@@ -1589,7 +1604,7 @@ const Dashboard = () => {
                                                     internId: myInternId,
                                                     internName: sessionUser.name,
                                                     internEmail: sessionUser.email,
-                                                    rating: mentorRatings[mentorId],
+                                                    rating,
                                                     review: mentorReviews[mentorId],
                                                   });
 
@@ -1615,7 +1630,7 @@ const Dashboard = () => {
                                                   setSubmitMentorFeedbackLoading(false);
                                                 }
                                               }}
-                                              disabled={submitMentorFeedbackLoading || !mentorRatings[mentorId] || !mentorReviews[mentorId]?.trim()}
+                                              disabled={submitMentorFeedbackLoading || Number.isNaN(normalizeTenPointRating(mentorRatings[mentorId])) || !mentorReviews[mentorId]?.trim()}
                                               className="w-full bg-primary hover:bg-primary/80"
                                             >
                                               {submitMentorFeedbackLoading ? "Submitting..." : "Submit Feedback"}
@@ -2533,19 +2548,20 @@ const Dashboard = () => {
                                   ) : form.status === "Active" ? (
                                     <>
                                       <div className="space-y-2">
-                                        <label className="text-sm text-white/70">Rating (1–5 stars)</label>
-                                        <div className="flex gap-2">
-                                          {[1, 2, 3, 4, 5].map((num) => (
-                                            <button
-                                              key={num}
-                                              type="button"
-                                              onClick={() => setMtiRatings((prev) => ({ ...prev, [submissionKey]: num }))}
-                                              className="transition hover:scale-110"
-                                            >
-                                              <Star className={`w-7 h-7 ${(mtiRatings[submissionKey] || 0) >= num ? "fill-yellow-400 text-yellow-400" : "text-white/25"}`} />
-                                            </button>
-                                          ))}
-                                        </div>
+                                        <label className="text-sm text-white/70">Rating (out of 10)</label>
+                                        <Input
+                                          type="number"
+                                          min={0}
+                                          max={10}
+                                          step="0.1"
+                                          value={mtiRatings[submissionKey] ?? ""}
+                                          onChange={(event) => setMtiRatings((prev) => ({
+                                            ...prev,
+                                            [submissionKey]: event.target.value === "" ? Number.NaN : Number(event.target.value),
+                                          }))}
+                                          className="bg-white/5 border-white/10 text-white"
+                                        />
+                                        <p className="text-xs text-white/45">Enter a score from 0 to 10.</p>
                                       </div>
                                       <div className="space-y-2">
                                         <label className="text-sm text-white/70">Feedback</label>
@@ -2558,11 +2574,12 @@ const Dashboard = () => {
                                       </div>
                                       <Button
                                         type="button"
-                                        disabled={submitMtiFeedbackLoading || !mtiRatings[submissionKey] || !mtiComments[submissionKey]?.trim()}
+                                        disabled={submitMtiFeedbackLoading || Number.isNaN(normalizeTenPointRating(mtiRatings[submissionKey])) || !mtiComments[submissionKey]?.trim()}
                                         className="w-full bg-primary hover:bg-primary/80"
                                         onClick={async () => {
-                                          if (!mtiRatings[submissionKey] || !mtiComments[submissionKey]?.trim()) {
-                                            alert("Please provide both rating and feedback");
+                                          const rating = normalizeTenPointRating(mtiRatings[submissionKey]);
+                                          if (Number.isNaN(rating) || !mtiComments[submissionKey]?.trim()) {
+                                            alert("Please provide a valid rating between 0 and 10 and feedback");
                                             return;
                                           }
                                           setSubmitMtiFeedbackLoading(true);
@@ -2573,7 +2590,7 @@ const Dashboard = () => {
                                               internName: form.internNames[idx],
                                               mentorId: myMentorId,
                                               mentorName: sessionUser.name,
-                                              rating: mtiRatings[submissionKey],
+                                              rating,
                                               comment: mtiComments[submissionKey],
                                             });
                                             setMtiRatings((prev) => { const n = { ...prev }; delete n[submissionKey]; return n; });

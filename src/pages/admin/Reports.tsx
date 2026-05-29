@@ -324,7 +324,7 @@ const AdminReports = () => {
                         { label: "Attendance %", value: `${report.attendancePercentage}%`, icon: BadgeCheck, tone: "text-emerald-700 bg-emerald-50" },
                         { label: "Lectures attended", value: report.lecturesAttended, icon: CalendarDays, tone: "text-sky-700 bg-sky-50" },
                         { label: "Lectures missed", value: report.lecturesMissed, icon: CalendarDays, tone: "text-rose-700 bg-rose-50" },
-                        { label: "Feedback avg", value: `${report.feedbackAverage}/10`, icon: Star, tone: "text-amber-700 bg-amber-50" },
+                        { label: "Overall mentor rating", value: `${report.feedbackAverage}/10`, icon: Star, tone: "text-amber-700 bg-amber-50" },
                         { label: "Overall score", value: `${report.overallScore}/100`, icon: TrendingUp, tone: "text-violet-700 bg-violet-50" },
                       ].map((item) => {
                         const Icon = item.icon;
@@ -382,11 +382,11 @@ const AdminReports = () => {
 
                       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-4">
                         <div className="flex items-center justify-between gap-3">
-                          <h3 className="font-semibold text-slate-950">Feedback Summary</h3>
+                          <h3 className="font-semibold text-slate-950">Overall Mentor Rating</h3>
                           <Badge className="bg-slate-900 text-white">{report.mentorRatings.length} ratings</Badge>
                         </div>
                         <p className="text-sm text-slate-600">
-                          Average rating: <span className="font-semibold text-slate-900">{report.feedbackAverage}/10</span>
+                          Average rating from mentor feedback and feedback forms: <span className="font-semibold text-slate-900">{report.feedbackAverage}/10</span>
                         </p>
                         <div className="space-y-3 max-h-72 overflow-auto pr-1">
                           {report.mentorRatings.length === 0 ? (
