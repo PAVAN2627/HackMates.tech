@@ -48,6 +48,8 @@ const AdminReports = () => {
     feedback,
     attendanceSessions,
     mentorToInternFeedbackSubmissions,
+    submissions,
+    dailyNotes,
   } = usePlatform();
 
   const internUsers = useMemo(
@@ -67,7 +69,7 @@ const AdminReports = () => {
     [internUsers, selectedInternId],
   );
 
-  const report = useMemo(() => {
+    const report = useMemo(() => {
     if (!selectedIntern) {
       return null;
     }
@@ -120,6 +122,21 @@ const AdminReports = () => {
     ].sort((a, b) => b.date.localeCompare(a.date));
 
     const feedbackAverage = averageScore(mentorRatings.map((entry) => entry.rating));
+    const submissionsList = submissions
+      .filter((s) => s.internId === selectedIntern.id)
+      .sort((a, b) => (b.submittedAt ?? "").localeCompare(a.submittedAt ?? ""));
+    const submissionCounts = submissionsList.reduce(
+      (acc, cur) => {
+        acc.total += 1;
+        acc[cur.status] = (acc[cur.status] || 0) + 1;
+        return acc;
+      },
+      { total: 0 } as Record<string, number>,
+    );
+
+    const notesList = dailyNotes
+      .filter((n) => n.internId === selectedIntern.id)
+      .sort((a, b) => (b.createdAt ?? b.date).localeCompare(a.createdAt ?? a.date));
     const performanceHistory = [...performance.filter((entry) => entry.internId === selectedIntern.id)]
       .sort((a, b) => b.month.localeCompare(a.month))
       .map((entry) => ({
@@ -140,6 +157,9 @@ const AdminReports = () => {
       attendancePercentage,
       mentorRatings,
       feedbackAverage,
+      submissionsList,
+      submissionCounts,
+      notesList,
       performanceHistory,
       performanceAverage,
       overallScore,
@@ -162,6 +182,11 @@ const AdminReports = () => {
     <div className="min-h-screen bg-background relative overflow-x-hidden flex">
       <style>{`
         @media print {
+          @page {
+            size: A4;
+            margin: 12mm;
+          }
+
           body * {
             visibility: hidden !important;
           }
@@ -285,10 +310,12 @@ const AdminReports = () => {
                           <GraduationCap className="w-4 h-4 text-emerald-600" />
                           {selectedIntern.position || "Intern profile"}
                         </div>
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-emerald-600" />
-                          {selectedIntern.mentorId || "No mentor assigned"}
-                        </div>
+                        {selectedIntern.mentorId && (
+                          <div className="flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-emerald-600" />
+                            {selectedIntern.mentorId}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -377,6 +404,60 @@ const AdminReports = () => {
                                   <Badge className="bg-amber-500/10 text-amber-700 border-amber-200">{entry.rating}/10</Badge>
                                 </div>
                                 <p className="text-sm text-slate-600">{entry.comment}</p>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 lg:grid-cols-2">
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <h3 className="font-semibold text-slate-950">Submissions</h3>
+                          <Badge className="bg-slate-900 text-white">{report.submissionCounts?.total ?? 0}</Badge>
+                        </div>
+                        <p className="text-sm text-slate-600">Total submissions: <span className="font-semibold text-slate-900">{report.submissionCounts?.total ?? 0}</span></p>
+                        <div className="space-y-3 max-h-72 overflow-auto pr-1">
+                          {(!report.submissionsList || report.submissionsList.length === 0) ? (
+                            <p className="text-sm text-slate-500">No submissions recorded for this intern.</p>
+                          ) : (
+                            report.submissionsList.map((s) => (
+                              <div key={s.id} className="rounded-xl border border-slate-200 bg-white p-3">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="font-semibold text-slate-900">{s.title}</p>
+                                    <p className="text-xs text-slate-500">{s.submittedAt ? new Date(s.submittedAt).toLocaleDateString() : "-"}</p>
+                                  </div>
+                                  <Badge className={s.status === "Approved" ? "bg-emerald-500/10 text-emerald-700" : s.status === "Reviewed" ? "bg-sky-500/10 text-sky-700" : "bg-amber-500/10 text-amber-700"}>{s.status}</Badge>
+                                </div>
+                                {s.feedback && <p className="text-sm text-slate-600 mt-2">{s.feedback}</p>}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <h3 className="font-semibold text-slate-950">Notes</h3>
+                          <Badge className="bg-slate-900 text-white">{report.notesList?.length ?? 0}</Badge>
+                        </div>
+                        <p className="text-sm text-slate-600">Recent daily notes and lecture remarks.</p>
+                        <div className="space-y-3 max-h-72 overflow-auto pr-1">
+                          {(!report.notesList || report.notesList.length === 0) ? (
+                            <p className="text-sm text-slate-500">No notes available for this intern.</p>
+                          ) : (
+                            report.notesList.map((n) => (
+                              <div key={n.id} className="rounded-xl border border-slate-200 bg-white p-3">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="font-semibold text-slate-900">{n.title}</p>
+                                    <p className="text-xs text-slate-500">{n.date}</p>
+                                  </div>
+                                  <span className="text-xs text-slate-500">{n.lectureTime || ""}</span>
+                                </div>
+                                <p className="text-sm text-slate-600 mt-2">{n.note}</p>
                               </div>
                             ))
                           )}
