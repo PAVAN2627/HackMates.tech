@@ -134,13 +134,7 @@ service cloud.firestore {
     }
 
     match /mentorFeedbackForms/{docId} {
-      allow read: if isAdmin()
-        || isMentor()
-        || (isIntern() && (
-          resource.data.targetInternIds == null
-          || resource.data.targetInternIds.size() == 0
-          || request.auth.uid in resource.data.targetInternIds
-        ));
+      allow read: if isAdmin() || isMentor() || isIntern();
       allow create, update, delete: if isAdmin();
     }
 
@@ -153,8 +147,15 @@ service cloud.firestore {
 
     match /mentorToInternFeedbackForms/{docId} {
       allow read: if isAdmin()
-        || (isMentor() && (resource.data.targetMentorIds.size() == 0 || request.auth.uid in resource.data.targetMentorIds))
-        || (isIntern() && request.auth.uid in resource.data.internIds);
+        || (isMentor() && (
+          !('targetMentorIds' in resource.data)
+          || resource.data.targetMentorIds.size() == 0
+          || request.auth.uid in resource.data.targetMentorIds
+        ))
+        || (isIntern() && (
+          !('internIds' in resource.data)
+          || request.auth.uid in resource.data.internIds
+        ));
       allow create, update, delete: if isAdmin();
     }
 

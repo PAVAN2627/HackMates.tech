@@ -1656,6 +1656,19 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
    * Submit mentor feedback form
    */
   const submitMentorFeedbackForm = useCallback(async (input: NewMentorFeedbackSubmissionInput) => {
+    // Prevent duplicate submissions: one intern can only rate each mentor once per form
+    const existingSnap = await getDocs(
+      query(
+        collections.mentorFeedbackSubmissions,
+        where("formId", "==", input.formId),
+        where("mentorId", "==", input.mentorId),
+        where("internId", "==", input.internId),
+      )
+    );
+    if (!existingSnap.empty) {
+      throw new Error("You have already submitted feedback for this mentor.");
+    }
+
     const payload = {
       formId: input.formId,
       mentorId: input.mentorId,

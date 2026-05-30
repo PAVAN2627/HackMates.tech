@@ -1554,26 +1554,14 @@ const Dashboard = () => {
                                     const alreadySubmitted = mentorFeedbackSubmissions?.some(
                                       (s) => s.mentorId === mentorId && s.formId === form.id && s.internId === myInternId,
                                     );
-                                    const previousSubmission = mentorFeedbackSubmissions?.find(
-                                      (s) => s.mentorId === mentorId && s.formId === form.id && s.internId === myInternId,
-                                    );
+
+                                    // Once submitted, this mentor is gone from the form
+                                    if (alreadySubmitted) return null;
 
                                     return (
                                       <div key={mentorId} className="rounded-lg border border-white/10 bg-white/5 p-4 space-y-3">
                                         <h4 className="font-semibold text-white">{form.mentorNames[idx]}</h4>
-                                        {alreadySubmitted && previousSubmission ? (
-                                          <div className="space-y-2">
-                                            <Badge className="bg-green-500/20 text-green-300">Already Submitted</Badge>
-                                            <div className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-1">
-                                              <div className="flex items-center gap-2">
-                                                <span className="rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-xs text-white/80">{previousSubmission.rating}/10</span>
-                                                <span className="text-xs text-white/50">{new Date(previousSubmission.submittedAt).toLocaleDateString()}</span>
-                                              </div>
-                                              <p className="text-sm text-white/70">{previousSubmission.review}</p>
-                                            </div>
-                                          </div>
-                                        ) : (
-                                          <>
+                                        <>
                                             <div className="space-y-2">
                                               <label className="text-sm text-white/70">Rating (out of 10)</label>
                                               <Input
@@ -1626,21 +1614,18 @@ const Dashboard = () => {
                                                   setMentorRatings((prev) => { const n = { ...prev }; delete n[mentorId]; return n; });
                                                   setMentorReviews((prev) => { const n = { ...prev }; delete n[mentorId]; return n; });
 
-                                                  // Auto-close form if all mentors in this form are now submitted
+                                                  // Check if all remaining mentors are now submitted
                                                   const allDone = form.mentorIds.every((mid) =>
                                                     mid === mentorId || mentorFeedbackSubmissions?.some(
                                                       (s) => s.mentorId === mid && s.formId === form.id && s.internId === myInternId,
                                                     )
                                                   );
                                                   if (allDone) {
-                                                    alert("All feedback submitted. Thank you!");
                                                     setSelectedMentorForm(null);
-                                                  } else {
-                                                    alert("Feedback submitted!");
                                                   }
                                                 } catch (error) {
                                                   console.error("Error submitting feedback:", error);
-                                                  alert("Failed to submit feedback");
+                                                  alert("Failed to submit feedback. You may have already submitted for this mentor.");
                                                 } finally {
                                                   setSubmitMentorFeedbackLoading(false);
                                                 }
@@ -1651,7 +1636,6 @@ const Dashboard = () => {
                                               {submitMentorFeedbackLoading ? "Submitting..." : "Submit Feedback"}
                                             </Button>
                                           </>
-                                        )}
                                       </div>
                                     );
                                   })}
@@ -1660,12 +1644,20 @@ const Dashboard = () => {
                           </div>
                         ) : (
                           <div className="space-y-3">
-                            {mentorFeedbackForms.map((form) => {
+                            {mentorFeedbackForms
+                              .filter((form) => {
+                                const myInternId = sessionUser.uid || sessionUser.id;
+                                const allSubmitted = form.mentorIds.every((mid) =>
+                                  mentorFeedbackSubmissions?.some((s) => s.mentorId === mid && s.formId === form.id && s.internId === myInternId)
+                                );
+                                return !allSubmitted;
+                              })
+                              .map((form) => {
                               const myInternId = sessionUser.uid || sessionUser.id;
                               const submittedCount = form.mentorIds.filter((mid) =>
                                 mentorFeedbackSubmissions?.some((s) => s.mentorId === mid && s.formId === form.id && s.internId === myInternId)
                               ).length;
-                              const allSubmitted = submittedCount === form.mentorIds.length;
+                              const remaining = form.mentorIds.length - submittedCount;
                               return (
                                 <motion.div
                                   key={form.id}
@@ -1675,18 +1667,38 @@ const Dashboard = () => {
                                 >
                                   <div className="flex justify-between items-start">
                                     <div>
-                                      <p className="font-semibold">Rate: {form.mentorNames.join(", ")}</p>
+                                      <p className="font-semibold">
+                                        Rate:{" "}
+                                        {form.mentorIds
+                                          .filter((mid) =>
+                                            !mentorFeedbackSubmissions?.some(
+                                              (s) => s.mentorId === mid && s.formId === form.id && s.internId === myInternId
+                                            )
+                                          )
+                                          .map((mid) => form.mentorNames[form.mentorIds.indexOf(mid)])
+                                          .join(", ")}
+                                      </p>
                                       <p className="text-sm text-white/60 mt-1">
-                                        {submittedCount}/{form.mentorIds.length} submitted
+                                        {remaining} mentor{remaining !== 1 ? "s" : ""} remaining
                                       </p>
                                     </div>
-                                    <Badge className={allSubmitted ? "bg-green-500/20 text-green-300" : "bg-blue-500/20 text-blue-300"}>
-                                      {allSubmitted ? "Completed" : "View Form"}
+                                    <Badge className="bg-blue-500/20 text-blue-300">
+                                      View Form
                                     </Badge>
                                   </div>
                                 </motion.div>
                               );
                             })}
+                            {mentorFeedbackForms.length > 0 && mentorFeedbackForms.every((form) => {
+                              const myInternId = sessionUser.uid || sessionUser.id;
+                              return form.mentorIds.every((mid) =>
+                                mentorFeedbackSubmissions?.some((s) => s.mentorId === mid && s.formId === form.id && s.internId === myInternId)
+                              );
+                            }) && (
+                              <div className="rounded-2xl border border-green-500/20 bg-green-500/5 p-4 text-sm text-green-300 text-center">
+                                ✓ You have submitted feedback for all mentors. Thank you!
+                              </div>
+                            )}
                           </div>
                         )}
                       </CardContent>
