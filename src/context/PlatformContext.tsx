@@ -806,7 +806,19 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
         } as MentorFeedbackForm;
       });
       const filtered = sessionUser.role === "Intern"
-        ? items.filter((form) => form.status === "Active" && (!form.targetInternIds || form.targetInternIds.length === 0 || currentInternIdentifiers.some((identifier) => form.targetInternIds?.includes(identifier))))
+        ? items.filter((form) => {
+          if (form.status !== "Active") return false;
+          const targets = Array.isArray(form.targetInternIds) ? form.targetInternIds.map((t) => String(t).trim().toLowerCase()) : [];
+          if (targets.length === 0) return true;
+          const identifiers = Array.from(new Set([
+            sessionUser.uid,
+            sessionUser.id,
+            sessionUser.internId,
+            sessionUser.email,
+          ].filter(Boolean).map((s) => String(s).trim().toLowerCase())));
+
+          return identifiers.some((ident) => targets.includes(ident));
+        })
         : items;
       setMentorFeedbackForms(filtered);
     });
