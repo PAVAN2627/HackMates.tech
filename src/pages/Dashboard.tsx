@@ -148,6 +148,7 @@ const Dashboard = () => {
   } = usePlatform();
   const dashboardRole: "Admin" | "Mentor" | "Intern" = sessionUser?.role ?? "Intern";
 
+  const sessionRole = sessionUser?.role ?? null;
   const [doubtTopic, setDoubtTopic] = useState("");
   const [doubtQuestion, setDoubtQuestion] = useState("");
   const [selectedMentorTaskId, setSelectedMentorTaskId] = useState("");
@@ -389,7 +390,7 @@ const Dashboard = () => {
   }, [selectedMentorTask]);
 
   useEffect(() => {
-    if (!sessionUser || sessionUser.role !== "Mentor") {
+    if (!sessionUser || sessionRole !== "Mentor") {
       return;
     }
 
@@ -399,18 +400,18 @@ const Dashboard = () => {
     if (!selectedAttendanceSessionId && fallbackSession) {
       setSelectedAttendanceSessionId(fallbackSession.id);
     }
-  }, [mentorData.attendanceSessions, selectedAttendanceSessionId, sessionUser]);
+  }, [mentorData.attendanceSessions, selectedAttendanceSessionId, sessionUser, sessionRole]);
 
   useEffect(() => {
     if (!sessionUser) {
       return;
     }
 
-    if (sessionUser.role === "Admin") {
+    if (sessionRole === "Admin") {
       navigate("/admin", { replace: true });
       return;
     }
-  }, [navigate, sessionUser]);
+  }, [navigate, sessionUser, sessionRole]);
 
   const selectedAttendanceSession = mentorData.attendanceSessions.find((session) => session.id === selectedAttendanceSessionId);
   const closedAttendanceSessions = mentorData.attendanceSessions.filter((session) => session.status === "Closed");
@@ -436,24 +437,24 @@ const Dashboard = () => {
   }, [selectedAttendanceSession]);
 
   useEffect(() => {
-    if (sessionUser.role !== "Intern") {
+    if (sessionRole !== "Intern") {
       return;
     }
 
     if (selectedMentorForm && !mentorFeedbackForms.some((form) => form.id === selectedMentorForm)) {
       setSelectedMentorForm(null);
     }
-  }, [mentorFeedbackForms, selectedMentorForm, sessionUser?.role]);
+  }, [mentorFeedbackForms, selectedMentorForm, sessionRole]);
 
   useEffect(() => {
-    if (!sessionUser || sessionUser.role !== "Mentor") {
+    if (!sessionUser || sessionRole !== "Mentor") {
       return;
     }
 
     if (!selectedClosedAttendanceSessionId && closedAttendanceSessions.length > 0) {
       setSelectedClosedAttendanceSessionId(closedAttendanceSessions[0].id);
     }
-  }, [closedAttendanceSessions, selectedClosedAttendanceSessionId, sessionUser]);
+  }, [closedAttendanceSessions, selectedClosedAttendanceSessionId, sessionUser, sessionRole]);
 
   if (loading) {
     return (
@@ -475,7 +476,7 @@ const Dashboard = () => {
     return null;
   }
 
-  const isMentor = sessionUser.role === "Mentor";
+  const isMentor = sessionRole === "Mentor";
 
   const handleLogout = () => {
     logout();
@@ -885,10 +886,10 @@ const Dashboard = () => {
   };
 
   const pendingFees = currentInternData ? currentInternData.fees.filter((entry) => entry.status === "Pending").length : 0;
-  const openDoubts = sessionUser.role === "Intern"
+  const openDoubts = sessionRole === "Intern"
     ? currentInternData?.doubts.filter((entry) => entry.status === "Open").length ?? 0
     : mentorData.doubts.filter((entry) => entry.status === "Open").length;
-  const pendingSubmissions = sessionUser.role === "Intern"
+  const pendingSubmissions = sessionRole === "Intern"
     ? currentInternData?.submissions.filter((entry) => entry.status === "Pending").length ?? 0
     : mentorData.submissions.filter((entry) => entry.status === "Pending").length;
   const attendanceTotal = currentInternData?.attendance.length ?? 0;
@@ -943,12 +944,12 @@ const Dashboard = () => {
       month: entry.weekStart.slice(5),
       score: Math.round((entry.avgRating / 10) * 100),
     }));
-  const internTabValue = sessionUser.role === "Intern"
+  const internTabValue = sessionRole === "Intern"
     ? ((activeSection === "overview" || dashboardMetrics.some((item) => item.key === activeSection)) ? activeSection : "overview")
     : "performance";
 
   const showMentorOverview = activeSection === "overview";
-  const showInternOverview = sessionUser.role === "Intern" && activeSection === "overview";
+  const showInternOverview = sessionRole === "Intern" && activeSection === "overview";
   const showMentorNotes = activeSection === "notes";
   const showMentorDoubts = activeSection === "doubts";
   const showMentorSubmissions = activeSection === "submissions";
@@ -970,7 +971,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background relative overflow-x-hidden flex">
       <DashboardSidebar
-        role={sessionUser.role}
+        role={sessionRole}
         userName={sessionUser.name}
         onLogout={handleLogout}
         activeSection={activeSection}
@@ -985,7 +986,7 @@ const Dashboard = () => {
           <div className="w-full px-4 lg:px-6 py-4 pl-16 lg:pl-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-2">
-                <Badge className="bg-white/10 text-white border-white/10">{sessionUser.role}</Badge>
+                <Badge className="bg-white/10 text-white border-white/10">{sessionRole}</Badge>
                 <Badge variant="outline" className="border-primary/30 text-primary">{sessionUser.name}</Badge>
                 {!isMentor && sessionUser.internId && (
                   <Badge variant="outline" className="border-white/20 text-white/60 font-mono text-xs">{sessionUser.internId}</Badge>
@@ -1021,7 +1022,7 @@ const Dashboard = () => {
 
         <main className="w-full px-4 lg:px-6 py-6 lg:py-8 space-y-6 lg:space-y-8 min-w-0">
           {(showInternOverview || showMentorOverview) && (() => {
-            const overviewCards = sessionUser.role === "Mentor" ? [
+            const overviewCards = sessionRole === "Mentor" ? [
               { label: "Submission Forms Open", value: `${mentorActiveSubmissionForms.length}`, helper: "Awaiting intern completion", icon: Send },
               { label: "Attendance Sessions", value: `${mentorLectureCount}`, helper: "Sessions created", icon: ClipboardCheck },
               { label: "Open Doubts", value: `${openDoubts}`, helper: "Unanswered questions", icon: MessageSquareMore },
@@ -1054,7 +1055,7 @@ const Dashboard = () => {
             );
           })()}
 
-          {sessionUser.role === "Intern" ? (
+          {sessionRole === "Intern" ? (
             <Tabs value={internTabValue} onValueChange={setActiveSection} className="space-y-6">
               <TabsContent value="overview">
                 <div className="grid gap-6 lg:grid-cols-2">
@@ -1492,7 +1493,7 @@ const Dashboard = () => {
                   )}
 
                   {/* Intern sees anonymous feedback from mentors via admin-created forms */}
-                  {sessionUser.role === "Intern" && internData.mentorToInternFeedbackSubmissions && internData.mentorToInternFeedbackSubmissions.length > 0 && (
+                  {sessionRole === "Intern" && internData.mentorToInternFeedbackSubmissions && internData.mentorToInternFeedbackSubmissions.length > 0 && (
                     <Card className="border-white/10 bg-slate-950/70 text-white">
                       <CardHeader>
                         <CardTitle>Feedback from mentors</CardTitle>
@@ -2488,7 +2489,7 @@ const Dashboard = () => {
                     </CardContent>
                   </Card>
 
-                  {sessionUser.role === "Mentor" && (
+                  {sessionRole === "Mentor" && (
                     <Card className="border-white/10 bg-slate-950/70 text-white">
                       <CardHeader>
                         <CardTitle>Feedback received</CardTitle>
@@ -2519,7 +2520,7 @@ const Dashboard = () => {
                   )}
 
                   {/* Mentor fills feedback forms about interns (admin-created) */}
-                  {sessionUser.role === "Mentor" && mentorData.mentorToInternFeedbackForms && mentorData.mentorToInternFeedbackForms.length > 0 && (
+                  {sessionRole === "Mentor" && mentorData.mentorToInternFeedbackForms && mentorData.mentorToInternFeedbackForms.length > 0 && (
                     <Card className="border-white/10 bg-slate-950/70 text-white">
                       <CardHeader>
                         <CardTitle>Intern Feedback Forms</CardTitle>
