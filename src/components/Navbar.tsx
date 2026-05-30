@@ -21,6 +21,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { sessionUser } = usePlatform();
+  const sessionRole = sessionUser?.role ?? null;
   const [dark, setDark] = useState(() => {
     // Initialize from localStorage or default to true
     const saved = localStorage.getItem('theme');
@@ -83,7 +84,7 @@ const Navbar = () => {
             </Link>
           ))}
           <Button asChild className="h-10 px-4">
-            <Link to={sessionUser ? (sessionUser.role === "Admin" ? "/admin" : "/dashboard") : "/login"}>
+            <Link to={sessionUser ? (sessionRole === "Admin" ? "/admin" : "/dashboard") : "/login"}>
               {sessionUser ? (
                 <>
                   <LayoutDashboard className="w-4 h-4" />
@@ -159,7 +160,7 @@ const Navbar = () => {
                 </motion.div>
               ))}
               <Button asChild className="w-full justify-center">
-                <Link to={sessionUser ? (sessionUser.role === "Admin" ? "/admin" : "/dashboard") : "/login"} onClick={() => setIsOpen(false)}>
+                <Link to={sessionUser ? (sessionRole === "Admin" ? "/admin" : "/dashboard") : "/login"} onClick={() => setIsOpen(false)}>
                   {sessionUser ? "Open dashboard" : "Login"}
                 </Link>
               </Button>

@@ -17,6 +17,7 @@ const features = [
 const Login = () => {
   const navigate = useNavigate();
   const { loading, sessionUser, login } = usePlatform();
+  const sessionRole = sessionUser?.role ?? null;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -24,11 +25,11 @@ const Login = () => {
 
   useEffect(() => {
     if (!sessionUser) return;
-    navigate(sessionUser.role === "Admin" ? "/admin" : "/dashboard", { replace: true });
-  }, [navigate, sessionUser]);
+    navigate(sessionRole === "Admin" ? "/admin" : "/dashboard", { replace: true });
+  }, [navigate, sessionUser, sessionRole]);
 
   if (!loading && sessionUser) {
-    return <Navigate to={sessionUser.role === "Admin" ? "/admin" : "/dashboard"} replace />;
+    return <Navigate to={sessionRole === "Admin" ? "/admin" : "/dashboard"} replace />;
   }
 
   const handleSubmit = async (event: FormEvent) => {

@@ -578,7 +578,11 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
       return [];
     }
 
-    return Array.from(new Set([sessionUser.uid, sessionUser.id].filter((value): value is string => Boolean(value))));
+    return Array.from(new Set([
+      sessionUser.uid,
+      sessionUser.id,
+      sessionUser.internId,
+    ].filter((value): value is string => Boolean(value))));
   }, [sessionUser]);
 
   const refresh = useCallback(async () => {
