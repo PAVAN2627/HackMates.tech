@@ -769,7 +769,7 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribeFeedbackForms = onSnapshot(collections.feedbackForms, (snapshot) => {
       const items = snapshot.docs.map((docSnapshot) => mapDoc<FeedbackForm>(docSnapshot));
       const filtered = sessionUser.role === "Intern"
-        ? items.filter((form) => form.status === "Active" && (!form.targetInternIds || form.targetInternIds.length === 0 || form.targetInternIds.includes(sessionUser.uid)))
+        ? items.filter((form) => form.status === "Active" && (!form.targetInternIds || form.targetInternIds.length === 0 || currentInternIdentifiers.some((identifier) => form.targetInternIds?.includes(identifier))))
         : items;
       setFeedbackForms(filtered);
     });
@@ -785,7 +785,7 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribeMentorFeedbackForms = onSnapshot(collections.mentorFeedbackForms, (snapshot) => {
       const items = snapshot.docs.map((docSnapshot) => mapDoc<MentorFeedbackForm>(docSnapshot));
       const filtered = sessionUser.role === "Intern"
-        ? items.filter((form) => form.status === "Active" && (!form.targetInternIds || form.targetInternIds.length === 0 || form.targetInternIds.includes(sessionUser.uid)))
+        ? items.filter((form) => form.status === "Active" && (!form.targetInternIds || form.targetInternIds.length === 0 || currentInternIdentifiers.some((identifier) => form.targetInternIds?.includes(identifier))))
         : items;
       setMentorFeedbackForms(filtered);
     });

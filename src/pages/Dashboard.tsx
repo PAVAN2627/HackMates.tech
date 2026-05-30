@@ -436,6 +436,16 @@ const Dashboard = () => {
   }, [selectedAttendanceSession]);
 
   useEffect(() => {
+    if (sessionUser.role !== "Intern") {
+      return;
+    }
+
+    if (selectedMentorForm && !mentorFeedbackForms.some((form) => form.id === selectedMentorForm)) {
+      setSelectedMentorForm(null);
+    }
+  }, [mentorFeedbackForms, selectedMentorForm, sessionUser.role]);
+
+  useEffect(() => {
     if (!sessionUser || sessionUser.role !== "Mentor") {
       return;
     }
@@ -1507,14 +1517,18 @@ const Dashboard = () => {
                     </Card>
                   )}
 
-                  {dashboardRole === "Intern" && mentorFeedbackForms && mentorFeedbackForms.length > 0 && (
+                  {dashboardRole === "Intern" && (
                     <Card className="border-white/10 bg-slate-950/70 text-white">
                       <CardHeader>
                         <CardTitle>Mentor Rating Forms</CardTitle>
-                        <CardDescription className="text-white/60">Submit your feedback and ratings for your mentors</CardDescription>
+                        <CardDescription className="text-white/60">Active forms assigned to you will appear here.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        {selectedMentorForm ? (
+                        {mentorFeedbackForms.length === 0 ? (
+                          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/65">
+                            No active mentor rating forms are available right now.
+                          </div>
+                        ) : selectedMentorForm ? (
                           <div className="space-y-4">
                             <Button
                               variant="outline"
