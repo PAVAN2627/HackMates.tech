@@ -787,7 +787,16 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     });
 
     const unsubscribeMentorFeedbackForms = onSnapshot(collections.mentorFeedbackForms, (snapshot) => {
-      const items = snapshot.docs.map((docSnapshot) => mapDoc<MentorFeedbackForm>(docSnapshot));
+      const items = snapshot.docs.map((docSnapshot) => {
+        const data = docSnapshot.data();
+        return {
+          id: docSnapshot.id,
+          ...(data as Omit<MentorFeedbackForm, "id" | "targetInternIds">),
+          targetInternIds: Array.isArray(data.targetInternIds)
+            ? data.targetInternIds.map((value) => String(value))
+            : [],
+        } as MentorFeedbackForm;
+      });
       const filtered = sessionUser.role === "Intern"
         ? items.filter((form) => form.status === "Active" && (!form.targetInternIds || form.targetInternIds.length === 0 || currentInternIdentifiers.some((identifier) => form.targetInternIds?.includes(identifier))))
         : items;
