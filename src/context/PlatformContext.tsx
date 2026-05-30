@@ -484,6 +484,7 @@ interface PlatformContextValue {
   createMentorToInternFeedbackForm: (input: NewMentorToInternFeedbackFormInput) => Promise<MentorToInternFeedbackForm>;
   updateMentorToInternFeedbackForm: (formId: string, input: NewMentorToInternFeedbackFormInput) => Promise<void>;
   updateMentorToInternFeedbackFormStatus: (formId: string, status: "Active" | "Closed") => Promise<void>;
+  deleteMentorToInternFeedbackForm: (formId: string) => Promise<void>;
   submitMentorToInternFeedbackForm: (input: NewMentorToInternFeedbackSubmissionInput) => Promise<MentorToInternFeedbackSubmission>;
   updateMentorToInternFeedbackSubmission: (input: { submissionId: string; rating: number; comment: string; internId: string }) => Promise<void>;
   deleteMentorToInternFeedbackSubmission: (submissionId: string, internId: string) => Promise<void>;
@@ -576,7 +577,7 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
   const [attendanceSessions, setAttendanceSessions] = useState<AttendanceSession[]>([]);
   const [feedbackForms, setFeedbackForms] = useState<FeedbackForm[]>([]);
   const [feedbackFormSubmissions, setFeedbackFormSubmissions] = useState<FeedbackFormSubmission[]>([]);
-  const [mentorFeedbackForms, setMentorFeedbackForms] = useState<MentorFeedbackForm[]>([]);
+  const [mentorFeedbackFormsRaw, setMentorFeedbackFormsRaw] = useState<MentorFeedbackForm[]>([]);
   const [mentorFeedbackSubmissions, setMentorFeedbackSubmissions] = useState<MentorFeedbackSubmission[]>([]);
   const [mentorToInternFeedbackForms, setMentorToInternFeedbackForms] = useState<MentorToInternFeedbackForm[]>([]);
   const [mentorToInternFeedbackSubmissions, setMentorToInternFeedbackSubmissions] = useState<MentorToInternFeedbackSubmission[]>([]);
@@ -592,6 +593,27 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
       sessionUser.internId,
     ].filter((value): value is string => Boolean(value))));
   }, [sessionUser]);
+
+  // Derive filtered mentorFeedbackForms via useMemo so it always reacts to
+  // the latest sessionUser — avoids stale-closure bugs in the snapshot listener.
+  const mentorFeedbackForms = useMemo<MentorFeedbackForm[]>(() => {
+    if (!sessionUser) return [];
+    if (sessionUser.role !== "Intern") return mentorFeedbackFormsRaw;
+    const identifiers = Array.from(new Set([
+      sessionUser.uid,
+      sessionUser.id,
+      sessionUser.internId,
+      sessionUser.email,
+    ].filter(Boolean).map((s) => String(s).trim().toLowerCase())));
+    return mentorFeedbackFormsRaw.filter((form) => {
+      if (form.status !== "Active") return false;
+      const targets = Array.isArray(form.targetInternIds)
+        ? form.targetInternIds.map((t) => String(t).trim().toLowerCase())
+        : [];
+      if (targets.length === 0) return true;
+      return identifiers.some((ident) => targets.includes(ident));
+    });
+  }, [mentorFeedbackFormsRaw, sessionUser]);
 
   const refresh = useCallback(async () => {
     if (!auth.currentUser) {
@@ -805,22 +827,8 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
             : [],
         } as MentorFeedbackForm;
       });
-      const filtered = sessionUser.role === "Intern"
-        ? items.filter((form) => {
-          if (form.status !== "Active") return false;
-          const targets = Array.isArray(form.targetInternIds) ? form.targetInternIds.map((t) => String(t).trim().toLowerCase()) : [];
-          if (targets.length === 0) return true;
-          const identifiers = Array.from(new Set([
-            sessionUser.uid,
-            sessionUser.id,
-            sessionUser.internId,
-            sessionUser.email,
-          ].filter(Boolean).map((s) => String(s).trim().toLowerCase())));
-
-          return identifiers.some((ident) => targets.includes(ident));
-        })
-        : items;
-      setMentorFeedbackForms(filtered);
+      // Store raw items — filtering is done reactively in the mentorFeedbackForms useMemo
+      setMentorFeedbackFormsRaw(items);
     });
 
     const unsubscribeMentorFeedbackSubmissions = onSnapshot(collections.mentorFeedbackSubmissions, (snapshot) => {
