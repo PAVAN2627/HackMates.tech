@@ -17,9 +17,9 @@ const AdminFeedback = () => {
   const {
     loading, sessionUser, logout,
     feedback, mentorFeedbackSubmissions, users,
-    mentorFeedbackForms, createMentorFeedbackForm, updateMentorFeedbackFormStatus,
+    mentorFeedbackForms, createMentorFeedbackForm, updateMentorFeedbackFormStatus, updateMentorFeedbackForm, deleteMentorFeedbackForm,
     mentorToInternFeedbackForms, mentorToInternFeedbackSubmissions,
-    createMentorToInternFeedbackForm, updateMentorToInternFeedbackFormStatus,
+    createMentorToInternFeedbackForm, updateMentorToInternFeedbackFormStatus, updateMentorToInternFeedbackForm, deleteMentorToInternFeedbackForm,
   } = usePlatform();
 
   const [activeTab, setActiveTab] = useState("mentor-to-intern");
@@ -30,6 +30,7 @@ const AdminFeedback = () => {
   const [selectedMentors, setSelectedMentors] = useState<string[]>([]);
   const [selectedInterns, setSelectedInterns] = useState<string[]>([]);
   const [formCreating, setFormCreating] = useState(false);
+  const [editingFormId, setEditingFormId] = useState<string | null>(null);
 
   // Mentor-to-intern form creator state
   const [showMtiFormCreator, setShowMtiFormCreator] = useState(false);
@@ -305,22 +306,31 @@ const AdminFeedback = () => {
                           const mentorNames = selectedMentors
                             .map((id) => mentorUsers.find((u) => u.id === id)?.name)
                             .filter(Boolean) as string[];
-                          await createMentorFeedbackForm({
-                            mentorIds: selectedMentors,
-                            mentorNames,
-                            targetInternIds: selectedInterns.length === 0 ? [] : selectedInterns,
-                          });
+                          if (editingFormId) {
+                            await updateMentorFeedbackForm(editingFormId, {
+                              mentorIds: selectedMentors,
+                              mentorNames,
+                              targetInternIds: selectedInterns.length === 0 ? [] : selectedInterns,
+                            });
+                          } else {
+                            await createMentorFeedbackForm({
+                              mentorIds: selectedMentors,
+                              mentorNames,
+                              targetInternIds: selectedInterns.length === 0 ? [] : selectedInterns,
+                            });
+                          }
                           setShowFormCreator(false);
                           setSelectedMentors([]);
                           setSelectedInterns([]);
+                          setEditingFormId(null);
                         } catch (err) {
                           console.error(err);
-                          alert("Failed to create form");
+                          alert(editingFormId ? "Failed to save form" : "Failed to create form");
                         } finally {
                           setFormCreating(false);
                         }
                       }}>
-                      {formCreating ? "Creating..." : "Create Form"}
+                      {formCreating ? (editingFormId ? "Saving..." : "Creating...") : (editingFormId ? "Save Changes" : "Create Form")}
                     </Button>
                   </motion.div>
                 )}
@@ -348,11 +358,31 @@ const AdminFeedback = () => {
                               {" · "}Created {new Date(form.createdAt).toLocaleDateString()}
                             </p>
                           </div>
-                          <Button size="sm" variant="outline"
-                            className="border-white/20 text-white hover:bg-white/10 shrink-0"
-                            onClick={() => updateMentorFeedbackFormStatus(form.id, form.status === "Active" ? "Closed" : "Active")}>
-                            {form.status === "Active" ? "Close" : "Reopen"}
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" variant="outline"
+                              className="border-white/20 text-white hover:bg-white/10 shrink-0"
+                              onClick={() => updateMentorFeedbackFormStatus(form.id, form.status === "Active" ? "Closed" : "Active")}>
+                              {form.status === "Active" ? "Close" : "Reopen"}
+                            </Button>
+                            <Button size="sm" variant="outline" className="border-white/20 text-white hover:bg-white/10 shrink-0"
+                              onClick={() => {
+                                setShowFormCreator(true);
+                                setEditingFormId(form.id);
+                                setSelectedMentors(form.mentorIds.slice());
+                                setSelectedInterns((form.targetInternIds || []).slice());
+                              }}>
+                              Edit
+                            </Button>
+                            <Button size="sm" variant="destructive" className="h-8 px-3 shrink-0"
+                              onClick={async () => {
+                                if (!window.confirm("Delete this form and its submissions?")) return;
+                                try {
+                                  await deleteMentorFeedbackForm(form.id);
+                                } catch (err) { console.error(err); alert("Failed to delete form"); }
+                              }}>
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
                         </div>
                       </motion.div>
                     ))}
@@ -422,22 +452,31 @@ const AdminFeedback = () => {
                           const internNames = mtiSelectedInterns
                             .map((id) => internUsers.find((u) => u.id === id)?.name)
                             .filter(Boolean) as string[];
-                          await createMentorToInternFeedbackForm({
-                            internIds: mtiSelectedInterns,
-                            internNames,
-                            targetMentorIds: mtiSelectedMentors.length === 0 ? [] : mtiSelectedMentors,
-                          });
+                          if (editingFormId) {
+                            await updateMentorToInternFeedbackForm(editingFormId, {
+                              internIds: mtiSelectedInterns,
+                              internNames,
+                              targetMentorIds: mtiSelectedMentors.length === 0 ? [] : mtiSelectedMentors,
+                            });
+                          } else {
+                            await createMentorToInternFeedbackForm({
+                              internIds: mtiSelectedInterns,
+                              internNames,
+                              targetMentorIds: mtiSelectedMentors.length === 0 ? [] : mtiSelectedMentors,
+                            });
+                          }
                           setShowMtiFormCreator(false);
                           setMtiSelectedInterns([]);
                           setMtiSelectedMentors([]);
+                          setEditingFormId(null);
                         } catch (err) {
                           console.error(err);
-                          alert("Failed to create form");
+                          alert(editingFormId ? "Failed to save form" : "Failed to create form");
                         } finally {
                           setMtiFormCreating(false);
                         }
                       }}>
-                      {mtiFormCreating ? "Creating..." : "Create Form"}
+                      {mtiFormCreating ? (editingFormId ? "Saving..." : "Creating...") : (editingFormId ? "Save Changes" : "Create Form")}
                     </Button>
                   </motion.div>
                 )}
@@ -469,11 +508,31 @@ const AdminFeedback = () => {
                                   {" · "}Created {new Date(form.createdAt).toLocaleDateString()}
                                 </p>
                               </div>
-                              <Button size="sm" variant="outline"
-                                className="border-white/20 text-white hover:bg-white/10 shrink-0"
-                                onClick={() => updateMentorToInternFeedbackFormStatus(form.id, form.status === "Active" ? "Closed" : "Active")}>
-                                {form.status === "Active" ? "Close" : "Reopen"}
-                              </Button>
+                              <div className="flex items-center gap-2">
+                                <Button size="sm" variant="outline"
+                                  className="border-white/20 text-white hover:bg-white/10 shrink-0"
+                                  onClick={() => updateMentorToInternFeedbackFormStatus(form.id, form.status === "Active" ? "Closed" : "Active")}>
+                                  {form.status === "Active" ? "Close" : "Reopen"}
+                                </Button>
+                                <Button size="sm" variant="outline" className="border-white/20 text-white hover:bg-white/10 shrink-0"
+                                  onClick={() => {
+                                    setShowMtiFormCreator(true);
+                                    setEditingFormId(form.id);
+                                    setMtiSelectedInterns(form.internIds.slice());
+                                    setMtiSelectedMentors((form.targetMentorIds || []).slice());
+                                  }}>
+                                  Edit
+                                </Button>
+                                <Button size="sm" variant="destructive" className="h-8 px-3"
+                                  onClick={async () => {
+                                    if (!window.confirm("Delete this form and its submissions?")) return;
+                                    try {
+                                      await deleteMentorToInternFeedbackForm(form.id);
+                                    } catch (err) { console.error(err); alert("Failed to delete form"); }
+                                  }}>
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
                             </div>
                             {formSubmissions.length > 0 && (
                               <div className="space-y-2 pt-3 border-t border-white/10">
