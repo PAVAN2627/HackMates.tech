@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { browserLocalPersistence, onAuthStateChanged, setPersistence, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, type User } from "firebase/auth";
@@ -474,11 +475,18 @@ interface PlatformContextValue {
   submitFeedbackForm: (input: NewFeedbackFormSubmissionInput) => Promise<FeedbackFormSubmission>;
   reviewFeedbackFormSubmission: (input: ReviewFeedbackFormSubmissionInput) => Promise<void>;
   createMentorFeedbackForm: (input: NewMentorFeedbackFormInput) => Promise<MentorFeedbackForm>;
+  updateMentorFeedbackForm: (formId: string, input: NewMentorFeedbackFormInput) => Promise<void>;
   updateMentorFeedbackFormStatus: (formId: string, status: "Active" | "Closed") => Promise<void>;
+  deleteMentorFeedbackForm: (formId: string) => Promise<void>;
   submitMentorFeedbackForm: (input: NewMentorFeedbackSubmissionInput) => Promise<MentorFeedbackSubmission>;
+  updateMentorFeedbackSubmission: (input: { submissionId: string; rating: number; review: string; internId: string }) => Promise<void>;
+  deleteMentorFeedbackSubmission: (submissionId: string, internId: string) => Promise<void>;
   createMentorToInternFeedbackForm: (input: NewMentorToInternFeedbackFormInput) => Promise<MentorToInternFeedbackForm>;
+  updateMentorToInternFeedbackForm: (formId: string, input: NewMentorToInternFeedbackFormInput) => Promise<void>;
   updateMentorToInternFeedbackFormStatus: (formId: string, status: "Active" | "Closed") => Promise<void>;
   submitMentorToInternFeedbackForm: (input: NewMentorToInternFeedbackSubmissionInput) => Promise<MentorToInternFeedbackSubmission>;
+  updateMentorToInternFeedbackSubmission: (input: { submissionId: string; rating: number; comment: string; internId: string }) => Promise<void>;
+  deleteMentorToInternFeedbackSubmission: (submissionId: string, internId: string) => Promise<void>;
 }
 
 const PlatformContext = createContext<PlatformContextValue | null>(null);
@@ -1603,11 +1611,25 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     return { id: result.id, ...payload } as MentorFeedbackForm;
   }, [sessionUser]);
 
+  const updateMentorFeedbackForm = useCallback(async (formId: string, input: NewMentorFeedbackFormInput) => {
+    await updateDoc(doc(db, "mentorFeedbackForms", formId), {
+      mentorIds: input.mentorIds,
+      mentorNames: input.mentorNames,
+      targetInternIds: input.targetInternIds || [],
+    });
+  }, []);
+
   /**
    * Update mentor feedback form status
    */
   const updateMentorFeedbackFormStatus = useCallback(async (formId: string, status: "Active" | "Closed") => {
     await updateDoc(doc(db, "mentorFeedbackForms", formId), { status });
+  }, []);
+
+  const deleteMentorFeedbackForm = useCallback(async (formId: string) => {
+    const submissionsSnap = await getDocs(query(collections.mentorFeedbackSubmissions, where("formId", "==", formId)));
+    await Promise.all(submissionsSnap.docs.map((submissionDoc) => deleteDoc(submissionDoc.ref)));
+    await deleteDoc(doc(db, "mentorFeedbackForms", formId));
   }, []);
 
   /**
@@ -1650,6 +1672,45 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     return { id: result.id, ...payload } as MentorFeedbackSubmission;
   }, []);
 
+  const recalculateMentorFeedbackPerformance = useCallback(async (internId: string) => {
+    const submissionsSnap = await getDocs(query(collections.mentorFeedbackSubmissions, where("internId", "==", internId)));
+    const ratings = submissionsSnap.docs.map((submissionDoc) => Number((submissionDoc.data() as { rating?: number }).rating ?? 0)).filter((rating) => Number.isFinite(rating));
+    const currentRating = ratings.length > 0
+      ? Number((ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length).toFixed(1))
+      : 0;
+
+    try {
+      const performanceRef = doc(db, "performance", internId);
+      const performanceDoc = await getDoc(performanceRef);
+
+      if (performanceDoc.exists()) {
+        const currentData = performanceDoc.data();
+
+        await updateDoc(performanceRef, {
+          weeklyAverageRating: currentRating,
+          monthlyAverageRating: currentData.monthlyAverageRating || currentRating,
+          lastUpdated: new Date().toISOString(),
+        });
+      }
+    } catch (error) {
+      console.warn("Failed to recalculate performance from mentor feedback:", error);
+    }
+  }, []);
+
+  const updateMentorFeedbackSubmission = useCallback(async (input: { submissionId: string; rating: number; review: string; internId: string }) => {
+    await updateDoc(doc(db, "mentorFeedbackSubmissions", input.submissionId), {
+      rating: input.rating,
+      review: input.review,
+    });
+
+    await recalculateMentorFeedbackPerformance(input.internId);
+  }, [recalculateMentorFeedbackPerformance]);
+
+  const deleteMentorFeedbackSubmission = useCallback(async (submissionId: string, internId: string) => {
+    await deleteDoc(doc(db, "mentorFeedbackSubmissions", submissionId));
+    await recalculateMentorFeedbackPerformance(internId);
+  }, [recalculateMentorFeedbackPerformance]);
+
   /**
    * Create mentor-to-intern feedback form (admin creates, mentor fills)
    */
@@ -1691,6 +1752,59 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     const result = await addDoc(collections.mentorToInternFeedbackSubmissions, payload);
     return { id: result.id, ...payload } as MentorToInternFeedbackSubmission;
   }, []);
+
+  const recalculateCombinedInternPerformance = useCallback(async (internId: string) => {
+    try {
+      const mentorFeedbackSnap = await getDocs(query(collections.mentorFeedbackSubmissions, where("internId", "==", internId)));
+      const mentorToInternSnap = await getDocs(query(collections.mentorToInternFeedbackSubmissions, where("internId", "==", internId)));
+
+      const mentorRatings = mentorFeedbackSnap.docs.map((d) => Number((d.data() as MentorFeedbackSubmission).rating ?? 0)).filter((r) => Number.isFinite(r));
+      const toInternRatings = mentorToInternSnap.docs.map((d) => Number((d.data() as MentorToInternFeedbackSubmission).rating ?? 0)).filter((r) => Number.isFinite(r));
+
+      const all = [...mentorRatings, ...toInternRatings];
+      const avg = all.length > 0 ? Number((all.reduce((s, v) => s + v, 0) / all.length).toFixed(1)) : 0;
+
+      const performanceRef = doc(db, "performance", internId);
+      const performanceDoc = await getDoc(performanceRef);
+      if (performanceDoc.exists()) {
+        const currentData = performanceDoc.data();
+        await updateDoc(performanceRef, {
+          weeklyAverageRating: avg,
+          monthlyAverageRating: currentData.monthlyAverageRating || avg,
+          lastUpdated: new Date().toISOString(),
+        });
+      }
+    } catch (error) {
+      console.warn("Failed to recalculate combined intern performance:", error);
+    }
+  }, []);
+
+  const updateMentorToInternFeedbackForm = useCallback(async (formId: string, input: NewMentorToInternFeedbackFormInput) => {
+    await updateDoc(doc(db, "mentorToInternFeedbackForms", formId), {
+      internIds: input.internIds,
+      internNames: input.internNames,
+      targetMentorIds: input.targetMentorIds || [],
+    });
+  }, []);
+
+  const deleteMentorToInternFeedbackForm = useCallback(async (formId: string) => {
+    const submissionsSnap = await getDocs(query(collections.mentorToInternFeedbackSubmissions, where("formId", "==", formId)));
+    await Promise.all(submissionsSnap.docs.map((d) => deleteDoc(d.ref)));
+    await deleteDoc(doc(db, "mentorToInternFeedbackForms", formId));
+  }, []);
+
+  const updateMentorToInternFeedbackSubmission = useCallback(async (input: { submissionId: string; rating: number; comment: string; internId: string }) => {
+    await updateDoc(doc(db, "mentorToInternFeedbackSubmissions", input.submissionId), {
+      rating: input.rating,
+      comment: input.comment,
+    });
+    await recalculateCombinedInternPerformance(input.internId);
+  }, [recalculateCombinedInternPerformance]);
+
+  const deleteMentorToInternFeedbackSubmission = useCallback(async (submissionId: string, internId: string) => {
+    await deleteDoc(doc(db, "mentorToInternFeedbackSubmissions", submissionId));
+    await recalculateCombinedInternPerformance(internId);
+  }, [recalculateCombinedInternPerformance]);
 
   const adminStats = useMemo(() => ({
     users: users.length,
@@ -1802,16 +1916,24 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     markAttendance,
     updateAttendanceSession,
     deleteAttendanceSession,
+    deleteMentorFeedbackForm,
     createFeedbackForm,
     updateFeedbackFormStatus,
     submitFeedbackForm,
     reviewFeedbackFormSubmission,
     createMentorFeedbackForm,
+    updateMentorFeedbackForm,
     updateMentorFeedbackFormStatus,
     submitMentorFeedbackForm,
+    updateMentorFeedbackSubmission,
+    deleteMentorFeedbackSubmission,
     createMentorToInternFeedbackForm,
+    updateMentorToInternFeedbackForm,
+    deleteMentorToInternFeedbackForm,
     updateMentorToInternFeedbackFormStatus,
     submitMentorToInternFeedbackForm,
+    updateMentorToInternFeedbackSubmission,
+    deleteMentorToInternFeedbackSubmission,
   }), [
     addDailyNote,
     addDoubt,
@@ -1842,8 +1964,12 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     updateMentorFeedbackFormStatus,
     submitMentorFeedbackForm,
     createMentorToInternFeedbackForm,
+    updateMentorToInternFeedbackForm,
+    deleteMentorToInternFeedbackForm,
     updateMentorToInternFeedbackFormStatus,
     submitMentorToInternFeedbackForm,
+    updateMentorToInternFeedbackSubmission,
+    deleteMentorToInternFeedbackSubmission,
     logout,
     mentorData,
     mentorFeedback,
@@ -1863,6 +1989,10 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     users,
     feedbackForms,
     feedbackFormSubmissions,
+    updateMentorFeedbackForm,
+    deleteMentorFeedbackForm,
+    updateMentorFeedbackSubmission,
+    deleteMentorFeedbackSubmission,
   ]);
 
   return <PlatformContext.Provider value={value}>{children}</PlatformContext.Provider>;
