@@ -200,6 +200,9 @@ const Dashboard = () => {
   const [mentorRatings, setMentorRatings] = useState<Record<string, number>>({});
   const [mentorReviews, setMentorReviews] = useState<Record<string, string>>({});
   const [submitMentorFeedbackLoading, setSubmitMentorFeedbackLoading] = useState(false);
+  // tracks mentorIds submitted this session before Firestore snapshot catches up
+  const [justSubmittedMentorIds, setJustSubmittedMentorIds] = useState<Set<string>>(new Set());
+  const [feedbackSuccessMsg, setFeedbackSuccessMsg] = useState<string | null>(null);
 
   // Mentor-to-intern form state (mentor fills feedback about interns)
   const [mtiRatings, setMtiRatings] = useState<Record<string, number>>({});
@@ -1530,165 +1533,218 @@ const Dashboard = () => {
                             No active mentor rating forms are available right now.
                           </div>
                         ) : selectedMentorForm ? (
-                          <div className="space-y-4">
-                            <Button
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedMentorForm(null);
-                                setMentorRatings({});
-                                setMentorReviews({});
-                              }}
-                              className="bg-white/15 border-white/30 text-white hover:bg-white/25"
-                            >
-                              ← Back to Forms
-                            </Button>
+                          (() => {
+                            const form = mentorFeedbackForms.find((f) => f.id === selectedMentorForm);
+                            if (!form) return null;
+                            const myInternId = sessionUser.uid || sessionUser.id;
 
-                            {mentorFeedbackForms
-                              .filter((f) => f.id === selectedMentorForm)
-                              .map((form) => (
-                                <div key={form.id} className="space-y-4">
-                                  <h3 className="font-semibold text-lg">Rating: {form.mentorNames.join(", ")}</h3>
+                            const isSubmitted = (mentorId: string) =>
+                              justSubmittedMentorIds.has(mentorId) ||
+                              mentorFeedbackSubmissions?.some(
+                                (s) => s.mentorId === mentorId && s.formId === form.id && s.internId === myInternId,
+                              );
 
-                                  {form.mentorIds.map((mentorId, idx) => {
-                                    const myInternId = sessionUser.uid || sessionUser.id;
-                                    const alreadySubmitted = mentorFeedbackSubmissions?.some(
-                                      (s) => s.mentorId === mentorId && s.formId === form.id && s.internId === myInternId,
-                                    );
+                            const pendingMentors = form.mentorIds.filter((mid) => !isSubmitted(mid));
+                            const doneMentors = form.mentorIds.filter((mid) => isSubmitted(mid));
 
-                                    // Once submitted, this mentor is gone from the form
-                                    if (alreadySubmitted) return null;
+                            return (
+                              <div className="space-y-4">
+                                {/* Success popup */}
+                                {feedbackSuccessMsg && (
+                                  <motion.div
+                                    initial={{ opacity: 0, y: -8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="flex items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-300"
+                                  >
+                                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                                    {feedbackSuccessMsg}
+                                  </motion.div>
+                                )}
 
+                                <Button
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedMentorForm(null);
+                                    setMentorRatings({});
+                                    setMentorReviews({});
+                                    setJustSubmittedMentorIds(new Set());
+                                    setFeedbackSuccessMsg(null);
+                                  }}
+                                  className="bg-white/15 border-white/30 text-white hover:bg-white/25"
+                                >
+                                  ← Back to Forms
+                                </Button>
+
+                                <h3 className="font-semibold text-lg">
+                                  Rating: {form.mentorNames.join(", ")}
+                                </h3>
+
+                                {/* ── Pending mentors ── */}
+                                {pendingMentors.length === 0 ? (
+                                  <div className="rounded-lg border border-green-500/20 bg-green-500/5 p-4 text-sm text-green-300 text-center">
+                                    ✓ You have rated all mentors in this form!
+                                  </div>
+                                ) : (
+                                  pendingMentors.map((mentorId) => {
+                                    const idx = form.mentorIds.indexOf(mentorId);
                                     return (
                                       <div key={mentorId} className="rounded-lg border border-white/10 bg-white/5 p-4 space-y-3">
                                         <h4 className="font-semibold text-white">{form.mentorNames[idx]}</h4>
-                                        <>
-                                            <div className="space-y-2">
-                                              <label className="text-sm text-white/70">Rating (out of 10)</label>
-                                              <Input
-                                                type="number"
-                                                min={0}
-                                                max={10}
-                                                step="0.1"
-                                                value={mentorRatings[mentorId] ?? ""}
-                                                onChange={(event) => setMentorRatings({
-                                                  ...mentorRatings,
-                                                  [mentorId]: event.target.value === "" ? Number.NaN : Number(event.target.value),
-                                                })}
-                                                className="bg-white/5 border-white/10 text-white"
-                                              />
-                                              <p className="text-xs text-white/45">Enter a score from 0 to 10.</p>
-                                            </div>
 
-                                            <div className="space-y-2">
-                                              <label className="text-sm text-white/70">Review</label>
-                                              <Textarea
-                                                placeholder="Your feedback for the mentor..."
-                                                value={mentorReviews[mentorId] || ""}
-                                                onChange={(e) => setMentorReviews({ ...mentorReviews, [mentorId]: e.target.value })}
-                                                className="bg-white/5 border-white/10 text-white min-h-20"
-                                              />
-                                            </div>
+                                        <div className="space-y-2">
+                                          <label className="text-sm text-white/70">Rating (out of 10)</label>
+                                          <Input
+                                            type="number"
+                                            min={0}
+                                            max={10}
+                                            step="0.1"
+                                            value={mentorRatings[mentorId] ?? ""}
+                                            onChange={(event) => setMentorRatings({
+                                              ...mentorRatings,
+                                              [mentorId]: event.target.value === "" ? Number.NaN : Number(event.target.value),
+                                            })}
+                                            className="bg-white/5 border-white/10 text-white"
+                                          />
+                                          <p className="text-xs text-white/45">Enter a score from 0 to 10.</p>
+                                        </div>
 
-                                            <Button
-                                              type="button"
-                                              onClick={async () => {
-                                                const rating = normalizeTenPointRating(mentorRatings[mentorId]);
-                                                if (Number.isNaN(rating) || !mentorReviews[mentorId]?.trim()) {
-                                                  alert("Please provide a valid rating between 0 and 10 and a review.");
-                                                  return;
-                                                }
+                                        <div className="space-y-2">
+                                          <label className="text-sm text-white/70">Review</label>
+                                          <Textarea
+                                            placeholder="Your feedback for the mentor..."
+                                            value={mentorReviews[mentorId] || ""}
+                                            onChange={(e) => setMentorReviews({ ...mentorReviews, [mentorId]: e.target.value })}
+                                            className="bg-white/5 border-white/10 text-white min-h-20"
+                                          />
+                                        </div>
 
-                                                setSubmitMentorFeedbackLoading(true);
-                                                try {
-                                                  await submitMentorFeedbackForm({
-                                                    formId: form.id,
-                                                    mentorId,
-                                                    mentorName: form.mentorNames[idx],
-                                                    internId: myInternId,
-                                                    internName: sessionUser.name,
-                                                    internEmail: sessionUser.email,
-                                                    rating,
-                                                    review: mentorReviews[mentorId],
-                                                  });
+                                        <Button
+                                          type="button"
+                                          onClick={async () => {
+                                            const rating = normalizeTenPointRating(mentorRatings[mentorId]);
+                                            if (Number.isNaN(rating) || !mentorReviews[mentorId]?.trim()) {
+                                              alert("Please provide a valid rating between 0 and 10 and a review.");
+                                              return;
+                                            }
+                                            setSubmitMentorFeedbackLoading(true);
+                                            try {
+                                              await submitMentorFeedbackForm({
+                                                formId: form.id,
+                                                mentorId,
+                                                mentorName: form.mentorNames[idx],
+                                                internId: myInternId,
+                                                internName: sessionUser.name,
+                                                internEmail: sessionUser.email,
+                                                rating,
+                                                review: mentorReviews[mentorId],
+                                              });
 
-                                                  setMentorRatings((prev) => { const n = { ...prev }; delete n[mentorId]; return n; });
-                                                  setMentorReviews((prev) => { const n = { ...prev }; delete n[mentorId]; return n; });
+                                              // Mark as submitted locally immediately
+                                              setJustSubmittedMentorIds((prev) => new Set([...prev, mentorId]));
+                                              setMentorRatings((prev) => { const n = { ...prev }; delete n[mentorId]; return n; });
+                                              setMentorReviews((prev) => { const n = { ...prev }; delete n[mentorId]; return n; });
 
-                                                  // Check if all remaining mentors are now submitted
-                                                  const allDone = form.mentorIds.every((mid) =>
-                                                    mid === mentorId || mentorFeedbackSubmissions?.some(
-                                                      (s) => s.mentorId === mid && s.formId === form.id && s.internId === myInternId,
-                                                    )
-                                                  );
-                                                  if (allDone) {
-                                                    setSelectedMentorForm(null);
-                                                  }
-                                                } catch (error) {
-                                                  console.error("Error submitting feedback:", error);
-                                                  alert("Failed to submit feedback. You may have already submitted for this mentor.");
-                                                } finally {
-                                                  setSubmitMentorFeedbackLoading(false);
-                                                }
-                                              }}
-                                              disabled={submitMentorFeedbackLoading || Number.isNaN(normalizeTenPointRating(mentorRatings[mentorId])) || !mentorReviews[mentorId]?.trim()}
-                                              className="w-full bg-primary hover:bg-primary/80"
-                                            >
-                                              {submitMentorFeedbackLoading ? "Submitting..." : "Submit Feedback"}
-                                            </Button>
-                                          </>
+                                              const remainingAfter = pendingMentors.filter((mid) => mid !== mentorId);
+                                              if (remainingAfter.length === 0) {
+                                                setFeedbackSuccessMsg(`All done! You've rated all mentors in this form.`);
+                                              } else {
+                                                setFeedbackSuccessMsg(`Feedback for ${form.mentorNames[idx]} submitted successfully!`);
+                                                setTimeout(() => setFeedbackSuccessMsg(null), 3000);
+                                              }
+                                            } catch (error) {
+                                              console.error("Error submitting feedback:", error);
+                                              alert("Failed to submit feedback. You may have already submitted for this mentor.");
+                                            } finally {
+                                              setSubmitMentorFeedbackLoading(false);
+                                            }
+                                          }}
+                                          disabled={submitMentorFeedbackLoading || Number.isNaN(normalizeTenPointRating(mentorRatings[mentorId])) || !mentorReviews[mentorId]?.trim()}
+                                          className="w-full bg-primary hover:bg-primary/80"
+                                        >
+                                          {submitMentorFeedbackLoading ? "Submitting..." : "Submit Feedback"}
+                                        </Button>
                                       </div>
                                     );
-                                  })}
-                                </div>
-                              ))}
-                          </div>
+                                  })
+                                )}
+
+                                {/* ── Already submitted section ── */}
+                                {doneMentors.length > 0 && (
+                                  <div className="space-y-2 pt-2">
+                                    <p className="text-xs text-white/40 uppercase tracking-wide font-medium">Already submitted</p>
+                                    {doneMentors.map((mentorId) => {
+                                      const idx = form.mentorIds.indexOf(mentorId);
+                                      const sub = mentorFeedbackSubmissions?.find(
+                                        (s) => s.mentorId === mentorId && s.formId === form.id && s.internId === myInternId,
+                                      );
+                                      return (
+                                        <div key={mentorId} className="rounded-lg border border-green-500/20 bg-green-500/5 p-3 flex items-start gap-3">
+                                          <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
+                                          <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-white/80 text-sm">{form.mentorNames[idx]}</p>
+                                            {sub && (
+                                              <div className="mt-1 space-y-0.5">
+                                                <div className="flex items-center gap-2">
+                                                  <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white/70">{sub.rating}/10</span>
+                                                  <span className="text-xs text-white/40">{new Date(sub.submittedAt).toLocaleDateString()}</span>
+                                                </div>
+                                                <p className="text-xs text-white/55 line-clamp-2">{sub.review}</p>
+                                              </div>
+                                            )}
+                                          </div>
+                                          <Badge className="bg-green-500/20 text-green-300 border-green-500/30 shrink-0 text-xs">Submitted</Badge>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()
                         ) : (
                           <div className="space-y-3">
                             {mentorFeedbackForms
                               .filter((form) => {
                                 const myInternId = sessionUser.uid || sessionUser.id;
-                                const allSubmitted = form.mentorIds.every((mid) =>
+                                return !form.mentorIds.every((mid) =>
                                   mentorFeedbackSubmissions?.some((s) => s.mentorId === mid && s.formId === form.id && s.internId === myInternId)
                                 );
-                                return !allSubmitted;
                               })
                               .map((form) => {
-                              const myInternId = sessionUser.uid || sessionUser.id;
-                              const submittedCount = form.mentorIds.filter((mid) =>
-                                mentorFeedbackSubmissions?.some((s) => s.mentorId === mid && s.formId === form.id && s.internId === myInternId)
-                              ).length;
-                              const remaining = form.mentorIds.length - submittedCount;
-                              return (
-                                <motion.div
-                                  key={form.id}
-                                  whileHover={{ scale: 1.02 }}
-                                  onClick={() => setSelectedMentorForm(form.id)}
-                                  className="p-4 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 cursor-pointer transition"
-                                >
-                                  <div className="flex justify-between items-start">
-                                    <div>
-                                      <p className="font-semibold">
-                                        Rate:{" "}
-                                        {form.mentorIds
-                                          .filter((mid) =>
-                                            !mentorFeedbackSubmissions?.some(
-                                              (s) => s.mentorId === mid && s.formId === form.id && s.internId === myInternId
-                                            )
-                                          )
-                                          .map((mid) => form.mentorNames[form.mentorIds.indexOf(mid)])
-                                          .join(", ")}
-                                      </p>
-                                      <p className="text-sm text-white/60 mt-1">
-                                        {remaining} mentor{remaining !== 1 ? "s" : ""} remaining
-                                      </p>
+                                const myInternId = sessionUser.uid || sessionUser.id;
+                                const submittedIds = form.mentorIds.filter((mid) =>
+                                  mentorFeedbackSubmissions?.some((s) => s.mentorId === mid && s.formId === form.id && s.internId === myInternId)
+                                );
+                                const pendingNames = form.mentorIds
+                                  .filter((mid) => !submittedIds.includes(mid))
+                                  .map((mid) => form.mentorNames[form.mentorIds.indexOf(mid)]);
+                                const remaining = pendingNames.length;
+                                return (
+                                  <motion.div
+                                    key={form.id}
+                                    whileHover={{ scale: 1.02 }}
+                                    onClick={() => {
+                                      setSelectedMentorForm(form.id);
+                                      setJustSubmittedMentorIds(new Set());
+                                      setFeedbackSuccessMsg(null);
+                                    }}
+                                    className="p-4 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 cursor-pointer transition"
+                                  >
+                                    <div className="flex justify-between items-start">
+                                      <div>
+                                        <p className="font-semibold text-sm">Rate: {pendingNames.join(", ")}</p>
+                                        <p className="text-xs text-white/50 mt-1">
+                                          {remaining} mentor{remaining !== 1 ? "s" : ""} remaining
+                                          {submittedIds.length > 0 && ` · ${submittedIds.length} submitted`}
+                                        </p>
+                                      </div>
+                                      <Badge className="bg-blue-500/20 text-blue-300 shrink-0">View Form</Badge>
                                     </div>
-                                    <Badge className="bg-blue-500/20 text-blue-300">
-                                      View Form
-                                    </Badge>
-                                  </div>
-                                </motion.div>
-                              );
-                            })}
+                                  </motion.div>
+                                );
+                              })}
+
+                            {/* All done state */}
                             {mentorFeedbackForms.length > 0 && mentorFeedbackForms.every((form) => {
                               const myInternId = sessionUser.uid || sessionUser.id;
                               return form.mentorIds.every((mid) =>

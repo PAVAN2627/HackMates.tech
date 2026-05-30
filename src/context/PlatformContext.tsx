@@ -808,12 +808,13 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
       setFeedbackForms(filtered);
     });
 
-    const unsubscribeFeedbackFormSubmissions = onSnapshot(collections.feedbackFormSubmissions, (snapshot) => {
+    const feedbackFormSubmissionsQuery = sessionUser.role === "Intern"
+      ? query(collections.feedbackFormSubmissions, where("internId", "==", sessionUser.uid))
+      : collections.feedbackFormSubmissions;
+
+    const unsubscribeFeedbackFormSubmissions = onSnapshot(feedbackFormSubmissionsQuery, (snapshot) => {
       const items = snapshot.docs.map((docSnapshot) => mapDoc<FeedbackFormSubmission>(docSnapshot));
-      const filtered = sessionUser.role === "Intern"
-        ? items.filter((submission) => submission.internId === sessionUser.uid)
-        : items;
-      setFeedbackFormSubmissions(filtered);
+      setFeedbackFormSubmissions(items);
     });
 
     const unsubscribeMentorFeedbackForms = onSnapshot(collections.mentorFeedbackForms, (snapshot) => {
@@ -831,12 +832,13 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
       setMentorFeedbackFormsRaw(items);
     });
 
-    const unsubscribeMentorFeedbackSubmissions = onSnapshot(collections.mentorFeedbackSubmissions, (snapshot) => {
+    const mentorFeedbackSubmissionsQuery = sessionUser.role === "Intern"
+      ? query(collections.mentorFeedbackSubmissions, where("internId", "==", sessionUser.uid))
+      : collections.mentorFeedbackSubmissions;
+
+    const unsubscribeMentorFeedbackSubmissions = onSnapshot(mentorFeedbackSubmissionsQuery, (snapshot) => {
       const items = snapshot.docs.map((docSnapshot) => mapDoc<MentorFeedbackSubmission>(docSnapshot));
-      const filtered = sessionUser.role === "Intern"
-        ? items.filter((submission) => submission.internId === sessionUser.uid)
-        : items;
-      setMentorFeedbackSubmissions(filtered);
+      setMentorFeedbackSubmissions(items);
     });
 
     const unsubscribeMentorToInternFeedbackForms = onSnapshot(collections.mentorToInternFeedbackForms, (snapshot) => {
@@ -849,14 +851,15 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
       setMentorToInternFeedbackForms(filtered);
     });
 
-    const unsubscribeMentorToInternFeedbackSubmissions = onSnapshot(collections.mentorToInternFeedbackSubmissions, (snapshot) => {
+    const mentorToInternFeedbackSubmissionsQuery = sessionUser.role === "Intern"
+      ? query(collections.mentorToInternFeedbackSubmissions, where("internId", "==", sessionUser.uid))
+      : sessionUser.role === "Mentor"
+        ? query(collections.mentorToInternFeedbackSubmissions, where("mentorId", "==", sessionUser.uid))
+        : collections.mentorToInternFeedbackSubmissions;
+
+    const unsubscribeMentorToInternFeedbackSubmissions = onSnapshot(mentorToInternFeedbackSubmissionsQuery, (snapshot) => {
       const items = snapshot.docs.map((docSnapshot) => mapDoc<MentorToInternFeedbackSubmission>(docSnapshot));
-      const filtered = sessionUser.role === "Intern"
-        ? items.filter((sub) => sub.internId === sessionUser.uid)
-        : sessionUser.role === "Mentor"
-          ? items.filter((sub) => sub.mentorId === sessionUser.uid)
-          : items;
-      setMentorToInternFeedbackSubmissions(filtered);
+      setMentorToInternFeedbackSubmissions(items);
     });
 
     return () => {
