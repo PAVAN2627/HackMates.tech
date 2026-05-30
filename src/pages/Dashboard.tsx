@@ -443,7 +443,7 @@ const Dashboard = () => {
     if (selectedMentorForm && !mentorFeedbackForms.some((form) => form.id === selectedMentorForm)) {
       setSelectedMentorForm(null);
     }
-  }, [mentorFeedbackForms, selectedMentorForm, sessionUser.role]);
+  }, [mentorFeedbackForms, selectedMentorForm, sessionUser?.role]);
 
   useEffect(() => {
     if (!sessionUser || sessionUser.role !== "Mentor") {
