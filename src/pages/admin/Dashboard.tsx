@@ -10,12 +10,23 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const { loading, sessionUser, logout, adminStats, feedback, fees, mentorToInternFeedbackSubmissions } = usePlatform();
 
+  const combinedFeedback = [
+    ...feedback.map((entry) => ({
+      date: entry.date,
+      rating: entry.rating,
+    })),
+    ...mentorToInternFeedbackSubmissions.map((entry) => ({
+      date: entry.submittedAt,
+      rating: entry.rating,
+    })),
+  ].sort((a, b) => b.date.localeCompare(a.date));
+
   const thisMonthKey = new Date().toISOString().slice(0, 7);
-  const thisMonthFeedback = feedback.filter((e) => e.date.startsWith(thisMonthKey));
+  const thisMonthFeedback = combinedFeedback.filter((e) => e.date.startsWith(thisMonthKey));
   const monthlyOverallRating = thisMonthFeedback.length > 0
     ? Number((thisMonthFeedback.reduce((s, e) => s + e.rating, 0) / thisMonthFeedback.length).toFixed(1))
     : 0;
-  const recentFeedback = feedback.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20);
+  const recentFeedback = combinedFeedback.slice(0, 20);
   const weeklyAverageRating = recentFeedback.length > 0
     ? Number((recentFeedback.reduce((s, e) => s + e.rating, 0) / recentFeedback.length).toFixed(1))
     : 0;
