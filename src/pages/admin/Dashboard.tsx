@@ -8,7 +8,7 @@ import DashboardSidebar from "@/components/DashboardSidebar";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { loading, sessionUser, logout, adminStats, feedback, fees } = usePlatform();
+  const { loading, sessionUser, logout, adminStats, feedback, fees, mentorToInternFeedbackSubmissions } = usePlatform();
 
   const thisMonthKey = new Date().toISOString().slice(0, 7);
   const thisMonthFeedback = feedback.filter((e) => e.date.startsWith(thisMonthKey));
@@ -18,6 +18,9 @@ const AdminDashboard = () => {
   const recentFeedback = feedback.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20);
   const weeklyAverageRating = recentFeedback.length > 0
     ? Number((recentFeedback.reduce((s, e) => s + e.rating, 0) / recentFeedback.length).toFixed(1))
+    : 0;
+  const mentorToInternAverageRating = mentorToInternFeedbackSubmissions.length > 0
+    ? Number((mentorToInternFeedbackSubmissions.reduce((s, e) => s + e.rating, 0) / mentorToInternFeedbackSubmissions.length).toFixed(1))
     : 0;
   const totalFeeAmount = fees.reduce((s, e) => s + (Number(e.amount) || 0), 0);
   const totalFeePaid = fees.reduce((s, e) => s + (Number(e.paidAmount) || 0), 0);
@@ -56,6 +59,8 @@ const AdminDashboard = () => {
       stats: [
         { label: "Weekly Avg", value: `${weeklyAverageRating}/10`, icon: Star, color: "text-green-400 bg-green-400/10" },
         { label: "This Month Avg", value: `${monthlyOverallRating}/10`, icon: TrendingUp, color: "text-emerald-400 bg-emerald-400/10" },
+        { label: "Mentor → Intern Avg", value: `${mentorToInternAverageRating}/10`, icon: BadgeCheck, color: "text-cyan-400 bg-cyan-400/10" },
+        { label: "Mentor → Intern Count", value: mentorToInternFeedbackSubmissions.length, icon: MessageSquareMore, color: "text-sky-400 bg-sky-400/10" },
       ],
     },
   ];

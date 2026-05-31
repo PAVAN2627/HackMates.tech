@@ -1519,9 +1519,11 @@ const Dashboard = () => {
                                   {[1,2,3,4,5].map((n) => (
                                     <Star key={n} className={`w-4 h-4 ${entry.rating >= n * 2 ? "fill-yellow-400 text-yellow-400" : entry.rating >= n * 2 - 1 ? "fill-yellow-400/50 text-yellow-400/50" : "text-white/20"}`} />
                                   ))}
-                                  <span className="text-xs text-white/60 ml-1">{entry.rating}/10</span>
                                 </div>
-                                <span className="text-xs text-white/40">{new Date(entry.submittedAt).toLocaleDateString()}</span>
+                                <div className="flex items-center gap-2">
+                                  <Badge className="bg-white/10 text-white/70 border-white/10 text-xs">Marks: {entry.rating}/10</Badge>
+                                  <span className="text-xs text-white/40">{new Date(entry.submittedAt).toLocaleDateString()}</span>
+                                </div>
                               </div>
                               <p className="text-sm text-white/75">{entry.review}</p>
                             </div>
@@ -1575,7 +1577,7 @@ const Dashboard = () => {
                                     className={`w-4 h-4 ${entry.rating >= n * 2 ? "fill-yellow-400 text-yellow-400" : entry.rating >= n * 2 - 1 ? "fill-yellow-400/50 text-yellow-400/50" : "text-white/20"}`}
                                   />
                                 ))}
-                                <span className="text-xs text-white/60 ml-1">{entry.rating}/10</span>
+                                <Badge className="bg-white/10 text-white/70 border-white/10 text-xs ml-1">Marks: {entry.rating}/10</Badge>
                               </div>
                               <p className="text-sm text-white/75">{entry.comment}</p>
                             </div>
