@@ -234,8 +234,27 @@ const Dashboard = () => {
     () => (currentInternData?.submissions ?? []).filter((entry) => entry.type === "Mentor Task"),
     [currentInternData?.submissions],
   );
+  const internMentorRatingEntries = useMemo(() => {
+    const mentorReviews = (currentInternData?.feedback ?? []).map((entry) => ({
+      date: entry.date,
+      rating: entry.rating,
+      comment: entry.comment,
+      mentorName: entry.mentorName?.trim() || "Mentor",
+      source: "Mentor review" as const,
+    }));
+
+    const mentorFormReviews = (currentInternData?.mentorToInternFeedbackSubmissions ?? []).map((entry) => ({
+      date: entry.submittedAt,
+      rating: entry.rating,
+      comment: entry.comment,
+      mentorName: entry.mentorName?.trim() || "Mentor",
+      source: "Mentor form" as const,
+    }));
+
+    return [...mentorReviews, ...mentorFormReviews].sort((a, b) => b.date.localeCompare(a.date));
+  }, [currentInternData?.feedback, currentInternData?.mentorToInternFeedbackSubmissions]);
   const internWeeklyFeedback = useMemo(() => {
-    const feedbackEntries = [...(currentInternData?.feedback ?? [])].sort((a, b) => b.date.localeCompare(a.date));
+    const feedbackEntries = [...internMentorRatingEntries];
     const weeklyMap = new Map<string, { weekStart: string; total: number; count: number; remarks: string[] }>();
 
     feedbackEntries.forEach((entry) => {
@@ -256,11 +275,11 @@ const Dashboard = () => {
         avgRating: item.count > 0 ? Number((item.total / item.count).toFixed(1)) : 0,
         latestRemark: item.remarks[0] || "No remark added.",
       }));
-  }, [currentInternData?.feedback]);
+  }, [internMentorRatingEntries]);
   const internCurrentMonthFeedback = useMemo(() => {
     const monthKey = new Date().toISOString().slice(0, 7);
-    return (currentInternData?.feedback ?? []).filter((entry) => entry.date.startsWith(monthKey));
-  }, [currentInternData?.feedback]);
+    return internMentorRatingEntries.filter((entry) => entry.date.startsWith(monthKey));
+  }, [internMentorRatingEntries]);
   const internMonthlyOverallRating = useMemo(() => {
     if (internCurrentMonthFeedback.length === 0) {
       return 0;
@@ -278,10 +297,7 @@ const Dashboard = () => {
     return Number((total / internWeeklyFeedback.length).toFixed(1));
   }, [internWeeklyFeedback]);
   const internOverallMentorRating = useMemo(() => {
-    const mentorRatings = [
-      ...(currentInternData?.feedback ?? []).map((entry) => entry.rating),
-      ...(currentInternData?.mentorToInternFeedbackSubmissions ?? []).map((entry) => entry.rating),
-    ];
+    const mentorRatings = internMentorRatingEntries.map((entry) => entry.rating);
 
     if (mentorRatings.length === 0) {
       return 0;
@@ -289,43 +305,37 @@ const Dashboard = () => {
 
     const total = mentorRatings.reduce((sum, rating) => sum + rating, 0);
     return Number((total / mentorRatings.length).toFixed(1));
-  }, [currentInternData?.feedback, currentInternData?.mentorToInternFeedbackSubmissions]);
+  }, [internMentorRatingEntries]);
   const internMentorFeedbackEntries = useMemo<MentorFeedbackDisplayEntry[]>(() => {
-    const mentorReviews = (currentInternData?.feedback ?? []).map((entry) => ({
-      id: `feedback-${entry.id}`,
-      mentorName: entry.mentorName?.trim() || "Mentor",
+    return internMentorRatingEntries.map((entry, index) => ({
+      id: `${entry.source}-${index}-${entry.date}`,
+      mentorName: entry.mentorName,
       rating: entry.rating,
       comment: entry.comment,
       date: entry.date,
-      source: "Mentor review" as const,
+      source: entry.source,
     }));
-
-    const mentorFormReviews = (currentInternData?.mentorToInternFeedbackSubmissions ?? []).map((entry) => ({
-      id: `mentor-form-${entry.id}`,
-      mentorName: entry.mentorName?.trim() || "Mentor",
-      rating: entry.rating,
-      comment: entry.comment,
-      date: entry.submittedAt,
-      source: "Mentor form" as const,
-    }));
-
-    return [...mentorReviews, ...mentorFormReviews].sort((a, b) => b.date.localeCompare(a.date));
-  }, [currentInternData?.feedback, currentInternData?.mentorToInternFeedbackSubmissions]);
+  }, [internMentorRatingEntries]);
   const internPerformanceOverallScore = useMemo(() => {
-    // Calculate overall performance from monthly records
+    // Prefer weekly mentor feedback when available
+    if (internWeeklyFeedback.length > 0) {
+      const total = internWeeklyFeedback.reduce((sum, entry) => sum + entry.avgRating, 0);
+      return Math.round((total / internWeeklyFeedback.length) * 10);
+    }
+
     const monthlyPerformance = (currentInternData?.performance ?? []);
     if (monthlyPerformance.length > 0) {
       const total = monthlyPerformance.reduce((sum, entry) => sum + entry.score, 0);
       return Math.round(total / monthlyPerformance.length);
     }
 
-    // Fallback to weekly average rating if no monthly records
+    // Fallback to overall weekly average rating if no weekly or monthly records exist
     if (internWeeklyAverageRating > 0) {
       return Math.round(internWeeklyAverageRating * 10);
     }
 
     return 0;
-  }, [currentInternData?.performance, internWeeklyAverageRating]);
+  }, [currentInternData?.performance, internWeeklyAverageRating, internWeeklyFeedback]);
   const internMonthlyPerformanceSummary = useMemo(() => {
     const monthlyMap = new Map<string, { month: string; total: number; count: number; remarks: string[] }>();
 
@@ -970,14 +980,14 @@ const Dashboard = () => {
     { name: "Pending", value: internSubmissionPending },
     { name: "Resolved", value: internSubmissionResolved },
   ];
-  const internPerformanceChartData = (currentInternData?.performance.length ?? 0) > 0
-    ? (currentInternData?.performance ?? []).map((entry) => ({
-      month: entry.month.slice(0, 7),
-      score: entry.score,
-    }))
-    : internWeeklyFeedback.map((entry) => ({
+  const internPerformanceChartData = internWeeklyFeedback.length > 0
+    ? internWeeklyFeedback.map((entry) => ({
       month: entry.weekStart.slice(5),
       score: Math.round((entry.avgRating / 10) * 100),
+    }))
+    : (currentInternData?.performance ?? []).map((entry) => ({
+      month: entry.month.slice(0, 7),
+      score: entry.score,
     }));
   const internTabValue = sessionRole === "Intern"
     ? ((activeSection === "overview" || dashboardMetrics.some((item) => item.key === activeSection)) ? activeSection : "overview")
@@ -1062,7 +1072,7 @@ const Dashboard = () => {
               { label: "Attendance Sessions", value: `${mentorLectureCount}`, helper: "Sessions created", icon: ClipboardCheck },
               { label: "Open Doubts", value: `${openDoubts}`, helper: "Unanswered questions", icon: MessageSquareMore },
             ] : [
-              { label: "Performance", value: `${internMonthlyOverallRating || 0}/10`, helper: `Weekly avg ${internWeeklyAverageRating || 0}/10`, icon: BadgeCheck },
+              { label: "Performance", value: `${internWeeklyAverageRating || 0}/10`, helper: `Weekly avg ${internOverallMentorRating || 0}/10`, icon: BadgeCheck },
               { label: "Mentor feedback", value: `${internOverallMentorRating || 0}/10`, helper: `${internMentorFeedbackEntries.length} ratings received`, icon: Star },
               { label: "Fees", value: `${pendingFees}`, helper: "Pending items", icon: FileText },
               { label: "Doubts", value: `${openDoubts}`, helper: "Open questions", icon: MessageSquareMore },
@@ -1122,23 +1132,27 @@ const Dashboard = () => {
                       <CardDescription className="text-white/60">Present vs absent in your marked sessions.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <ResponsiveContainer width="100%" height={260}>
-                        <PieChart>
-                          <Pie data={internAttendancePieData} dataKey="value" nameKey="name" innerRadius={60} outerRadius={90} paddingAngle={4}>
-                            {internAttendancePieData.map((entry, index) => (
-                              <Cell key={entry.name} fill={index === 0 ? "#22c55e" : "#ef4444"} />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                        </PieChart>
-                      </ResponsiveContainer>
+                      {attendanceTotal === 0 ? (
+                        <p className="text-sm text-white/60 rounded-xl border border-white/10 bg-white/5 p-4">No attendance has been marked yet.</p>
+                      ) : (
+                        <ResponsiveContainer width="100%" height={260}>
+                          <PieChart>
+                            <Pie data={internAttendancePieData} dataKey="value" nameKey="name" innerRadius={60} outerRadius={90} paddingAngle={4}>
+                              {internAttendancePieData.map((entry, index) => (
+                                <Cell key={entry.name} fill={index === 0 ? "#22c55e" : "#ef4444"} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      )}
                     </CardContent>
                   </Card>
 
                   <Card className="border-white/10 bg-slate-950/70 text-white">
                     <CardHeader>
-                      <CardTitle>Performance trend</CardTitle>
-                      <CardDescription className="text-white/60">Monthly scores from the mentor review timeline.</CardDescription>
+                      <CardTitle>Weekly performance trend</CardTitle>
+                      <CardDescription className="text-white/60">Weekly scores from the mentor review timeline.</CardDescription>
                     </CardHeader>
                     <CardContent>
                       {internPerformanceChartData.length === 0 ? (
@@ -1181,20 +1195,20 @@ const Dashboard = () => {
               <TabsContent value="performance">
                 <Card className="border-white/10 bg-slate-950/70 text-white">
                   <CardHeader>
-                    <CardTitle>Three-month performance</CardTitle>
-                    <CardDescription className="text-white/60">Overall performance till now, with month-by-month breakdown.</CardDescription>
+                    <CardTitle>Weekly performance</CardTitle>
+                    <CardDescription className="text-white/60">Overall performance till now, with week-by-week breakdown.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid gap-4 md:grid-cols-3">
                       <div className="rounded-2xl border border-primary/20 bg-primary/10 p-4">
                         <p className="text-sm text-white/70">Overall performance</p>
                         <p className="text-3xl font-bold mt-1">{internPerformanceOverallScore}%</p>
-                        <p className="text-xs text-white/55 mt-2">Based on all recorded monthly mentor reviews.</p>
+                        <p className="text-xs text-white/55 mt-2">Based on all recorded weekly mentor reviews.</p>
                       </div>
                       <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <p className="text-sm text-white/70">Monthly records</p>
-                        <p className="text-3xl font-bold mt-1">{currentInternData?.performance.length ?? 0}</p>
-                        <p className="text-xs text-white/55 mt-2">April, May, June style monthly entries.</p>
+                        <p className="text-sm text-white/70">Weekly records</p>
+                        <p className="text-3xl font-bold mt-1">{internWeeklyFeedback.length}</p>
+                        <p className="text-xs text-white/55 mt-2">Grouped by week from mentor feedback.</p>
                       </div>
                       <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                         <p className="text-sm text-white/70">Overall mentor rating</p>
@@ -1203,17 +1217,17 @@ const Dashboard = () => {
                       </div>
                     </div>
 
-                    {internMonthlyPerformanceSummary.length === 0 ? (
-                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/60">No monthly performance records yet.</div>
+                    {internWeeklyFeedback.length === 0 ? (
+                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/60">No weekly performance records yet.</div>
                     ) : (
-                      internMonthlyPerformanceSummary.map((entry) => (
-                        <div key={entry.month} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                      internWeeklyFeedback.map((entry) => (
+                        <div key={entry.weekStart} className="rounded-2xl border border-white/10 bg-white/5 p-4">
                           <div className="flex items-center justify-between gap-4">
                             <div>
-                              <p className="font-semibold">{entry.monthLabel}</p>
+                              <p className="font-semibold">Week of {entry.weekStart}</p>
                               <p className="text-sm text-white/65 mt-1">{entry.latestRemark}</p>
                             </div>
-                            <Badge className="bg-primary/15 text-primary border-primary/20">{entry.averageScore}%</Badge>
+                            <Badge className="bg-primary/15 text-primary border-primary/20">{entry.avgRating}/10</Badge>
                           </div>
                         </div>
                       ))
