@@ -42,8 +42,8 @@ const AdminFeedback = () => {
   const mentorUsers = useMemo(() => users.filter((u) => u.role === "Mentor"), [users]);
 
   const sortedMentorFeedback = useMemo(
-    () => (feedback ?? []).slice().sort((a, b) => b.date.localeCompare(a.date)),
-    [feedback],
+    () => (mentorToInternFeedbackSubmissions ?? []).slice().sort((a, b) => b.submittedAt.localeCompare(a.submittedAt)),
+    [mentorToInternFeedbackSubmissions],
   );
   const sortedInternSubmissions = useMemo(
     () => (mentorFeedbackSubmissions ?? []).slice().sort((a, b) => b.submittedAt.localeCompare(a.submittedAt)),
@@ -63,7 +63,7 @@ const AdminFeedback = () => {
   const cancelEdit = () => { setEditingId(""); setEditingRating(7); setEditingComment(""); };
   const saveEdit = async (id: string) => {
     if (!editingComment.trim()) return;
-    await updateDoc(doc(db, "feedback", id), {
+    await updateDoc(doc(db, "mentorToInternFeedbackSubmissions", id), {
       rating: Math.max(0, Math.min(10, Number(editingRating.toFixed(1)))),
       comment: editingComment.trim(),
     });
@@ -154,7 +154,7 @@ const AdminFeedback = () => {
                             </div>
                             <p className="text-white/70 text-sm leading-relaxed">{entry.comment}</p>
                             <div className="flex items-center gap-3 mt-2 text-xs text-white/40">
-                              <span>{new Date(entry.date).toLocaleDateString()}</span>
+                              <span>{new Date(entry.submittedAt).toLocaleDateString()}</span>
                               <span className={`flex items-center gap-1 font-medium ${ratingColor(entry.rating)}`}>
                                 <Star className="w-3 h-3 fill-current" />{entry.rating}/10
                               </span>
@@ -168,7 +168,7 @@ const AdminFeedback = () => {
                             <Button size="sm" variant="destructive" className="h-8 px-3"
                               onClick={async () => {
                                 if (!window.confirm("Delete this feedback?")) return;
-                                await deleteDoc(doc(db, "feedback", entry.id));
+                                await deleteDoc(doc(db, "mentorToInternFeedbackSubmissions", entry.id));
                               }}>
                               <Trash2 className="w-3.5 h-3.5" />
                             </Button>
