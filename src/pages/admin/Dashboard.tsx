@@ -1,6 +1,6 @@
 import { Navigate, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Users, GraduationCap, UserCheck, MessageSquareMore, Send, Star, Wallet, TrendingUp } from "lucide-react";
+import { BadgeCheck, Users, GraduationCap, UserCheck, MessageSquareMore, Send, Star, Wallet, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { usePlatform } from "@/context/PlatformContext";

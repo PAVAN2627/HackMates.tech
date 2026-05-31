@@ -1000,12 +1000,21 @@ const Dashboard = () => {
   const showMentorSubmissions = activeSection === "submissions";
   const showMentorFeedback = activeSection === "feedback";
   const showMentorAttendance = activeSection === "attendance";
+  const currentMentorIdentifiers = new Set([
+    sessionUser.uid,
+    sessionUser.id,
+    sessionUser.mentorId,
+    sessionUser.email,
+    sessionUser.name,
+  ]
+    .filter((value): value is string => Boolean(value))
+    .map((value) => value.trim().toLowerCase()));
   const mentorFeedbackHistory = mentorData.feedback
     .filter((entry) => entry.mentorName === sessionUser.name)
     .slice()
     .sort((a, b) => b.date.localeCompare(a.date));
   const receivedMentorFeedback = (mentorFeedbackSubmissions ?? [])
-    .filter((entry) => entry.mentorId === sessionUser.uid)
+    .filter((entry) => currentMentorIdentifiers.has(String(entry.mentorId || "").trim().toLowerCase()))
     .slice()
     .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
   const internGaveMentorFeedback = mentorFeedback

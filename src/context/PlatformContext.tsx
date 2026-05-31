@@ -594,6 +594,20 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     ].filter((value): value is string => Boolean(value))));
   }, [sessionUser]);
 
+  const currentInternAttendanceIdentifiers = useMemo(() => {
+    if (!sessionUser || sessionUser.role !== "Intern") {
+      return [];
+    }
+
+    return Array.from(new Set([
+      sessionUser.uid,
+      sessionUser.id,
+      sessionUser.internId,
+      sessionUser.email,
+      sessionUser.name,
+    ].filter((value): value is string => Boolean(value)).map((value) => value.trim().toLowerCase())));
+  }, [sessionUser]);
+
   // Derive filtered mentorFeedbackForms via useMemo so it always reacts to
   // the latest sessionUser — avoids stale-closure bugs in the snapshot listener.
   const mentorFeedbackForms = useMemo<MentorFeedbackForm[]>(() => {
@@ -700,9 +714,7 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     const submissionsQuery = sessionUser.role === "Intern"
       ? query(collections.submissions, where("internId", "==", sessionUser.uid))
       : collections.submissions;
-    const attendanceQuery = sessionUser.role === "Intern"
-      ? query(collections.attendanceSessions, where("internIds", "array-contains-any", currentInternIdentifiers))
-      : collections.attendanceSessions;
+    const attendanceQuery = collections.attendanceSessions;
 
     const unsubscribePerformance = onSnapshot(performanceQuery, (snapshot) => {
       const items = snapshot.docs.map((docSnapshot) => mapDoc<PerformanceEntry>(docSnapshot));
@@ -791,10 +803,23 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
       });
 
       const filtered = sessionUser.role === "Intern"
-        ? items.filter((session) =>
-          currentInternIdentifiers.some((identifier) => session.internIds.includes(identifier))
-            || session.records.some((record) => currentInternIdentifiers.includes(record.internId))
-        )
+        ? items.filter((session) => {
+          const sessionIds = session.internIds.map((value) => String(value).trim().toLowerCase());
+          if (currentInternAttendanceIdentifiers.some((identifier) => sessionIds.includes(identifier))) {
+            return true;
+          }
+
+          return session.records.some((record) => {
+            const recordId = String(record.internId || "").trim().toLowerCase();
+            const recordEmail = String(record.internEmail || "").trim().toLowerCase();
+            const recordName = String(record.internName || "").trim().toLowerCase();
+            return currentInternAttendanceIdentifiers.some((identifier) => (
+              identifier === recordId
+              || identifier === recordEmail
+              || identifier === recordName
+            ));
+          });
+        })
         : items;
 
       setAttendanceSessions(filtered.sort((a, b) => b.date.localeCompare(a.date)));
@@ -879,7 +904,7 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
       unsubscribeMentorToInternFeedbackForms();
       unsubscribeMentorToInternFeedbackSubmissions();
     };
-  }, [sessionUser, currentInternIdentifiers]);
+  }, [sessionUser, currentInternIdentifiers, currentInternAttendanceIdentifiers]);
 
   const login = useCallback(async (email: string, password: string) => {
     await setPersistence(auth, browserLocalPersistence);
