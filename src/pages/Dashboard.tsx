@@ -143,7 +143,6 @@ const Dashboard = () => {
     addSubmission,
     updateSubmissionResponse,
     addDailyNote,
-    addFeedback,
     answerDoubt,
     reviewSubmission,
     createAttendanceSession,
@@ -185,12 +184,6 @@ const Dashboard = () => {
   const [noteLinks, setNoteLinks] = useState<NoteLinkDraft[]>([{ label: "", url: "" }]);
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteSearch, setNoteSearch] = useState("");
-  const [feedbackInternId, setFeedbackInternId] = useState("");
-  const [feedbackRating, setFeedbackRating] = useState(7);
-  const [feedbackComment, setFeedbackComment] = useState("");
-  const [editingFeedbackId, setEditingFeedbackId] = useState("");
-  const [editingFeedbackRating, setEditingFeedbackRating] = useState(7);
-  const [editingFeedbackComment, setEditingFeedbackComment] = useState("");
   const [doubtAnswers, setDoubtAnswers] = useState<Record<string, string>>({});
   const [submissionReviews, setSubmissionReviews] = useState<Record<string, string>>({});
   const [attendanceTitle, setAttendanceTitle] = useState("");
@@ -382,14 +375,10 @@ const Dashboard = () => {
       setNoteInternIds([internUsers[0].id]);
     }
 
-    if (!feedbackInternId) {
-      setFeedbackInternId(internUsers[0].id);
-    }
-
     if (mentorSubmissionInternIds.length === 0) {
       setMentorSubmissionInternIds([internUsers[0].id]);
     }
-  }, [feedbackInternId, internUsers, mentorSubmissionInternIds, noteInternIds]);
+  }, [internUsers, mentorSubmissionInternIds, noteInternIds]);
 
   useEffect(() => {
     if (sessionUser?.role !== "Intern") {
@@ -689,42 +678,6 @@ const Dashboard = () => {
     }
   };
 
-  const handleMentorFeedbackSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!feedbackInternId || !feedbackComment.trim()) {
-      return;
-    }
-
-    const intern = internUsers.find((user) => user.id === feedbackInternId);
-    if (!intern) {
-      alert("Selected intern not found. Please select again.");
-      return;
-    }
-
-    const normalizedRating = normalizeTenPointRating(feedbackRating);
-    if (Number.isNaN(normalizedRating)) {
-      alert("Please enter a valid rating between 0 and 10.");
-      return;
-    }
-
-    try {
-      await addFeedback({
-        internId: feedbackInternId,
-        internName: intern.name,
-        date: new Date().toISOString().slice(0, 10),
-        mentorName: sessionUser.name,
-        rating: normalizedRating,
-        comment: feedbackComment,
-      });
-      setFeedbackComment("");
-      setFeedbackRating(7);
-      alert("Feedback saved successfully.");
-    } catch (error) {
-      console.error("Failed to save mentor feedback:", error);
-      alert("Unable to save feedback right now.");
-    }
-  };
-
   const submitDoubtAnswer = (doubtId: string) => {
     const answer = doubtAnswers[doubtId]?.trim();
     if (!answer) {
@@ -1009,10 +962,6 @@ const Dashboard = () => {
   ]
     .filter((value): value is string => Boolean(value))
     .map((value) => value.trim().toLowerCase()));
-  const mentorFeedbackHistory = mentorData.feedback
-    .filter((entry) => entry.mentorName === sessionUser.name)
-    .slice()
-    .sort((a, b) => b.date.localeCompare(a.date));
   const receivedMentorFeedback = (mentorFeedbackSubmissions ?? [])
     .filter((entry) => currentMentorIdentifiers.has(String(entry.mentorId || "").trim().toLowerCase()))
     .slice()
@@ -2490,162 +2439,6 @@ const Dashboard = () => {
 
                 {showMentorFeedback && (
                 <div className="space-y-6">
-                  <Card className="border-white/10 bg-slate-950/70 text-white">
-                    <CardHeader>
-                      <CardTitle>Feedback board</CardTitle>
-                      <CardDescription className="text-white/60">Add rating-based mentor feedback.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                    <form onSubmit={handleMentorFeedbackSubmit} className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-                      <div className="space-y-2">
-                        <label className="text-sm text-white/70">Intern</label>
-                          <select value={feedbackInternId} onChange={(event) => setFeedbackInternId(event.target.value)} className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white">
-                          <option value="">Select intern</option>
-                          {internUsers.map((user) => (
-                            <option key={user.id} value={user.id} className="text-black">{user.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm text-white/70">Rating</label>
-                        <Input type="number" min={0} max={10} step="0.1" value={feedbackRating} onChange={(event) => setFeedbackRating(Number(event.target.value))} className="bg-white/5 border-white/10 text-white" />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm text-white/70">Feedback</label>
-                        <Textarea value={feedbackComment} onChange={(event) => setFeedbackComment(event.target.value)} className="bg-white/5 border-white/10 text-white min-h-28" placeholder="What should the intern improve next?" />
-                      </div>
-                      <Button type="submit" className="w-full">
-                        <Sparkles className="w-4 h-4" />
-                        Save feedback
-                      </Button>
-                    </form>
-
-                    <div className="space-y-3">
-                      <p className="text-sm text-white/75">Your feedback history</p>
-                      {mentorFeedbackHistory.length === 0 ? (
-                        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/60">No feedback entries from you yet.</div>
-                      ) : (
-                        mentorFeedbackHistory.map((entry) => {
-                          const internName = entry.internName || internUsers.find((user) => user.id === entry.internId)?.name || entry.internId;
-                          const isEditing = editingFeedbackId === entry.id;
-
-                          return (
-                            <div key={entry.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
-                              <div className="flex items-start justify-between gap-3">
-                                <div>
-                                  <p className="font-semibold">{internName}</p>
-                                  <p className="text-xs text-white/60 mt-1">{entry.date} · {entry.rating}/10</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-                                    onClick={() => {
-                                      setEditingFeedbackId(entry.id);
-                                      setEditingFeedbackRating(entry.rating);
-                                      setEditingFeedbackComment(entry.comment);
-                                    }}
-                                  >
-                                    <Pencil className="w-4 h-4" />
-                                    Edit
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="destructive"
-                                    onClick={async () => {
-                                      if (!window.confirm("Delete this feedback?")) {
-                                        return;
-                                      }
-                                      try {
-                                        await deleteDoc(doc(db, "feedback", entry.id));
-                                      } catch (error) {
-                                        console.error("Failed to delete feedback:", error);
-                                        alert("Unable to delete feedback right now.");
-                                      }
-                                    }}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                    Delete
-                                  </Button>
-                                </div>
-                              </div>
-
-                              {isEditing ? (
-                                <div className="space-y-3 rounded-xl border border-white/10 bg-slate-950/40 p-3">
-                                  <div className="space-y-2">
-                                    <label className="text-xs text-white/65">Rating (out of 10)</label>
-                                    <Input
-                                      type="number"
-                                      min={0}
-                                      max={10}
-                                      step="0.1"
-                                      value={editingFeedbackRating}
-                                      onChange={(event) => setEditingFeedbackRating(Number(event.target.value))}
-                                      className="bg-white/5 border-white/10 text-white"
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <label className="text-xs text-white/65">Comment</label>
-                                    <Textarea
-                                      value={editingFeedbackComment}
-                                      onChange={(event) => setEditingFeedbackComment(event.target.value)}
-                                      className="bg-white/5 border-white/10 text-white min-h-24"
-                                    />
-                                  </div>
-                                  <div className="grid sm:grid-cols-2 gap-2">
-                                    <Button
-                                      type="button"
-                                      onClick={async () => {
-                                        if (!editingFeedbackComment.trim()) {
-                                          return;
-                                        }
-
-                                        const normalizedRating = Number.isFinite(editingFeedbackRating)
-                                          ? Math.max(0, Math.min(10, Number(editingFeedbackRating.toFixed(1))))
-                                          : 0;
-
-                                        try {
-                                          await updateDoc(doc(db, "feedback", entry.id), {
-                                            rating: normalizedRating,
-                                            comment: editingFeedbackComment.trim(),
-                                          });
-                                          setEditingFeedbackId("");
-                                          setEditingFeedbackComment("");
-                                          setEditingFeedbackRating(7);
-                                        } catch (error) {
-                                          console.error("Failed to update feedback:", error);
-                                          alert("Unable to update feedback right now.");
-                                        }
-                                      }}
-                                    >
-                                      Save changes
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-                                      onClick={() => {
-                                        setEditingFeedbackId("");
-                                        setEditingFeedbackComment("");
-                                        setEditingFeedbackRating(7);
-                                      }}
-                                    >
-                                      Cancel
-                                    </Button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <p className="text-sm text-white/75">{entry.comment}</p>
-                              )}
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                    </CardContent>
-                  </Card>
-
                   {sessionRole === "Mentor" && (
                     <Card className="border-white/10 bg-slate-950/70 text-white">
                       <CardHeader>
@@ -2667,6 +2460,7 @@ const Dashboard = () => {
                                 </div>
                                 <span className="text-xs text-white/40">{new Date(entry.submittedAt).toLocaleDateString()}</span>
                               </div>
+                              <p className="text-xs text-white/40 italic">Anonymous intern</p>
                               <p className="text-sm text-white/75">{entry.review}</p>
                             </div>
                           ))

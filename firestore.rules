@@ -112,7 +112,7 @@ service cloud.firestore {
     match /attendanceSessions/{docId} {
       allow read: if isAdmin()
         || isMentor()
-        || (isIntern() && request.auth.uid in resource.data.internIds);
+        || isIntern();
       allow create, update, delete: if isAdmin() || isMentor();
     }
 
