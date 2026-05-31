@@ -21,6 +21,15 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis
 
 type NoteLinkDraft = { label: string; url: string };
 
+type MentorFeedbackDisplayEntry = {
+  id: string;
+  mentorName: string;
+  rating: number;
+  comment: string;
+  date: string;
+  source: "Mentor review" | "Mentor form";
+};
+
 const dashboardMetrics = [
   { key: "performance", label: "Performance", icon: BadgeCheck },
   { key: "fees", label: "Fees", icon: FileText },
@@ -208,6 +217,8 @@ const Dashboard = () => {
   const [mtiRatings, setMtiRatings] = useState<Record<string, number>>({});
   const [mtiComments, setMtiComments] = useState<Record<string, string>>({});
   const [submitMtiFeedbackLoading, setSubmitMtiFeedbackLoading] = useState(false);
+  const [justSubmittedMtiKeys, setJustSubmittedMtiKeys] = useState<Set<string>>(new Set());
+  const [mtiSuccessMsg, setMtiSuccessMsg] = useState<string | null>(null);
 
   const internUsers = useMemo(() => users.filter((user) => user.role === "Intern"), [users]);
   const currentInternData = sessionUser?.role === "Intern" ? internData : null;
@@ -278,6 +289,27 @@ const Dashboard = () => {
 
     const total = mentorRatings.reduce((sum, rating) => sum + rating, 0);
     return Number((total / mentorRatings.length).toFixed(1));
+  }, [currentInternData?.feedback, currentInternData?.mentorToInternFeedbackSubmissions]);
+  const internMentorFeedbackEntries = useMemo<MentorFeedbackDisplayEntry[]>(() => {
+    const mentorReviews = (currentInternData?.feedback ?? []).map((entry) => ({
+      id: `feedback-${entry.id}`,
+      mentorName: entry.mentorName?.trim() || "Mentor",
+      rating: entry.rating,
+      comment: entry.comment,
+      date: entry.date,
+      source: "Mentor review" as const,
+    }));
+
+    const mentorFormReviews = (currentInternData?.mentorToInternFeedbackSubmissions ?? []).map((entry) => ({
+      id: `mentor-form-${entry.id}`,
+      mentorName: entry.mentorName?.trim() || "Mentor",
+      rating: entry.rating,
+      comment: entry.comment,
+      date: entry.submittedAt,
+      source: "Mentor form" as const,
+    }));
+
+    return [...mentorReviews, ...mentorFormReviews].sort((a, b) => b.date.localeCompare(a.date));
   }, [currentInternData?.feedback, currentInternData?.mentorToInternFeedbackSubmissions]);
   const internPerformanceOverallScore = useMemo(() => {
     // Calculate overall performance from monthly records
@@ -1031,12 +1063,13 @@ const Dashboard = () => {
               { label: "Open Doubts", value: `${openDoubts}`, helper: "Unanswered questions", icon: MessageSquareMore },
             ] : [
               { label: "Performance", value: `${internMonthlyOverallRating || 0}/10`, helper: `Weekly avg ${internWeeklyAverageRating || 0}/10`, icon: BadgeCheck },
+              { label: "Mentor feedback", value: `${internOverallMentorRating || 0}/10`, helper: `${internMentorFeedbackEntries.length} ratings received`, icon: Star },
               { label: "Fees", value: `${pendingFees}`, helper: "Pending items", icon: FileText },
               { label: "Doubts", value: `${openDoubts}`, helper: "Open questions", icon: MessageSquareMore },
               { label: "Submissions", value: `${pendingSubmissions}`, helper: "Awaiting review", icon: Send },
             ];
             return (
-              <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+              <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="grid gap-4 grid-cols-2 lg:grid-cols-5">
                 {overviewCards.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -1480,14 +1513,17 @@ const Dashboard = () => {
                           <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/65">No feedback received yet.</div>
                         ) : (
                           receivedMentorFeedback.map((entry) => (
-                            <div key={entry.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                            <div key={entry.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-2">
                               <div className="flex items-center justify-between gap-3">
-                                <div>
-                                  <p className="text-xs text-white/55">{new Date(entry.submittedAt).toLocaleDateString()}</p>
+                                <div className="flex items-center gap-1.5">
+                                  {[1,2,3,4,5].map((n) => (
+                                    <Star key={n} className={`w-4 h-4 ${entry.rating >= n * 2 ? "fill-yellow-400 text-yellow-400" : entry.rating >= n * 2 - 1 ? "fill-yellow-400/50 text-yellow-400/50" : "text-white/20"}`} />
+                                  ))}
+                                  <span className="text-xs text-white/60 ml-1">{entry.rating}/10</span>
                                 </div>
-                                <span className="rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-xs text-white/80">{entry.rating}/10</span>
+                                <span className="text-xs text-white/40">{new Date(entry.submittedAt).toLocaleDateString()}</span>
                               </div>
-                              <p className="text-sm text-white/75 mt-3">{entry.review}</p>
+                              <p className="text-sm text-white/75">{entry.review}</p>
                             </div>
                           ))
                         )}
@@ -1495,28 +1531,56 @@ const Dashboard = () => {
                     </Card>
                   )}
 
-                  {/* Intern sees anonymous feedback from mentors via admin-created forms */}
-                  {sessionRole === "Intern" && internData.mentorToInternFeedbackSubmissions && internData.mentorToInternFeedbackSubmissions.length > 0 && (
+                  {/* Intern sees feedback from mentors — with mentor name, stars, comment */}
+                  {sessionRole === "Intern" && internMentorFeedbackEntries.length > 0 && (
                     <Card className="border-white/10 bg-slate-950/70 text-white">
                       <CardHeader>
-                        <CardTitle>Feedback from mentors</CardTitle>
-                        <CardDescription className="text-white/60">Anonymous ratings and comments submitted by your mentors.</CardDescription>
+                        <CardTitle>Mentor feedback</CardTitle>
+                        <CardDescription className="text-white/60">Ratings, stars, and comments submitted by your mentors.</CardDescription>
                       </CardHeader>
-                      <CardContent className="space-y-3">
-                        {internData.mentorToInternFeedbackSubmissions
-                          .slice()
-                          .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))
-                          .map((sub) => (
-                            <div key={sub.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                              <div className="flex items-center justify-between gap-3">
-                                <p className="text-xs text-white/55">{new Date(sub.submittedAt).toLocaleDateString()}</p>
-                                <div className="flex items-center gap-1">
-                                    <span className="rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-xs text-white/80">{sub.rating}/10</span>
+                      <CardContent className="space-y-4">
+                        <div className="grid gap-3 md:grid-cols-3">
+                          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                            <p className="text-sm text-white/60">Total reviews</p>
+                            <p className="text-3xl font-bold mt-2">{internMentorFeedbackEntries.length}</p>
+                          </div>
+                          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                            <p className="text-sm text-white/60">Average rating</p>
+                            <p className="text-3xl font-bold mt-2">{internOverallMentorRating || 0}/10</p>
+                          </div>
+                          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                            <p className="text-sm text-white/60">Mentors</p>
+                            <p className="text-3xl font-bold mt-2">
+                              {new Set(internMentorFeedbackEntries.map((entry) => entry.mentorName)).size}
+                            </p>
+                          </div>
+                        </div>
+
+                        {internMentorFeedbackEntries.length === 0 ? (
+                          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/65">No mentor feedback received yet.</div>
+                        ) : (
+                          internMentorFeedbackEntries.map((entry) => (
+                            <div key={entry.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-2">
+                              <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-sm text-white">{entry.mentorName}</span>
+                                  <Badge className="bg-white/10 text-white/60 border-white/10 text-xs">{entry.source}</Badge>
                                 </div>
+                                <span className="text-xs text-white/40">{new Date(entry.date).toLocaleDateString()}</span>
                               </div>
-                              <p className="text-sm text-white/75 mt-3">{sub.comment}</p>
+                              <div className="flex items-center gap-1.5">
+                                {[1, 2, 3, 4, 5].map((n) => (
+                                  <Star
+                                    key={n}
+                                    className={`w-4 h-4 ${entry.rating >= n * 2 ? "fill-yellow-400 text-yellow-400" : entry.rating >= n * 2 - 1 ? "fill-yellow-400/50 text-yellow-400/50" : "text-white/20"}`}
+                                  />
+                                ))}
+                                <span className="text-xs text-white/60 ml-1">{entry.rating}/10</span>
+                              </div>
+                              <p className="text-sm text-white/75">{entry.comment}</p>
                             </div>
-                          ))}
+                          ))
+                        )}
                       </CardContent>
                     </Card>
                   )}
@@ -2568,18 +2632,17 @@ const Dashboard = () => {
                           <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/65">No feedback received yet.</div>
                         ) : (
                           receivedMentorFeedback.map((entry) => (
-                            <div key={entry.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                            <div key={entry.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-2">
                               <div className="flex items-center justify-between gap-3">
-                                <div>
-                                  <p className="text-xs text-white/55">{new Date(entry.submittedAt).toLocaleDateString()}</p>
-                                </div>
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1.5">
                                   {[1,2,3,4,5].map((n) => (
-                                    <Star key={n} className={`w-4 h-4 ${entry.rating >= n ? "fill-yellow-400 text-yellow-400" : "text-white/20"}`} />
+                                    <Star key={n} className={`w-4 h-4 ${entry.rating >= n * 2 ? "fill-yellow-400 text-yellow-400" : entry.rating >= n * 2 - 1 ? "fill-yellow-400/50 text-yellow-400/50" : "text-white/20"}`} />
                                   ))}
+                                  <span className="text-xs text-white/60 ml-1">{entry.rating}/10</span>
                                 </div>
+                                <span className="text-xs text-white/40">{new Date(entry.submittedAt).toLocaleDateString()}</span>
                               </div>
-                              <p className="text-sm text-white/75 mt-3">{entry.review}</p>
+                              <p className="text-sm text-white/75">{entry.review}</p>
                             </div>
                           ))
                         )}
@@ -2595,109 +2658,165 @@ const Dashboard = () => {
                         <CardDescription className="text-white/60">Admin-assigned forms — rate and review your interns.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        {mentorData.mentorToInternFeedbackForms.map((form) => (
-                          <div key={form.id} className="rounded-lg border border-white/10 bg-white/5 p-4 space-y-4">
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="font-semibold text-white text-sm">Interns: {form.internNames.join(", ")}</p>
-                              <Badge className={form.status === "Active" ? "bg-green-500/20 text-green-300 border-green-500/30" : "bg-red-500/20 text-red-300 border-red-500/30"}>
-                                {form.status}
-                              </Badge>
-                            </div>
-                            {form.internIds.map((internId, idx) => {
-                              const myMentorId = sessionUser.uid || sessionUser.id;
-                              const submissionKey = `${form.id}-${internId}`;
-                              const alreadySubmitted = mentorData.mentorToInternFeedbackSubmissions?.some(
+                        {/* Global success popup */}
+                        {mtiSuccessMsg && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-300"
+                          >
+                            <CheckCircle2 className="w-4 h-4 shrink-0" />
+                            {mtiSuccessMsg}
+                          </motion.div>
+                        )}
+
+                        {mentorData.mentorToInternFeedbackForms.map((form) => {
+                          const myMentorId = sessionUser.uid || sessionUser.id;
+
+                          const isMtiSubmitted = (internId: string) => {
+                            const key = `${form.id}-${internId}`;
+                            return justSubmittedMtiKeys.has(key) ||
+                              mentorData.mentorToInternFeedbackSubmissions?.some(
                                 (s) => s.internId === internId && s.formId === form.id && s.mentorId === myMentorId,
                               );
-                              const previousSubmission = mentorData.mentorToInternFeedbackSubmissions?.find(
-                                (s) => s.internId === internId && s.formId === form.id && s.mentorId === myMentorId,
-                              );
-                              return (
-                                <div key={internId} className="rounded-lg border border-white/10 bg-slate-950/40 p-4 space-y-3">
-                                  <h4 className="font-semibold text-white text-sm">{form.internNames[idx]}</h4>
-                                  {alreadySubmitted && previousSubmission ? (
-                                    <div className="space-y-2">
-                                      <Badge className="bg-green-500/20 text-green-300">Submitted</Badge>
-                                      <div className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-1">
-                                        <div className="flex items-center gap-2">
-                                          {[1,2,3,4,5].map((n) => (
-                                            <Star key={n} className={`w-4 h-4 ${previousSubmission.rating >= n ? "fill-yellow-400 text-yellow-400" : "text-white/20"}`} />
-                                          ))}
-                                          <span className="text-xs text-white/50">{new Date(previousSubmission.submittedAt).toLocaleDateString()}</span>
+                          };
+
+                          const pendingInterns = form.internIds.filter((id) => !isMtiSubmitted(id));
+                          const doneInterns = form.internIds.filter((id) => isMtiSubmitted(id));
+
+                          return (
+                            <div key={form.id} className="rounded-lg border border-white/10 bg-white/5 p-4 space-y-4">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="font-semibold text-white text-sm">
+                                  {pendingInterns.length > 0
+                                    ? `Pending: ${pendingInterns.map((id) => form.internNames[form.internIds.indexOf(id)]).join(", ")}`
+                                    : "All interns reviewed"}
+                                </p>
+                                <Badge className={form.status === "Active" ? "bg-green-500/20 text-green-300 border-green-500/30" : "bg-red-500/20 text-red-300 border-red-500/30"}>
+                                  {form.status}
+                                </Badge>
+                              </div>
+
+                              {/* Pending interns */}
+                              {pendingInterns.map((internId) => {
+                                const idx = form.internIds.indexOf(internId);
+                                const submissionKey = `${form.id}-${internId}`;
+                                return (
+                                  <div key={internId} className="rounded-lg border border-white/10 bg-slate-950/40 p-4 space-y-3">
+                                    <h4 className="font-semibold text-white text-sm">{form.internNames[idx]}</h4>
+                                    {form.status === "Active" ? (
+                                      <>
+                                        <div className="space-y-2">
+                                          <label className="text-sm text-white/70">Rating (out of 10)</label>
+                                          <Input
+                                            type="number"
+                                            min={0}
+                                            max={10}
+                                            step="0.1"
+                                            value={mtiRatings[submissionKey] ?? ""}
+                                            onChange={(event) => setMtiRatings((prev) => ({
+                                              ...prev,
+                                              [submissionKey]: event.target.value === "" ? Number.NaN : Number(event.target.value),
+                                            }))}
+                                            className="bg-white/5 border-white/10 text-white"
+                                          />
+                                          <p className="text-xs text-white/45">Enter a score from 0 to 10.</p>
                                         </div>
-                                        <p className="text-sm text-white/70">{previousSubmission.comment}</p>
+                                        <div className="space-y-2">
+                                          <label className="text-sm text-white/70">Feedback</label>
+                                          <Textarea
+                                            placeholder="Your feedback for this intern..."
+                                            value={mtiComments[submissionKey] || ""}
+                                            onChange={(e) => setMtiComments((prev) => ({ ...prev, [submissionKey]: e.target.value }))}
+                                            className="bg-white/5 border-white/10 text-white min-h-20"
+                                          />
+                                        </div>
+                                        <Button
+                                          type="button"
+                                          disabled={submitMtiFeedbackLoading || Number.isNaN(normalizeTenPointRating(mtiRatings[submissionKey])) || !mtiComments[submissionKey]?.trim()}
+                                          className="w-full bg-primary hover:bg-primary/80"
+                                          onClick={async () => {
+                                            const rating = normalizeTenPointRating(mtiRatings[submissionKey]);
+                                            if (Number.isNaN(rating) || !mtiComments[submissionKey]?.trim()) {
+                                              alert("Please provide a valid rating between 0 and 10 and feedback");
+                                              return;
+                                            }
+                                            setSubmitMtiFeedbackLoading(true);
+                                            try {
+                                              await submitMentorToInternFeedbackForm({
+                                                formId: form.id,
+                                                internId,
+                                                internName: form.internNames[idx],
+                                                mentorId: myMentorId,
+                                                mentorName: sessionUser.name,
+                                                rating,
+                                                comment: mtiComments[submissionKey],
+                                              });
+                                              // Mark locally immediately
+                                              setJustSubmittedMtiKeys((prev) => new Set([...prev, submissionKey]));
+                                              setMtiRatings((prev) => { const n = { ...prev }; delete n[submissionKey]; return n; });
+                                              setMtiComments((prev) => { const n = { ...prev }; delete n[submissionKey]; return n; });
+
+                                              const stillPending = pendingInterns.filter((id) => id !== internId);
+                                              if (stillPending.length === 0) {
+                                                setMtiSuccessMsg("All done! You've reviewed all interns in this form.");
+                                              } else {
+                                                setMtiSuccessMsg(`Feedback for ${form.internNames[idx]} submitted!`);
+                                                setTimeout(() => setMtiSuccessMsg(null), 3000);
+                                              }
+                                            } catch (error) {
+                                              console.error("Error submitting feedback:", error);
+                                              alert("Failed to submit feedback. You may have already submitted for this intern.");
+                                            } finally {
+                                              setSubmitMtiFeedbackLoading(false);
+                                            }
+                                          }}
+                                        >
+                                          {submitMtiFeedbackLoading ? "Submitting..." : "Submit Feedback"}
+                                        </Button>
+                                      </>
+                                    ) : (
+                                      <p className="text-xs text-white/40 italic">This form is closed.</p>
+                                    )}
+                                  </div>
+                                );
+                              })}
+
+                              {/* Already submitted interns */}
+                              {doneInterns.length > 0 && (
+                                <div className="space-y-2 pt-1">
+                                  <p className="text-xs text-white/40 uppercase tracking-wide font-medium">Already submitted</p>
+                                  {doneInterns.map((internId) => {
+                                    const idx = form.internIds.indexOf(internId);
+                                    const sub = mentorData.mentorToInternFeedbackSubmissions?.find(
+                                      (s) => s.internId === internId && s.formId === form.id && s.mentorId === myMentorId,
+                                    );
+                                    return (
+                                      <div key={internId} className="rounded-lg border border-green-500/20 bg-green-500/5 p-3 flex items-start gap-3">
+                                        <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-medium text-white/80 text-sm">{form.internNames[idx]}</p>
+                                          {sub && (
+                                            <div className="mt-1 space-y-0.5">
+                                              <div className="flex items-center gap-2">
+                                                {[1,2,3,4,5].map((n) => (
+                                                  <Star key={n} className={`w-3.5 h-3.5 ${sub.rating >= n * 2 ? "fill-yellow-400 text-yellow-400" : "text-white/20"}`} />
+                                                ))}
+                                                <span className="text-xs text-white/50">{sub.rating}/10 · {new Date(sub.submittedAt).toLocaleDateString()}</span>
+                                              </div>
+                                              <p className="text-xs text-white/55 line-clamp-2">{sub.comment}</p>
+                                            </div>
+                                          )}
+                                        </div>
+                                        <Badge className="bg-green-500/20 text-green-300 border-green-500/30 shrink-0 text-xs">Submitted</Badge>
                                       </div>
-                                    </div>
-                                  ) : form.status === "Active" ? (
-                                    <>
-                                      <div className="space-y-2">
-                                        <label className="text-sm text-white/70">Rating (out of 10)</label>
-                                        <Input
-                                          type="number"
-                                          min={0}
-                                          max={10}
-                                          step="0.1"
-                                          value={mtiRatings[submissionKey] ?? ""}
-                                          onChange={(event) => setMtiRatings((prev) => ({
-                                            ...prev,
-                                            [submissionKey]: event.target.value === "" ? Number.NaN : Number(event.target.value),
-                                          }))}
-                                          className="bg-white/5 border-white/10 text-white"
-                                        />
-                                        <p className="text-xs text-white/45">Enter a score from 0 to 10.</p>
-                                      </div>
-                                      <div className="space-y-2">
-                                        <label className="text-sm text-white/70">Feedback</label>
-                                        <Textarea
-                                          placeholder="Your feedback for this intern..."
-                                          value={mtiComments[submissionKey] || ""}
-                                          onChange={(e) => setMtiComments((prev) => ({ ...prev, [submissionKey]: e.target.value }))}
-                                          className="bg-white/5 border-white/10 text-white min-h-20"
-                                        />
-                                      </div>
-                                      <Button
-                                        type="button"
-                                        disabled={submitMtiFeedbackLoading || Number.isNaN(normalizeTenPointRating(mtiRatings[submissionKey])) || !mtiComments[submissionKey]?.trim()}
-                                        className="w-full bg-primary hover:bg-primary/80"
-                                        onClick={async () => {
-                                          const rating = normalizeTenPointRating(mtiRatings[submissionKey]);
-                                          if (Number.isNaN(rating) || !mtiComments[submissionKey]?.trim()) {
-                                            alert("Please provide a valid rating between 0 and 10 and feedback");
-                                            return;
-                                          }
-                                          setSubmitMtiFeedbackLoading(true);
-                                          try {
-                                            await submitMentorToInternFeedbackForm({
-                                              formId: form.id,
-                                              internId,
-                                              internName: form.internNames[idx],
-                                              mentorId: myMentorId,
-                                              mentorName: sessionUser.name,
-                                              rating,
-                                              comment: mtiComments[submissionKey],
-                                            });
-                                            setMtiRatings((prev) => { const n = { ...prev }; delete n[submissionKey]; return n; });
-                                            setMtiComments((prev) => { const n = { ...prev }; delete n[submissionKey]; return n; });
-                                            alert("Feedback submitted!");
-                                          } catch (error) {
-                                            console.error("Error submitting feedback:", error);
-                                            alert("Failed to submit feedback");
-                                          } finally {
-                                            setSubmitMtiFeedbackLoading(false);
-                                          }
-                                        }}
-                                      >
-                                        {submitMtiFeedbackLoading ? "Submitting..." : "Submit Feedback"}
-                                      </Button>
-                                    </>
-                                  ) : (
-                                    <p className="text-xs text-white/40 italic">This form is closed.</p>
-                                  )}
+                                    );
+                                  })}
                                 </div>
-                              );
-                            })}
-                          </div>
-                        ))}
+                              )}
+                            </div>
+                          );
+                        })}
                       </CardContent>
                     </Card>
                   )}
