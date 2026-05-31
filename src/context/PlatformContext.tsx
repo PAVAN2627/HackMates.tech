@@ -1894,10 +1894,13 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const attendance = attendanceSessions.flatMap((session) => {
-      const record = session.records.find((item) => currentInternIdentifiers.includes(item.internId));
-      if (!record) {
-        return [];
-      }
+      const record = session.records.find((item) => {
+        const candidates = [item.internId, item.internEmail, item.internName]
+          .filter(Boolean)
+          .map((v) => String(v).trim().toLowerCase());
+        return candidates.some((c) => currentInternAttendanceIdentifiers.includes(c));
+      });
+      if (!record) return [];
 
       return [{
         sessionId: session.id,
@@ -1929,7 +1932,7 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
         currentInternIdentifiers.includes(sub.internId)
       ),
     };
-  }, [attendanceSessions, dailyNotes, feedback, fees, performance, sessionUser, doubts, submissions, feedbackForms, feedbackFormSubmissions, mentorFeedbackForms, mentorFeedbackSubmissions, mentorToInternFeedbackForms, mentorToInternFeedbackSubmissions, currentInternIdentifiers]);
+  }, [attendanceSessions, dailyNotes, feedback, fees, performance, sessionUser, doubts, submissions, feedbackForms, feedbackFormSubmissions, mentorFeedbackForms, mentorFeedbackSubmissions, mentorToInternFeedbackForms, mentorToInternFeedbackSubmissions, currentInternIdentifiers, currentInternAttendanceIdentifiers]);
 
   const mentorData = useMemo(() => ({
     internCount: users.filter((user) => user.role === "Intern").length,
