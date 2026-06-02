@@ -795,8 +795,6 @@ const Dashboard = () => {
       return;
     }
 
-    console.log("handleUpdateAttendanceSession called", { selectedAttendanceSessionId, attendanceDrafts, attendanceTitle, attendanceDate, attendanceStartTime });
-
     const records = internUsers.map((intern) => ({
       internId: intern.id,
       internName: intern.name,
@@ -815,16 +813,16 @@ const Dashboard = () => {
         notes: attendanceNotes,
         records,
         internIds: internUsers.map((intern) => intern.id),
-        status: attendanceSessionStatus,
+        status: "Closed",
       });
 
-      await sendAttendanceEmails(records, attendanceTitle, attendanceDate, attendanceStartTime, attendanceSessionStatus);
+      // Send email exactly once — on save & close
+      await sendAttendanceEmails(records, attendanceTitle, attendanceDate, attendanceStartTime, "Closed");
 
       setAttendanceDrafts({});
-      if (attendanceSessionStatus === "Closed") {
-        setSelectedClosedAttendanceSessionId(selectedAttendanceSessionId);
-      }
-      alert(attendanceSessionStatus === "Closed" ? "Attendance saved and session closed." : "Attendance saved and session set to active.");
+      setSelectedClosedAttendanceSessionId(selectedAttendanceSessionId);
+      setAttendanceSessionStatus("Closed");
+      alert("Attendance saved and session closed.");
     } finally {
       setAttendanceUpdating(false);
     }
@@ -839,25 +837,16 @@ const Dashboard = () => {
     try {
       await updateAttendanceSession({
         sessionId: selectedAttendanceSessionId,
-        title: attendanceTitle,
-        date: attendanceDate,
-        startTime: attendanceStartTime,
-        notes: attendanceNotes,
+        title: selectedAttendanceSession.title,
+        date: selectedAttendanceSession.date,
+        startTime: selectedAttendanceSession.startTime,
+        notes: selectedAttendanceSession.notes,
         records: selectedAttendanceSession.records,
         internIds: selectedAttendanceSession.internIds,
         status: "Open",
       });
-      await sendAttendanceEmails(
-        selectedAttendanceSession.records,
-        attendanceTitle || selectedAttendanceSession.title,
-        attendanceDate || selectedAttendanceSession.date,
-        attendanceStartTime || selectedAttendanceSession.startTime,
-        "Open",
-        "Attendance session reopened",
-        "Your attendance session has been reopened by your mentor.",
-      );
       setAttendanceSessionStatus("Open");
-      alert("Session reopened and attendance email sent.");
+      alert("Session reopened. You can now edit attendance.");
     } finally {
       setAttendanceUpdating(false);
     }
@@ -2696,32 +2685,18 @@ const Dashboard = () => {
                       {selectedAttendanceSession?.notes && (
                         <p className="text-sm text-white/65 rounded-xl border border-white/10 bg-white/5 p-3">{selectedAttendanceSession.notes}</p>
                       )}
-                      {selectedAttendanceSessionId && (
-                        <div className="rounded-xl border border-white/10 bg-white/5 p-3 space-y-2">
-                          <p className="text-xs text-white/70">Session mode</p>
-                          {selectedAttendanceSession?.status === "Closed" ? (
-                            <div className="space-y-2">
-                              <p className="rounded-md border border-white/10 bg-slate-950/40 px-3 py-2 text-sm text-white/80">Closed (locked)</p>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                className="w-full border-white/10 bg-white/5 text-white hover:bg-white/10"
-                                onClick={handleReopenAttendanceSession}
-                                disabled={attendanceUpdating || !selectedAttendanceSessionId}
-                              >
-                                Reopen to Active
-                              </Button>
-                            </div>
-                          ) : (
-                            <select
-                              value={attendanceSessionStatus}
-                              onChange={(event) => setAttendanceSessionStatus(event.target.value as "Open" | "Closed")}
-                              className="w-full rounded-md border border-white/10 bg-slate-950/40 px-3 py-2 text-white"
-                            >
-                              <option value="Open" className="text-black">Active (Open)</option>
-                              <option value="Closed" className="text-black">Closed</option>
-                            </select>
-                          )}
+                      {selectedAttendanceSession?.status === "Closed" && (
+                        <div className="rounded-xl border border-white/10 bg-white/5 p-3 flex items-center justify-between gap-3">
+                          <p className="text-sm text-white/70">Session is closed</p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+                            onClick={handleReopenAttendanceSession}
+                            disabled={attendanceUpdating}
+                          >
+                            {attendanceUpdating ? "Reopening..." : "Reopen session"}
+                          </Button>
                         </div>
                       )}
                       {mentorData.attendanceSessions.length === 0 && (
@@ -2730,12 +2705,11 @@ const Dashboard = () => {
                       <div className="grid sm:grid-cols-2 gap-3">
                         <Button
                           type="button"
-                          variant="outline"
-                          className="border-white/10 bg-white/5 text-white hover:bg-white/10"
                           onClick={handleUpdateAttendanceSession}
                           disabled={!selectedAttendanceSessionId || attendanceUpdating || selectedAttendanceSession?.status === "Closed"}
                         >
-                          {attendanceUpdating ? "Saving..." : attendanceSessionStatus === "Closed" ? "Save attendance & close session" : "Save attendance & set active"}
+                          <ClipboardCheck className="w-4 h-4" />
+                          {attendanceUpdating ? "Saving..." : "Save & close session"}
                         </Button>
                         <Button
                           type="button"
@@ -2751,7 +2725,7 @@ const Dashboard = () => {
                     <div className="space-y-3">
                       {selectedAttendanceSession?.status === "Closed" && (
                         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">
-                          This session is closed. Intern statuses are read-only here. Use "Reopen to Active" to edit.
+                          This session is closed. Intern statuses are read-only. Use "Reopen session" above to edit.
                         </div>
                       )}
                       {internUsers.map((intern) => {
