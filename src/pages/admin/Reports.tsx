@@ -553,6 +553,10 @@ const AdminReports = () => {
                                 <p className="text-xs text-white/50 mt-0.5">Avg rating</p>
                               </div>
                               <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-center">
+                                <p className="text-2xl font-bold text-yellow-300">{avgRating > 0 ? `${Math.round(avgRating * 10)}%` : "—"}</p>
+                                <p className="text-xs text-white/50 mt-0.5">Rating %</p>
+                              </div>
+                              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-center">
                                 <p className="text-2xl font-bold text-primary">{totalReviews}</p>
                                 <p className="text-xs text-white/50 mt-0.5">Reviews</p>
                               </div>
@@ -569,7 +573,7 @@ const AdminReports = () => {
                               {[1,2,3,4,5].map((n) => (
                                 <Star key={n} className={`w-5 h-5 ${avgRating >= n * 2 ? "fill-amber-400 text-amber-400" : avgRating >= n * 2 - 1 ? "fill-amber-400/50 text-amber-400/50" : "text-white/20"}`} />
                               ))}
-                              <span className="text-sm text-white/60 ml-1">{avgRating} / 10 from {totalReviews} intern{totalReviews !== 1 ? "s" : ""}</span>
+                              <span className="text-sm text-white/60 ml-1">{avgRating} / 10 ({Math.round(avgRating * 10)}%) from {totalReviews} intern{totalReviews !== 1 ? "s" : ""}</span>
                             </div>
                           )}
 
