@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { BadgeCheck, CalendarDays, Download, FileText, GraduationCap, Star, TrendingUp, Users } from "lucide-react";
+import { BadgeCheck, CalendarDays, Download, FileText, GraduationCap, Star, TrendingUp, UserCheck, Users } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePlatform } from "@/context/PlatformContext";
 import DashboardSidebar from "@/components/DashboardSidebar";
 
@@ -48,6 +48,7 @@ const AdminReports = () => {
     feedback,
     attendanceSessions,
     mentorToInternFeedbackSubmissions,
+    mentorFeedbackSubmissions,
     submissions,
     dailyNotes,
   } = usePlatform();
@@ -56,6 +57,11 @@ const AdminReports = () => {
     () => [...users.filter((user) => user.role === "Intern")].sort((a, b) => a.name.localeCompare(b.name)),
     [users],
   );
+  const mentorUsers = useMemo(
+    () => [...users.filter((user) => user.role === "Mentor")].sort((a, b) => a.name.localeCompare(b.name)),
+    [users],
+  );
+  const [reportTab, setReportTab] = useState<"intern" | "mentor">("intern");
   const [selectedInternId, setSelectedInternId] = useState("");
 
   useEffect(() => {
@@ -166,6 +172,20 @@ const AdminReports = () => {
     };
   }, [attendanceSessions, feedback, mentorToInternFeedbackSubmissions, performance, selectedIntern]);
 
+  // ── Mentor report ──────────────────────────────────────────────────────────
+  const mentorReports = useMemo(() => {
+    return mentorUsers.map((mentor) => {
+      // All anonymous intern→mentor submissions for this mentor
+      const subs = mentorFeedbackSubmissions.filter(
+        (s) => s.mentorId === mentor.id || s.mentorName === mentor.name,
+      );
+      const ratings = subs.map((s) => s.rating);
+      const avgRating = averageScore(ratings);
+      const totalSessions = attendanceSessions.filter((s) => s.mentorId === mentor.id || s.mentorName === mentor.name).length;
+      return { mentor, subs, avgRating, totalReviews: subs.length, totalSessions };
+    });
+  }, [mentorUsers, mentorFeedbackSubmissions, attendanceSessions]);
+
   if (!loading && !sessionUser) return <Navigate to="/login" replace />;
   if (!loading && sessionUser?.role !== "Admin") return <Navigate to="/login" replace />;
   if (!sessionUser) return null;
@@ -233,9 +253,9 @@ const AdminReports = () => {
                       Reports
                     </Badge>
                   </div>
-                  <h1 className="text-3xl md:text-4xl font-bold font-display text-white">Intern Performance Report</h1>
+                  <h1 className="text-3xl md:text-4xl font-bold font-display text-white">Reports</h1>
                   <p className="text-white/65 mt-1 max-w-3xl">
-                    Generate a profile-wise report for any intern, including attendance, feedback, performance, and a printable PDF view.
+                    Intern performance reports and mentor rating summaries.
                   </p>
                 </div>
                 <Button type="button" onClick={handlePrint} className="bg-primary hover:bg-primary/90 text-primary-foreground">
@@ -246,7 +266,21 @@ const AdminReports = () => {
             </div>
           </header>
 
-          <main className="mx-auto w-full max-w-7xl px-6 py-8 space-y-8 flex-1">
+          <main className="mx-auto w-full max-w-7xl px-6 py-8 flex-1">
+            <Tabs value={reportTab} onValueChange={(v) => setReportTab(v as "intern" | "mentor")} className="space-y-6">
+              <TabsList className="bg-white/5 border border-white/10 text-white h-auto p-1 no-print">
+                <TabsTrigger value="intern" className="flex items-center gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
+                  <GraduationCap className="w-4 h-4" />
+                  Intern Report
+                </TabsTrigger>
+                <TabsTrigger value="mentor" className="flex items-center gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
+                  <UserCheck className="w-4 h-4" />
+                  Mentor Report
+                </TabsTrigger>
+              </TabsList>
+
+              {/* ── Intern Report Tab ── */}
+              <TabsContent value="intern" className="space-y-8">
             <Card className="border-white/10 bg-white/5 text-white no-print">
               <CardContent className="p-6 space-y-4">
                 <div className="flex items-center gap-3">
@@ -308,7 +342,7 @@ const AdminReports = () => {
                         </div>
                         <div className="flex items-center gap-2">
                           <GraduationCap className="w-4 h-4 text-emerald-600" />
-                          {selectedIntern.position || "Intern profile"}
+                          {selectedIntern.role || "Intern profile"}
                         </div>
                         {selectedIntern.mentorId && (
                           <div className="flex items-center gap-2">
@@ -494,6 +528,81 @@ const AdminReports = () => {
                 </Card>
               </motion.section>
             )}
+              </TabsContent>
+
+              {/* ── Mentor Report Tab ── */}
+              <TabsContent value="mentor" className="space-y-6">
+                {mentorUsers.length === 0 ? (
+                  <Card className="border-white/10 bg-white/5 text-white">
+                    <CardContent className="p-8 text-center text-white/60">No mentor profiles found.</CardContent>
+                  </Card>
+                ) : (
+                  mentorReports.map(({ mentor, subs, avgRating, totalReviews, totalSessions }, i) => (
+                    <motion.div key={mentor.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+                      <Card className="border-white/10 bg-white/5 text-white">
+                        <CardContent className="p-6 space-y-5">
+                          {/* Mentor header */}
+                          <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div>
+                              <h2 className="text-xl font-bold">{mentor.name}</h2>
+                              <p className="text-sm text-white/50">{mentor.email}</p>
+                            </div>
+                            <div className="flex flex-wrap gap-3">
+                              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-center">
+                                <p className="text-2xl font-bold text-amber-400">{avgRating > 0 ? `${avgRating}/10` : "—"}</p>
+                                <p className="text-xs text-white/50 mt-0.5">Avg rating</p>
+                              </div>
+                              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-center">
+                                <p className="text-2xl font-bold text-primary">{totalReviews}</p>
+                                <p className="text-xs text-white/50 mt-0.5">Reviews</p>
+                              </div>
+                              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-center">
+                                <p className="text-2xl font-bold text-emerald-400">{totalSessions}</p>
+                                <p className="text-xs text-white/50 mt-0.5">Sessions</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Star bar */}
+                          {avgRating > 0 && (
+                            <div className="flex items-center gap-2">
+                              {[1,2,3,4,5].map((n) => (
+                                <Star key={n} className={`w-5 h-5 ${avgRating >= n * 2 ? "fill-amber-400 text-amber-400" : avgRating >= n * 2 - 1 ? "fill-amber-400/50 text-amber-400/50" : "text-white/20"}`} />
+                              ))}
+                              <span className="text-sm text-white/60 ml-1">{avgRating} / 10 from {totalReviews} intern{totalReviews !== 1 ? "s" : ""}</span>
+                            </div>
+                          )}
+
+                          {/* Anonymous feedback list */}
+                          {totalReviews === 0 ? (
+                            <p className="text-sm text-white/40 italic">No feedback received from interns yet.</p>
+                          ) : (
+                            <div className="space-y-3">
+                              <p className="text-xs uppercase tracking-wide text-white/40 font-medium">Feedback from interns (anonymous)</p>
+                              {subs.map((sub, idx) => (
+                                <div key={sub.id ?? idx} className="rounded-xl border border-white/10 bg-slate-950/40 p-4 space-y-2">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-1.5">
+                                      {[1,2,3,4,5].map((n) => (
+                                        <Star key={n} className={`w-4 h-4 ${sub.rating >= n * 2 ? "fill-amber-400 text-amber-400" : sub.rating >= n * 2 - 1 ? "fill-amber-400/50 text-amber-400/50" : "text-white/20"}`} />
+                                      ))}
+                                      <span className="text-xs text-white/60 ml-1">{sub.rating}/10</span>
+                                    </div>
+                                    <span className="text-xs text-white/40">{new Date(sub.submittedAt).toLocaleDateString()}</span>
+                                  </div>
+                                  <p className="text-xs text-white/35 italic">Anonymous intern</p>
+                                  {sub.review && <p className="text-sm text-white/75">{sub.review}</p>}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))
+                )}
+              </TabsContent>
+            </Tabs>
           </main>
         </div>
       </div>
