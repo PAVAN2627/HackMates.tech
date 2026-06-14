@@ -239,11 +239,15 @@ const AdminUsers = () => {
                                 if (!fee) return <p className="text-xs text-white/40 mt-2">No fee set</p>;
                                 const amount = Number(fee.amount) || 0;
                                 const paid = Number(fee.paidAmount) || 0;
+                                const remaining = Math.max(amount - paid, 0);
                                 const pct = amount > 0 ? Math.min(100, Math.round((paid / amount) * 100)) : 0;
+                                const statusLabel = amount === 0 ? "Not set" : paid >= amount ? "Fully paid" : paid > 0 ? "Partial" : "Unpaid";
+                                const statusColor = amount === 0 ? "text-white/40" : paid >= amount ? "text-emerald-400" : paid > 0 ? "text-yellow-400" : "text-red-400";
                                 return (
-                                  <div className="mt-2 text-xs text-white/60 space-y-0.5">
-                                    <p>{fee.label}: {paid} / {amount} ({pct}%)</p>
-                                    <p>Remaining: {Math.max(amount - paid, 0)}{fee.dueDate ? ` • Due ${fee.dueDate}` : ""}</p>
+                                  <div className="mt-2 text-xs space-y-0.5">
+                                    <p className="text-white/60">{fee.label}: <span className="text-white/80 font-medium">₹{paid.toLocaleString()} / ₹{amount.toLocaleString()}</span> ({pct}%)</p>
+                                    <p className="text-white/50">Outstanding: ₹{remaining.toLocaleString()}{fee.dueDate ? ` · Due ${fee.dueDate}` : ""}</p>
+                                    <p className={`font-semibold ${statusColor}`}>{statusLabel}</p>
                                   </div>
                                 );
                               })()}

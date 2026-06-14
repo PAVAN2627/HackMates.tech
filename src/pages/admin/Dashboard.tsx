@@ -8,7 +8,11 @@ import DashboardSidebar from "@/components/DashboardSidebar";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { loading, sessionUser, logout, adminStats, feedback, fees, mentorToInternFeedbackSubmissions } = usePlatform();
+  const { loading, sessionUser, logout, adminStats, feedback, fees, users, mentorToInternFeedbackSubmissions } = usePlatform();
+
+  // Only count fee entries that belong to interns (not mentors/admins)
+  const internIds = new Set(users.filter((u) => u.role === "Intern").map((u) => u.id));
+  const internFees = fees.filter((e) => internIds.has(e.internId));
 
   const combinedFeedback = [
     ...feedback.map((entry) => ({
@@ -33,11 +37,12 @@ const AdminDashboard = () => {
   const mentorToInternAverageRating = mentorToInternFeedbackSubmissions.length > 0
     ? Number((mentorToInternFeedbackSubmissions.reduce((s, e) => s + e.rating, 0) / mentorToInternFeedbackSubmissions.length).toFixed(1))
     : 0;
-  const totalFeeAmount = fees.reduce((s, e) => s + (Number(e.amount) || 0), 0);
-  const totalFeePaid = fees.reduce((s, e) => s + (Number(e.paidAmount) || 0), 0);
+  const totalFeeAmount = internFees.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const totalFeePaid = internFees.reduce((s, e) => s + (Number(e.paidAmount) || 0), 0);
   const totalFeeRemaining = Math.max(totalFeeAmount - totalFeePaid, 0);
-  const pendingFeeCount = fees.filter((e) => e.status === "Pending").length;
-  const paidFeeCount = fees.filter((e) => e.status === "Paid").length;
+  // Derive status dynamically from amounts — don't trust the stored status field
+  const paidFeeCount = internFees.filter((e) => (Number(e.paidAmount) || 0) >= (Number(e.amount) || 1)).length;
+  const pendingFeeCount = internFees.filter((e) => (Number(e.paidAmount) || 0) < (Number(e.amount) || 1)).length;
 
   if (!loading && !sessionUser) return <Navigate to="/login" replace />;
   if (!loading && sessionUser?.role !== "Admin") return <Navigate to="/login" replace />;

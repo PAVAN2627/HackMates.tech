@@ -1368,7 +1368,7 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
       label: input.label.trim() || "Internship Fee",
       amount: normalizedAmount,
       paidAmount: normalizedPaid,
-      status: normalizedPaid >= normalizedAmount ? "Paid" as const : "Pending" as const,
+      status: (normalizedAmount > 0 && normalizedPaid >= normalizedAmount) ? "Paid" as const : "Pending" as const,
       dueDate: input.dueDate || "",
     };
 
