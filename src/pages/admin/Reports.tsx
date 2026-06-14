@@ -353,13 +353,12 @@ const AdminReports = () => {
                       </div>
                     </div>
 
-                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                       {[
-                        { label: "Attendance %", value: `${report.attendancePercentage}%`, icon: BadgeCheck, tone: "text-emerald-700 bg-emerald-50" },
-                        { label: "Lectures attended", value: report.lecturesAttended, icon: CalendarDays, tone: "text-sky-700 bg-sky-50" },
-                        { label: "Lectures missed", value: report.lecturesMissed, icon: CalendarDays, tone: "text-rose-700 bg-rose-50" },
-                        { label: "Overall mentor rating", value: `${report.feedbackAverage}/10`, icon: Star, tone: "text-amber-700 bg-amber-50" },
-                        { label: "Overall score", value: `${report.overallScore}/100`, icon: TrendingUp, tone: "text-violet-700 bg-violet-50" },
+                        { label: "Attendance", value: `${report.attendancePercentage}%`, icon: BadgeCheck, tone: "text-emerald-700 bg-emerald-50" },
+                        { label: "Sessions attended", value: report.lecturesAttended, icon: CalendarDays, tone: "text-sky-700 bg-sky-50" },
+                        { label: "Sessions missed", value: report.lecturesMissed, icon: CalendarDays, tone: "text-rose-700 bg-rose-50" },
+                        { label: "Performance score", value: `${report.performanceAverage}/100`, icon: TrendingUp, tone: "text-violet-700 bg-violet-50" },
                       ].map((item) => {
                         const Icon = item.icon;
                         return (
@@ -376,74 +375,35 @@ const AdminReports = () => {
                       })}
                     </div>
 
-                    <div className="grid gap-4 lg:grid-cols-2">
-                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-4">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-4">
                         <div className="flex items-center justify-between gap-3">
-                          <h3 className="font-semibold text-slate-950">Attendance Summary</h3>
-                          <Badge className="bg-slate-900 text-white">{report.attendanceHistory.length} sessions</Badge>
+                          <h3 className="font-semibold text-slate-950">Attendance Record</h3>
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200">{report.lecturesAttended} Present</Badge>
+                            <Badge className="bg-rose-500/10 text-rose-700 border-rose-200">{report.lecturesMissed} Absent</Badge>
+                            <Badge className="bg-slate-900 text-white">{report.attendancePercentage}%</Badge>
+                          </div>
                         </div>
-                        <p className="text-sm text-slate-600">
-                          Lectures attended: <span className="font-semibold text-slate-900">{report.lecturesAttended}</span> | Lectures missed: <span className="font-semibold text-slate-900">{report.lecturesMissed}</span>
-                        </p>
-                        <div className="space-y-3 max-h-72 overflow-auto pr-1">
+                        <div className="space-y-2">
                           {report.attendanceHistory.length === 0 ? (
                             <p className="text-sm text-slate-500">No attendance records for this intern yet.</p>
                           ) : (
                             report.attendanceHistory.map((entry) => (
-                              <div key={entry.sessionId} className="rounded-xl border border-slate-200 bg-white p-4">
-                                <div className="flex flex-wrap items-center justify-between gap-3">
-                                  <div>
-                                    <p className="font-semibold text-slate-950">{entry.sessionTitle}</p>
-                                    <p className="text-xs text-slate-500">
-                                      {entry.date} {entry.startTime ? `| ${entry.startTime}` : ""} | Mentor: {entry.mentorName}
-                                    </p>
-                                  </div>
-                                  <Badge
-                                    className={
-                                      entry.status === "Present"
-                                        ? "bg-emerald-500/10 text-emerald-700 border-emerald-200"
-                                        : "bg-rose-500/10 text-rose-700 border-rose-200"
-                                    }
-                                  >
-                                    {entry.status}
-                                  </Badge>
+                              <div key={entry.sessionId} className="rounded-xl border border-slate-200 bg-white px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                  <p className="font-medium text-slate-900 text-sm">{entry.sessionTitle}</p>
+                                  <p className="text-xs text-slate-500">
+                                    {entry.date}{entry.startTime ? ` · ${entry.startTime}` : ""} · {entry.mentorName}
+                                  </p>
                                 </div>
+                                <Badge className={entry.status === "Present" ? "bg-emerald-500/10 text-emerald-700 border-emerald-200" : "bg-rose-500/10 text-rose-700 border-rose-200"}>
+                                  {entry.status}
+                                </Badge>
                               </div>
                             ))
                           )}
                         </div>
                       </div>
-
-                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <h3 className="font-semibold text-slate-950">Overall Mentor Rating</h3>
-                          <Badge className="bg-slate-900 text-white">{report.mentorRatings.length} ratings</Badge>
-                        </div>
-                        <p className="text-sm text-slate-600">
-                          Average rating from mentor feedback and feedback forms: <span className="font-semibold text-slate-900">{report.feedbackAverage}/10</span>
-                        </p>
-                        <div className="space-y-3 max-h-72 overflow-auto pr-1">
-                          {report.mentorRatings.length === 0 ? (
-                            <p className="text-sm text-slate-500">No feedback has been recorded for this intern yet.</p>
-                          ) : (
-                            report.mentorRatings.map((entry, index) => (
-                              <div key={`${entry.source}-${entry.date}-${index}`} className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
-                                <div className="flex flex-wrap items-center justify-between gap-3">
-                                  <div>
-                                    <p className="font-semibold text-slate-950">{entry.mentorName}</p>
-                                    <p className="text-xs text-slate-500">
-                                      {entry.source} | {new Date(entry.date).toLocaleDateString()}
-                                    </p>
-                                  </div>
-                                  <Badge className="bg-amber-500/10 text-amber-700 border-amber-200">{entry.rating}/10</Badge>
-                                </div>
-                                <p className="text-sm text-slate-600">{entry.comment}</p>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    </div>
 
                     <div className="grid gap-4 lg:grid-cols-2">
                       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-4">
@@ -522,7 +482,7 @@ const AdminReports = () => {
                     </div>
 
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
-                      This report combines attendance sessions, mentor feedback, form-based mentor feedback, and monthly performance records.
+                      This report is generated by HackMates and reflects verified attendance, task submissions, and monthly performance data for the above intern. Generated on {new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}.
                     </div>
                   </CardContent>
                 </Card>

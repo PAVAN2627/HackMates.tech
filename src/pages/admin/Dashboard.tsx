@@ -37,6 +37,7 @@ const AdminDashboard = () => {
   const totalFeePaid = fees.reduce((s, e) => s + (Number(e.paidAmount) || 0), 0);
   const totalFeeRemaining = Math.max(totalFeeAmount - totalFeePaid, 0);
   const pendingFeeCount = fees.filter((e) => e.status === "Pending").length;
+  const paidFeeCount = fees.filter((e) => e.status === "Paid").length;
 
   if (!loading && !sessionUser) return <Navigate to="/login" replace />;
   if (!loading && sessionUser?.role !== "Admin") return <Navigate to="/login" replace />;
@@ -61,8 +62,11 @@ const AdminDashboard = () => {
     {
       title: "Fees",
       stats: [
-        { label: "Pending Fee Entries", value: pendingFeeCount, icon: Wallet, color: "text-red-400 bg-red-400/10" },
-        { label: "Fee Remaining (₹)", value: totalFeeRemaining.toLocaleString(), icon: Wallet, color: "text-rose-400 bg-rose-400/10" },
+        { label: "Total Fee (₹)", value: `₹${totalFeeAmount.toLocaleString()}`, icon: Wallet, color: "text-slate-300 bg-slate-400/10" },
+        { label: "Collected (₹)", value: `₹${totalFeePaid.toLocaleString()}`, icon: BadgeCheck, color: "text-green-400 bg-green-400/10" },
+        { label: "Outstanding (₹)", value: `₹${totalFeeRemaining.toLocaleString()}`, icon: Wallet, color: "text-rose-400 bg-rose-400/10" },
+        { label: "Paid Entries", value: paidFeeCount, icon: BadgeCheck, color: "text-emerald-400 bg-emerald-400/10" },
+        { label: "Pending Entries", value: pendingFeeCount, icon: Wallet, color: "text-red-400 bg-red-400/10" },
       ],
     },
     {
