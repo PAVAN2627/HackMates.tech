@@ -151,10 +151,26 @@ const AdminReports = () => {
       }));
     const performanceAverage = averageScore(performanceHistory.map((entry) => entry.score));
 
-    const overallScoreParts = [attendancePercentage, performanceAverage, feedbackAverage ? Math.round(feedbackAverage * 10) : 0].filter(
-      (value) => value > 0,
-    );
-    const overallScore = averageScore(overallScoreParts);
+    // Overall score: weighted average of attendance, mentor ratings (converted to 0-100), and monthly performance
+    // Each component is only included if data exists for it
+    const scoreParts: number[] = [];
+    if (attendancePercentage > 0 || lecturesAttended + lecturesMissed > 0) {
+      scoreParts.push(attendancePercentage);
+    }
+    if (mentorRatings.length > 0) {
+      scoreParts.push(Math.round(feedbackAverage * 10));
+    }
+    if (performanceHistory.length > 0) {
+      scoreParts.push(performanceAverage);
+    }
+    const overallScore = scoreParts.length > 0 ? Math.round(averageScore(scoreParts)) : 0;
+
+    // Performance score shown on the stat card: monthly average if available, else feedback-based
+    const displayPerformanceScore = performanceHistory.length > 0
+      ? performanceAverage
+      : mentorRatings.length > 0
+        ? Math.round(feedbackAverage * 10)
+        : 0;
 
     return {
       attendanceHistory,
@@ -168,6 +184,7 @@ const AdminReports = () => {
       notesList,
       performanceHistory,
       performanceAverage,
+      displayPerformanceScore,
       overallScore,
     };
   }, [attendanceSessions, feedback, mentorToInternFeedbackSubmissions, performance, selectedIntern]);
@@ -353,12 +370,13 @@ const AdminReports = () => {
                       </div>
                     </div>
 
-                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                       {[
                         { label: "Attendance", value: `${report.attendancePercentage}%`, icon: BadgeCheck, tone: "text-emerald-700 bg-emerald-50" },
                         { label: "Sessions attended", value: report.lecturesAttended, icon: CalendarDays, tone: "text-sky-700 bg-sky-50" },
                         { label: "Sessions missed", value: report.lecturesMissed, icon: CalendarDays, tone: "text-rose-700 bg-rose-50" },
-                        { label: "Performance score", value: `${report.performanceAverage}/100`, icon: TrendingUp, tone: "text-violet-700 bg-violet-50" },
+                        { label: "Performance score", value: `${report.displayPerformanceScore}/100`, icon: TrendingUp, tone: "text-violet-700 bg-violet-50" },
+                        { label: "Overall score", value: `${report.overallScore}/100`, icon: Star, tone: "text-amber-700 bg-amber-50" },
                       ].map((item) => {
                         const Icon = item.icon;
                         return (
