@@ -1942,7 +1942,9 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     submissions,
     performance,
     fees,
-    attendanceSessions,
+    attendanceSessions: attendanceSessions.filter((s) =>
+      s.mentorId === sessionUser?.uid || s.mentorId === sessionUser?.id
+    ),
     feedbackFormSubmissions,
     mentorToInternFeedbackForms: mentorToInternFeedbackForms.filter((form) =>
       form.targetMentorIds.length === 0 || form.targetMentorIds.includes(sessionUser?.uid || "")
