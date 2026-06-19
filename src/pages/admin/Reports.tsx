@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { BadgeCheck, CalendarDays, Download, FileText, GraduationCap, Star, TrendingUp, UserCheck, Users } from "lucide-react";
+import { Download, GraduationCap, Star, UserCheck, Users } from "lucide-react";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -425,6 +426,66 @@ const AdminReports = () => {
                           <p className="text-xs text-slate-500 mt-0.5">{s.label}</p>
                         </div>
                       ))}
+                    </div>
+
+                    {/* Charts */}
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Attendance pie */}
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <p className="text-xs uppercase tracking-wide text-slate-500 mb-3 font-medium">Attendance</p>
+                        <div className="flex items-center gap-4">
+                          <ResponsiveContainer width={110} height={110}>
+                            <PieChart>
+                              <Pie
+                                data={[
+                                  { name: "Present", value: report.lecturesAttended },
+                                  { name: "Absent", value: report.lecturesMissed },
+                                ]}
+                                dataKey="value"
+                                innerRadius={32}
+                                outerRadius={50}
+                                paddingAngle={3}
+                                startAngle={90}
+                                endAngle={-270}
+                              >
+                                <Cell fill="#10b981" />
+                                <Cell fill="#f43f5e" />
+                              </Pie>
+                              <Tooltip formatter={(v: number, n: string) => [v, n]} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                          <div className="space-y-2 text-xs">
+                            <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />Present: <b>{report.lecturesAttended}</b></div>
+                            <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" />Absent: <b>{report.lecturesMissed}</b></div>
+                            <div className="text-slate-500 font-semibold">{report.attendancePercentage}% attendance</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Score breakdown bar */}
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <p className="text-xs uppercase tracking-wide text-slate-500 mb-3 font-medium">Score Breakdown</p>
+                        <ResponsiveContainer width="100%" height={110}>
+                          <BarChart
+                            data={[
+                              { label: "Attendance", score: report.attendancePercentage },
+                              { label: "Submissions", score: report.submissionScore },
+                              { label: "Rating", score: report.weeklyRatingScore },
+                            ]}
+                            margin={{ top: 4, right: 4, left: -28, bottom: 0 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                            <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                            <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                            <Tooltip formatter={(v: number) => [`${v}%`]} />
+                            <Bar dataKey="score" radius={[4, 4, 0, 0]}>
+                              <Cell fill="#10b981" />
+                              <Cell fill="#3b82f6" />
+                              <Cell fill="#f59e0b" />
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
                     </div>
 
                     {/* Mentor rating row */}
