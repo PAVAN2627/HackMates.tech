@@ -172,6 +172,24 @@ const AdminReports = () => {
         ? Math.round(feedbackAverage * 10)
         : 0;
 
+    // Submission summary
+    const totalSubmissions = submissionCounts.total ?? 0;
+    const approvedSubmissions = submissionCounts["Approved"] ?? 0;
+    const pendingSubmissions = submissionCounts["Pending"] ?? 0;
+    const reviewedSubmissions = submissionCounts["Reviewed"] ?? 0;
+    // Submission score: approved out of total (0-100)
+    const submissionScore = totalSubmissions > 0 ? Math.round((approvedSubmissions / totalSubmissions) * 100) : 0;
+
+    // Weekly rating score (feedbackAverage on 0-10 → 0-100)
+    const weeklyRatingScore = mentorRatings.length > 0 ? Math.round(feedbackAverage * 10) : 0;
+
+    // New overall score = avg of attendance + submission score + weekly rating (only non-zero parts)
+    const newScoreParts: number[] = [];
+    if (lecturesAttended + lecturesMissed > 0) newScoreParts.push(attendancePercentage);
+    if (totalSubmissions > 0) newScoreParts.push(submissionScore);
+    if (mentorRatings.length > 0) newScoreParts.push(weeklyRatingScore);
+    const newOverallScore = newScoreParts.length > 0 ? Math.round(averageScore(newScoreParts)) : 0;
+
     return {
       attendanceHistory,
       lecturesAttended,
@@ -181,11 +199,17 @@ const AdminReports = () => {
       feedbackAverage,
       submissionsList,
       submissionCounts,
+      totalSubmissions,
+      approvedSubmissions,
+      pendingSubmissions,
+      reviewedSubmissions,
+      submissionScore,
+      weeklyRatingScore,
       notesList,
       performanceHistory,
       performanceAverage,
       displayPerformanceScore,
-      overallScore,
+      overallScore: newOverallScore,
     };
   }, [attendanceSessions, feedback, mentorToInternFeedbackSubmissions, performance, selectedIntern]);
 
@@ -221,7 +245,7 @@ const AdminReports = () => {
         @media print {
           @page {
             size: A4;
-            margin: 12mm;
+            margin: 8mm;
           }
 
           body * {
@@ -247,6 +271,10 @@ const AdminReports = () => {
 
           body {
             background: white !important;
+          }
+
+          .report-print-area .space-y-5 > * + * {
+            margin-top: 0.75rem !important;
           }
         }
       `}</style>
@@ -341,167 +369,84 @@ const AdminReports = () => {
                 className="report-print-area space-y-6"
               >
                 <Card className="border-white/10 bg-white text-slate-900 shadow-xl print:shadow-none print:border-slate-200">
-                  <CardContent className="p-6 md:p-8 space-y-6">
-                    <div className="flex flex-wrap items-start justify-between gap-4">
-                      <div className="space-y-2">
-                        <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200">Intern Report</Badge>
-                        <div>
-                          <h2 className="text-3xl font-bold font-display text-slate-950">{selectedIntern.name}</h2>
-                          <p className="text-sm text-slate-500">
-                            {selectedIntern.email} {selectedIntern.internId ? `| ${selectedIntern.internId}` : ""}
-                          </p>
-                        </div>
+                  <CardContent className="p-6 md:p-8 space-y-5">
+
+                    {/* Header */}
+                    <div className="flex flex-wrap items-start justify-between gap-4 pb-4 border-b border-slate-200">
+                      <div className="space-y-1">
+                        <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200 text-xs">HackMates · Intern Performance Report</Badge>
+                        <h2 className="text-2xl font-bold text-slate-950">{selectedIntern.name}</h2>
+                        <p className="text-sm text-slate-500">
+                          {selectedIntern.email}{selectedIntern.internId ? ` · ${selectedIntern.internId}` : ""}
+                        </p>
                       </div>
-                      <div className="grid gap-2 text-sm text-slate-600">
-                        <div className="flex items-center gap-2">
-                          <CalendarDays className="w-4 h-4 text-emerald-600" />
-                          Generated {new Date().toLocaleString()}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <GraduationCap className="w-4 h-4 text-emerald-600" />
-                          {selectedIntern.role || "Intern profile"}
-                        </div>
-                        {selectedIntern.mentorId && (
-                          <div className="flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-emerald-600" />
-                            {selectedIntern.mentorId}
-                          </div>
-                        )}
+                      <div className="text-right text-xs text-slate-500 space-y-1">
+                        <p>Generated: {new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}</p>
+                        <p>Role: {selectedIntern.role}</p>
+                        {selectedIntern.mentorId && <p>ID: {selectedIntern.mentorId}</p>}
                       </div>
                     </div>
 
-                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                    {/* Overall score — prominent */}
+                    <div className="rounded-2xl bg-slate-950 text-white p-5 flex flex-wrap items-center justify-between gap-4">
+                      <div>
+                        <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">Overall Performance Score</p>
+                        <p className="text-5xl font-bold">{report.overallScore}<span className="text-2xl text-slate-400 ml-1">/100</span></p>
+                        <p className="text-xs text-slate-400 mt-2">Calculated from: Attendance + Submissions + Mentor Rating</p>
+                      </div>
+                      <div className="flex gap-3 flex-wrap">
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-emerald-400">{report.attendancePercentage}%</p>
+                          <p className="text-xs text-slate-400 mt-0.5">Attendance</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-sky-400">{report.submissionScore}%</p>
+                          <p className="text-xs text-slate-400 mt-0.5">Submissions</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-amber-400">{report.weeklyRatingScore > 0 ? `${report.weeklyRatingScore}%` : "—"}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">Mentor Rating</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Stats grid */}
+                    <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
                       {[
-                        { label: "Attendance", value: `${report.attendancePercentage}%`, icon: BadgeCheck, tone: "text-emerald-700 bg-emerald-50" },
-                        { label: "Sessions attended", value: report.lecturesAttended, icon: CalendarDays, tone: "text-sky-700 bg-sky-50" },
-                        { label: "Sessions missed", value: report.lecturesMissed, icon: CalendarDays, tone: "text-rose-700 bg-rose-50" },
-                        { label: "Performance score", value: `${report.displayPerformanceScore}/100`, icon: TrendingUp, tone: "text-violet-700 bg-violet-50" },
-                        { label: "Overall score", value: `${report.overallScore}/100`, icon: Star, tone: "text-amber-700 bg-amber-50" },
-                      ].map((item) => {
-                        const Icon = item.icon;
-                        return (
-                          <div key={item.label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                            <div className="flex items-center justify-between gap-3">
-                              <p className="text-xs uppercase tracking-wide text-slate-500">{item.label}</p>
-                              <div className={`h-9 w-9 rounded-xl flex items-center justify-center ${item.tone}`}>
-                                <Icon className="w-4 h-4" />
-                              </div>
-                            </div>
-                            <p className="mt-3 text-2xl font-bold text-slate-950">{item.value}</p>
-                          </div>
-                        );
-                      })}
+                        { label: "Sessions", value: report.lecturesAttended + report.lecturesMissed, color: "text-slate-900" },
+                        { label: "Present", value: report.lecturesAttended, color: "text-emerald-700" },
+                        { label: "Absent", value: report.lecturesMissed, color: "text-rose-700" },
+                        { label: "Submissions", value: report.totalSubmissions, color: "text-slate-900" },
+                        { label: "Approved", value: report.approvedSubmissions, color: "text-emerald-700" },
+                        { label: "Pending", value: report.pendingSubmissions, color: "text-amber-700" },
+                      ].map((s) => (
+                        <div key={s.label} className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center">
+                          <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">{s.label}</p>
+                        </div>
+                      ))}
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <h3 className="font-semibold text-slate-950">Attendance Record</h3>
-                          <div className="flex items-center gap-2">
-                            <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200">{report.lecturesAttended} Present</Badge>
-                            <Badge className="bg-rose-500/10 text-rose-700 border-rose-200">{report.lecturesMissed} Absent</Badge>
-                            <Badge className="bg-slate-900 text-white">{report.attendancePercentage}%</Badge>
-                          </div>
+                    {/* Mentor rating row */}
+                    {report.mentorRatings.length > 0 && (
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Mentor Rating Average</p>
+                          <p className="text-lg font-bold text-slate-900">{report.feedbackAverage}/10 <span className="text-slate-500 font-normal text-sm">({report.weeklyRatingScore}%)</span></p>
                         </div>
-                        <div className="space-y-2">
-                          {report.attendanceHistory.length === 0 ? (
-                            <p className="text-sm text-slate-500">No attendance records for this intern yet.</p>
-                          ) : (
-                            report.attendanceHistory.map((entry) => (
-                              <div key={entry.sessionId} className="rounded-xl border border-slate-200 bg-white px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-                                <div>
-                                  <p className="font-medium text-slate-900 text-sm">{entry.sessionTitle}</p>
-                                  <p className="text-xs text-slate-500">
-                                    {entry.date}{entry.startTime ? ` · ${entry.startTime}` : ""} · {entry.mentorName}
-                                  </p>
-                                </div>
-                                <Badge className={entry.status === "Present" ? "bg-emerald-500/10 text-emerald-700 border-emerald-200" : "bg-rose-500/10 text-rose-700 border-rose-200"}>
-                                  {entry.status}
-                                </Badge>
-                              </div>
-                            ))
-                          )}
+                        <div className="flex items-center gap-1">
+                          {[1,2,3,4,5].map((n) => (
+                            <Star key={n} className={`w-5 h-5 ${report.feedbackAverage >= n * 2 ? "fill-amber-400 text-amber-400" : report.feedbackAverage >= n * 2 - 1 ? "fill-amber-400/40 text-amber-400/40" : "text-slate-300"}`} />
+                          ))}
+                          <span className="text-xs text-slate-500 ml-2">from {report.mentorRatings.length} review{report.mentorRatings.length !== 1 ? "s" : ""}</span>
                         </div>
                       </div>
+                    )}
 
-                    <div className="grid gap-4 lg:grid-cols-2">
-                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <h3 className="font-semibold text-slate-950">Submissions</h3>
-                          <Badge className="bg-slate-900 text-white">{report.submissionCounts?.total ?? 0}</Badge>
-                        </div>
-                        <p className="text-sm text-slate-600">Total submissions: <span className="font-semibold text-slate-900">{report.submissionCounts?.total ?? 0}</span></p>
-                        <div className="space-y-3 max-h-72 overflow-auto pr-1">
-                          {(!report.submissionsList || report.submissionsList.length === 0) ? (
-                            <p className="text-sm text-slate-500">No submissions recorded for this intern.</p>
-                          ) : (
-                            report.submissionsList.map((s) => (
-                              <div key={s.id} className="rounded-xl border border-slate-200 bg-white p-3">
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <p className="font-semibold text-slate-900">{s.title}</p>
-                                    <p className="text-xs text-slate-500">{s.submittedAt ? new Date(s.submittedAt).toLocaleDateString() : "-"}</p>
-                                  </div>
-                                  <Badge className={s.status === "Approved" ? "bg-emerald-500/10 text-emerald-700" : s.status === "Reviewed" ? "bg-sky-500/10 text-sky-700" : "bg-amber-500/10 text-amber-700"}>{s.status}</Badge>
-                                </div>
-                                {s.feedback && <p className="text-sm text-slate-600 mt-2">{s.feedback}</p>}
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <h3 className="font-semibold text-slate-950">Notes</h3>
-                          <Badge className="bg-slate-900 text-white">{report.notesList?.length ?? 0}</Badge>
-                        </div>
-                        <p className="text-sm text-slate-600">Recent daily notes and lecture remarks.</p>
-                        <div className="space-y-3 max-h-72 overflow-auto pr-1">
-                          {(!report.notesList || report.notesList.length === 0) ? (
-                            <p className="text-sm text-slate-500">No notes available for this intern.</p>
-                          ) : (
-                            report.notesList.map((n) => (
-                              <div key={n.id} className="rounded-xl border border-slate-200 bg-white p-3">
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <p className="font-semibold text-slate-900">{n.title}</p>
-                                    <p className="text-xs text-slate-500">{n.date}</p>
-                                  </div>
-                                  <span className="text-xs text-slate-500">{n.lectureTime || ""}</span>
-                                </div>
-                                <p className="text-sm text-slate-600 mt-2">{n.note}</p>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <h3 className="font-semibold text-slate-950">Performance Records</h3>
-                        <Badge className="bg-slate-900 text-white">Average {report.performanceAverage}</Badge>
-                      </div>
-                      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                        {report.performanceHistory.length === 0 ? (
-                          <p className="text-sm text-slate-500">No monthly performance records found.</p>
-                        ) : (
-                          report.performanceHistory.map((entry) => (
-                            <div key={entry.id} className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
-                              <div className="flex items-center justify-between gap-3">
-                                <p className="font-semibold text-slate-950">{entry.monthLabel}</p>
-                                <Badge className="bg-violet-500/10 text-violet-700 border-violet-200">{entry.score}/100</Badge>
-                              </div>
-                              <p className="text-sm text-slate-600">{entry.remark || "No remark added."}</p>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
-                      This report is generated by HackMates and reflects verified attendance, task submissions, and monthly performance data for the above intern. Generated on {new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}.
-                    </div>
+                    {/* Footer */}
+                    <p className="text-xs text-slate-400 pt-2 border-t border-slate-200">
+                      This report is generated by HackMates. Overall score = average of attendance %, submission approval %, and mentor rating %. Data is live from the HackMates platform.
+                    </p>
                   </CardContent>
                 </Card>
               </motion.section>
