@@ -1494,60 +1494,7 @@ const Dashboard = () => {
                     </Card>
                   )}
 
-                  {/* Intern sees feedback from mentors — with mentor name, stars, comment */}
-                  {sessionRole === "Intern" && internMentorFeedbackEntries.length > 0 && (
-                    <Card className="border-white/10 bg-slate-950/70 text-white">
-                      <CardHeader>
-                        <CardTitle>Mentor feedback</CardTitle>
-                        <CardDescription className="text-white/60">Ratings, stars, and comments submitted by your mentors.</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid gap-3 md:grid-cols-3">
-                          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                            <p className="text-sm text-white/60">Total reviews</p>
-                            <p className="text-3xl font-bold mt-2">{internMentorFeedbackEntries.length}</p>
-                          </div>
-                          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                            <p className="text-sm text-white/60">Average rating</p>
-                            <p className="text-3xl font-bold mt-2">{internOverallMentorRating || 0}/10</p>
-                          </div>
-                          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                            <p className="text-sm text-white/60">Mentors</p>
-                            <p className="text-3xl font-bold mt-2">
-                              {new Set(internMentorFeedbackEntries.map((entry) => entry.mentorName)).size}
-                            </p>
-                          </div>
-                        </div>
-
-                        {internMentorFeedbackEntries.length === 0 ? (
-                          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/65">No mentor feedback received yet.</div>
-                        ) : (
-                          internMentorFeedbackEntries.map((entry) => (
-                            <div key={entry.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-2">
-                              <div className="flex flex-wrap items-center justify-between gap-3">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-sm text-white">{entry.mentorName}</span>
-                                  <Badge className="bg-white/10 text-white/60 border-white/10 text-xs">{entry.source}</Badge>
-                                </div>
-                                <span className="text-xs text-white/40">{new Date(entry.date).toLocaleDateString()}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                {[1, 2, 3, 4, 5].map((n) => (
-                                  <Star
-                                    key={n}
-                                    className={`w-4 h-4 ${entry.rating >= n * 2 ? "fill-yellow-400 text-yellow-400" : entry.rating >= n * 2 - 1 ? "fill-yellow-400/50 text-yellow-400/50" : "text-white/20"}`}
-                                  />
-                                ))}
-                                <Badge className="bg-white/10 text-white/70 border-white/10 text-xs ml-1">Marks: {entry.rating}/10</Badge>
-                              </div>
-                              <p className="text-sm text-white/75">{entry.comment}</p>
-                            </div>
-                          ))
-                        )}
-                      </CardContent>
-                    </Card>
-                  )}
-
+                  {/* Active mentor rating forms — shown first so interns see pending actions immediately */}
                   {dashboardRole === "Intern" && (
                     <Card className="border-white/10 bg-slate-950/70 text-white">
                       <CardHeader>
@@ -1784,6 +1731,52 @@ const Dashboard = () => {
                             )}
                           </div>
                         )}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Intern sees feedback history from mentors — below the active forms */}
+                  {sessionRole === "Intern" && internMentorFeedbackEntries.length > 0 && (
+                    <Card className="border-white/10 bg-slate-950/70 text-white">
+                      <CardHeader>
+                        <CardTitle>Mentor feedback</CardTitle>
+                        <CardDescription className="text-white/60">Ratings, stars, and comments submitted by your mentors.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid gap-3 md:grid-cols-3">
+                          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                            <p className="text-sm text-white/60">Total reviews</p>
+                            <p className="text-3xl font-bold mt-2">{internMentorFeedbackEntries.length}</p>
+                          </div>
+                          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                            <p className="text-sm text-white/60">Average rating</p>
+                            <p className="text-3xl font-bold mt-2">{internOverallMentorRating || 0}/10</p>
+                          </div>
+                          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                            <p className="text-sm text-white/60">Mentors</p>
+                            <p className="text-3xl font-bold mt-2">
+                              {new Set(internMentorFeedbackEntries.map((entry) => entry.mentorName)).size}
+                            </p>
+                          </div>
+                        </div>
+                        {internMentorFeedbackEntries.map((entry) => (
+                          <div key={entry.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-2">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-sm text-white">{entry.mentorName}</span>
+                                <Badge className="bg-white/10 text-white/60 border-white/10 text-xs">{entry.source}</Badge>
+                              </div>
+                              <span className="text-xs text-white/40">{new Date(entry.date).toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              {[1, 2, 3, 4, 5].map((n) => (
+                                <Star key={n} className={`w-4 h-4 ${entry.rating >= n * 2 ? "fill-yellow-400 text-yellow-400" : entry.rating >= n * 2 - 1 ? "fill-yellow-400/50 text-yellow-400/50" : "text-white/20"}`} />
+                              ))}
+                              <Badge className="bg-white/10 text-white/70 border-white/10 text-xs ml-1">Marks: {entry.rating}/10</Badge>
+                            </div>
+                            <p className="text-sm text-white/75">{entry.comment}</p>
+                          </div>
+                        ))}
                       </CardContent>
                     </Card>
                   )}
@@ -2428,37 +2421,7 @@ const Dashboard = () => {
 
                 {showMentorFeedback && (
                 <div className="space-y-6">
-                  {sessionRole === "Mentor" && (
-                    <Card className="border-white/10 bg-slate-950/70 text-white">
-                      <CardHeader>
-                        <CardTitle>Feedback received</CardTitle>
-                        <CardDescription className="text-white/60">Anonymous ratings and reviews from interns.</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        {receivedMentorFeedback.length === 0 ? (
-                          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/65">No feedback received yet.</div>
-                        ) : (
-                          receivedMentorFeedback.map((entry) => (
-                            <div key={entry.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-2">
-                              <div className="flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-1.5">
-                                  {[1,2,3,4,5].map((n) => (
-                                    <Star key={n} className={`w-4 h-4 ${entry.rating >= n * 2 ? "fill-yellow-400 text-yellow-400" : entry.rating >= n * 2 - 1 ? "fill-yellow-400/50 text-yellow-400/50" : "text-white/20"}`} />
-                                  ))}
-                                  <span className="text-xs text-white/60 ml-1">{entry.rating}/10</span>
-                                </div>
-                                <span className="text-xs text-white/40">{new Date(entry.submittedAt).toLocaleDateString()}</span>
-                              </div>
-                              <p className="text-xs text-white/40 italic">Anonymous intern</p>
-                              <p className="text-sm text-white/75">{entry.review}</p>
-                            </div>
-                          ))
-                        )}
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Mentor fills feedback forms about interns (admin-created) */}
+                  {/* Intern Feedback Forms — shown first so mentor sees pending actions immediately */}
                   {sessionRole === "Mentor" && mentorData.mentorToInternFeedbackForms && mentorData.mentorToInternFeedbackForms.length > 0 && (
                     <Card className="border-white/10 bg-slate-950/70 text-white">
                       <CardHeader>
@@ -2625,6 +2588,37 @@ const Dashboard = () => {
                             </div>
                           );
                         })}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Feedback received from interns — shown below the active forms */}
+                  {sessionRole === "Mentor" && (
+                    <Card className="border-white/10 bg-slate-950/70 text-white">
+                      <CardHeader>
+                        <CardTitle>Feedback received</CardTitle>
+                        <CardDescription className="text-white/60">Anonymous ratings and reviews from interns.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {receivedMentorFeedback.length === 0 ? (
+                          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/65">No feedback received yet.</div>
+                        ) : (
+                          receivedMentorFeedback.map((entry) => (
+                            <div key={entry.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-2">
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-1.5">
+                                  {[1,2,3,4,5].map((n) => (
+                                    <Star key={n} className={`w-4 h-4 ${entry.rating >= n * 2 ? "fill-yellow-400 text-yellow-400" : entry.rating >= n * 2 - 1 ? "fill-yellow-400/50 text-yellow-400/50" : "text-white/20"}`} />
+                                  ))}
+                                  <span className="text-xs text-white/60 ml-1">{entry.rating}/10</span>
+                                </div>
+                                <span className="text-xs text-white/40">{new Date(entry.submittedAt).toLocaleDateString()}</span>
+                              </div>
+                              <p className="text-xs text-white/40 italic">Anonymous intern</p>
+                              <p className="text-sm text-white/75">{entry.review}</p>
+                            </div>
+                          ))
+                        )}
                       </CardContent>
                     </Card>
                   )}
