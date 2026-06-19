@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Download, GraduationCap, Star, UserCheck, Users } from "lucide-react";
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -275,6 +275,11 @@ const AdminReports = () => {
             background: white !important;
           }
 
+          .recharts-tooltip-wrapper,
+          .recharts-active-dot {
+            display: none !important;
+          }
+
           .report-print-area .space-y-5 > * + * {
             margin-top: 0.75rem !important;
           }
@@ -463,7 +468,6 @@ const AdminReports = () => {
                                 <Cell fill="#10b981" />
                                 <Cell fill="#f43f5e" />
                               </Pie>
-                              <Tooltip formatter={(v: number, n: string) => [v, n]} />
                             </PieChart>
                           </ResponsiveContainer>
                           <div className="space-y-2 text-xs">
@@ -489,7 +493,6 @@ const AdminReports = () => {
                             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                             <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
                             <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
-                            <Tooltip formatter={(v: number) => [`${v}%`]} />
                             <Bar dataKey="score" radius={[4, 4, 0, 0]}>
                               <Cell fill="#10b981" />
                               <Cell fill="#3b82f6" />
