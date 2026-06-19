@@ -64,6 +64,7 @@ const AdminReports = () => {
   );
   const [reportTab, setReportTab] = useState<"intern" | "mentor">("intern");
   const [selectedInternId, setSelectedInternId] = useState("");
+  const [adminComment, setAdminComment] = useState("");
 
   useEffect(() => {
     if (!selectedInternId && internUsers.length > 0) {
@@ -355,6 +356,17 @@ const AdminReports = () => {
                     The report uses live data from attendance sessions, feedback entries, and performance records.
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <label className="text-xs uppercase tracking-wide text-white/50">Admin performance message</label>
+                  <textarea
+                    value={adminComment}
+                    onChange={(e) => setAdminComment(e.target.value)}
+                    rows={3}
+                    placeholder="e.g. Pavan has shown consistent improvement in technical skills and demonstrated strong problem-solving ability throughout the internship..."
+                    className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-white/30 text-sm resize-none outline-none"
+                  />
+                  <p className="text-xs text-white/35">This message will appear on the printed report card.</p>
+                </div>
               </CardContent>
             </Card>
 
@@ -434,7 +446,7 @@ const AdminReports = () => {
                       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                         <p className="text-xs uppercase tracking-wide text-slate-500 mb-3 font-medium">Attendance</p>
                         <div className="flex items-center gap-4">
-                          <ResponsiveContainer width={110} height={110}>
+                          <ResponsiveContainer width={160} height={160}>
                             <PieChart>
                               <Pie
                                 data={[
@@ -442,8 +454,8 @@ const AdminReports = () => {
                                   { name: "Absent", value: report.lecturesMissed },
                                 ]}
                                 dataKey="value"
-                                innerRadius={32}
-                                outerRadius={50}
+                                innerRadius={46}
+                                outerRadius={68}
                                 paddingAngle={3}
                                 startAngle={90}
                                 endAngle={-270}
@@ -465,7 +477,7 @@ const AdminReports = () => {
                       {/* Score breakdown bar */}
                       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                         <p className="text-xs uppercase tracking-wide text-slate-500 mb-3 font-medium">Score Breakdown</p>
-                        <ResponsiveContainer width="100%" height={110}>
+                        <ResponsiveContainer width="100%" height={160}>
                           <BarChart
                             data={[
                               { label: "Attendance", score: report.attendancePercentage },
@@ -501,6 +513,14 @@ const AdminReports = () => {
                           ))}
                           <span className="text-xs text-slate-500 ml-2">from {report.mentorRatings.length} review{report.mentorRatings.length !== 1 ? "s" : ""}</span>
                         </div>
+                      </div>
+                    )}
+
+                    {/* Admin performance message */}
+                    {adminComment.trim() && (
+                      <div className="rounded-xl border border-slate-300 bg-slate-50 p-4 space-y-1">
+                        <p className="text-xs uppercase tracking-wide text-slate-400 font-medium">Admin Remark</p>
+                        <p className="text-sm text-slate-800 leading-relaxed">{adminComment.trim()}</p>
                       </div>
                     )}
 
