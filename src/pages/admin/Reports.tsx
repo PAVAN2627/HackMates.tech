@@ -95,8 +95,20 @@ const AdminReports = () => {
       return null;
     }
 
+    // Find the most recently closed period for this intern to determine current period start
+    const closedForIntern = internPeriods
+      .filter((p) => p.internId === selectedIntern.id)
+      .sort((a, b) => b.periodNumber - a.periodNumber);
+    const lastClosed = closedForIntern[0];
+    // Current period number (1 if none closed, 2 if M1 closed, 3 if M2 closed)
+    const currentPeriodNumber = lastClosed ? (lastClosed.periodNumber + 1) : 1;
+    // Only show data from after the last closed period
+    const periodStartDate = lastClosed ? lastClosed.closedAt : null;
+
     const attendanceHistory = attendanceSessions
       .flatMap((session) => {
+        // Filter session by period start date
+        if (periodStartDate && session.date <= periodStartDate.slice(0, 10)) return [];
         const record = session.records.find((entry) => entry.internId === selectedIntern.id);
         if (!record) {
           return [];
@@ -124,6 +136,7 @@ const AdminReports = () => {
     const mentorRatings: ReportFeedbackEntry[] = [
       ...feedback
         .filter((entry) => entry.internId === selectedIntern.id)
+        .filter((entry) => !periodStartDate || entry.date > periodStartDate.slice(0, 10))
         .map((entry) => ({
           source: "Mentor feedback",
           date: entry.date,
@@ -133,6 +146,7 @@ const AdminReports = () => {
         })),
       ...mentorToInternFeedbackSubmissions
         .filter((entry) => entry.internId === selectedIntern.id)
+        .filter((entry) => !periodStartDate || entry.submittedAt > periodStartDate)
         .map((entry) => ({
           source: "Form feedback",
           date: entry.submittedAt,
@@ -145,6 +159,7 @@ const AdminReports = () => {
     const feedbackAverage = averageScore(mentorRatings.map((entry) => entry.rating));
     const submissionsList = submissions
       .filter((s) => s.internId === selectedIntern.id)
+      .filter((s) => !periodStartDate || (s.submittedAt ?? "") > periodStartDate)
       .sort((a, b) => (b.submittedAt ?? "").localeCompare(a.submittedAt ?? ""));
     const submissionCounts = submissionsList.reduce(
       (acc, cur) => {
@@ -206,6 +221,8 @@ const AdminReports = () => {
     const newOverallScore = newScoreParts.length > 0 ? Math.round(averageScore(newScoreParts)) : 0;
 
     return {
+      currentPeriodNumber,
+      periodStartDate,
       attendanceHistory,
       lecturesAttended,
       lecturesMissed,
@@ -226,7 +243,7 @@ const AdminReports = () => {
       displayPerformanceScore,
       overallScore: newOverallScore,
     };
-  }, [attendanceSessions, feedback, mentorToInternFeedbackSubmissions, performance, selectedIntern]);
+  }, [attendanceSessions, feedback, mentorToInternFeedbackSubmissions, performance, selectedIntern, submissions, dailyNotes, internPeriods]);
 
   // ── Mentor report ──────────────────────────────────────────────────────────
   const mentorReports = useMemo(() => {
@@ -309,7 +326,7 @@ const AdminReports = () => {
         mentorRatingAvg: ratingAvg,
         weeklyRatingScore: ratingScore,
         overallScore: overall,
-        adminComment: periodAdminComment.trim() || undefined,
+        ...(periodAdminComment.trim() ? { adminComment: periodAdminComment.trim() } : {}),
       });
 
       setPeriodAdminComment("");
@@ -462,6 +479,9 @@ const AdminReports = () => {
                   </div>
                   <div className="rounded-xl border border-white/10 bg-slate-950/30 p-4 text-sm text-white/60">
                     The report uses live data from attendance sessions, feedback entries, and performance records.
+                    {report?.periodStartDate && (
+                      <p className="mt-1 text-white/40 text-xs">Showing data from after: {new Date(report.periodStartDate).toLocaleDateString()}</p>
+                    )}
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -496,6 +516,9 @@ const AdminReports = () => {
                     <div className="flex flex-wrap items-start justify-between gap-4 pb-4 border-b border-slate-200">
                       <div className="space-y-1">
                         <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200 text-xs">HackMates · Intern Performance Report</Badge>
+                        <Badge className="bg-sky-500/10 text-sky-700 border-sky-200 text-xs" style={{ backgroundColor: "#f0f9ff", color: "#0369a1", borderColor: "#bae6fd" }}>
+                          Month {report.currentPeriodNumber} — Current Period
+                        </Badge>
                         <h2 className="text-2xl font-bold text-slate-950">{selectedIntern.name}</h2>
                         <p className="text-sm text-slate-500">
                           {selectedIntern.email}{selectedIntern.internId ? ` · ${selectedIntern.internId}` : ""}
