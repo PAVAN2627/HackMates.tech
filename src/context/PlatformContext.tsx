@@ -429,6 +429,28 @@ export interface UpdateInternFeeInput {
   dueDate: string;
 }
 
+// ── Monthly period snapshot ───────────────────────────────────────────────────
+export interface InternPeriodSnapshot {
+  id: string;
+  internId: string;
+  internName: string;
+  internEmail: string;
+  periodNumber: 1 | 2 | 3;          // Month 1, 2 or 3
+  closedAt: string;                   // ISO date when admin closed this period
+  closedBy: string;                   // Admin name
+  attendancePercentage: number;
+  sessionsAttended: number;
+  sessionsMissed: number;
+  totalSubmissions: number;
+  approvedSubmissions: number;
+  pendingSubmissions: number;
+  submissionScore: number;            // approvedSubmissions / total * 100
+  mentorRatingAvg: number;            // 0-10
+  weeklyRatingScore: number;          // mentorRatingAvg * 10
+  overallScore: number;               // avg of the three scores
+  adminComment?: string;
+}
+
 interface PlatformContextValue {
   loading: boolean;
   sessionUser: AuthUserProfile | null;
@@ -488,6 +510,9 @@ interface PlatformContextValue {
   submitMentorToInternFeedbackForm: (input: NewMentorToInternFeedbackSubmissionInput) => Promise<MentorToInternFeedbackSubmission>;
   updateMentorToInternFeedbackSubmission: (input: { submissionId: string; rating: number; comment: string; internId: string }) => Promise<void>;
   deleteMentorToInternFeedbackSubmission: (submissionId: string, internId: string) => Promise<void>;
+  internPeriods: InternPeriodSnapshot[];
+  saveInternPeriod: (snapshot: Omit<InternPeriodSnapshot, "id">) => Promise<InternPeriodSnapshot>;
+  deleteInternPeriod: (periodId: string) => Promise<void>;
 }
 
 const PlatformContext = createContext<PlatformContextValue | null>(null);
@@ -508,6 +533,7 @@ const collections = {
   mentorFeedbackSubmissions: collection(db, "mentorFeedbackSubmissions"),
   mentorToInternFeedbackForms: collection(db, "mentorToInternFeedbackForms"),
   mentorToInternFeedbackSubmissions: collection(db, "mentorToInternFeedbackSubmissions"),
+  internPeriods: collection(db, "internPeriods"),
 } as const;
 
 function toIsoDate(value: unknown) {
@@ -581,6 +607,7 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
   const [mentorFeedbackSubmissions, setMentorFeedbackSubmissions] = useState<MentorFeedbackSubmission[]>([]);
   const [mentorToInternFeedbackForms, setMentorToInternFeedbackForms] = useState<MentorToInternFeedbackForm[]>([]);
   const [mentorToInternFeedbackSubmissions, setMentorToInternFeedbackSubmissions] = useState<MentorToInternFeedbackSubmission[]>([]);
+  const [internPeriods, setInternPeriods] = useState<InternPeriodSnapshot[]>([]);
 
   const currentInternIdentifiers = useMemo(() => {
     if (!sessionUser || sessionUser.role !== "Intern") {
@@ -887,6 +914,17 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
       setMentorToInternFeedbackSubmissions(items);
     });
 
+    // internPeriods — admin-only, load all; others get nothing
+    const internPeriodsQuery = sessionUser.role === "Admin"
+      ? collections.internPeriods
+      : null;
+    const unsubscribeInternPeriods = internPeriodsQuery
+      ? onSnapshot(internPeriodsQuery, (snapshot) => {
+          const items = snapshot.docs.map((docSnapshot) => mapDoc<InternPeriodSnapshot>(docSnapshot));
+          setInternPeriods(items.sort((a, b) => a.periodNumber - b.periodNumber));
+        })
+      : () => {};
+
     return () => {
       userUnsubscribe();
       unsubscribePerformance();
@@ -903,6 +941,7 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
       unsubscribeMentorFeedbackSubmissions();
       unsubscribeMentorToInternFeedbackForms();
       unsubscribeMentorToInternFeedbackSubmissions();
+      unsubscribeInternPeriods();
     };
   }, [sessionUser, currentInternIdentifiers, currentInternAttendanceIdentifiers]);
 
@@ -1381,6 +1420,15 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     const created = await addDoc(collections.fees, payload);
     return { id: created.id, ...payload };
   }, [fees]);
+
+  const saveInternPeriod = useCallback(async (snapshot: Omit<InternPeriodSnapshot, "id">) => {
+    const result = await addDoc(collections.internPeriods, snapshot);
+    return { id: result.id, ...snapshot } as InternPeriodSnapshot;
+  }, []);
+
+  const deleteInternPeriod = useCallback(async (periodId: string) => {
+    await deleteDoc(doc(db, "internPeriods", periodId));
+  }, []);
 
   const createAttendanceSession = useCallback(async (input: NewAttendanceSessionInput) => {
     const payload = {
@@ -2013,6 +2061,9 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     submitMentorToInternFeedbackForm,
     updateMentorToInternFeedbackSubmission,
     deleteMentorToInternFeedbackSubmission,
+    internPeriods,
+    saveInternPeriod,
+    deleteInternPeriod,
   }), [
     addDailyNote,
     addDoubt,
@@ -2072,6 +2123,9 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
     deleteMentorFeedbackForm,
     updateMentorFeedbackSubmission,
     deleteMentorFeedbackSubmission,
+    internPeriods,
+    saveInternPeriod,
+    deleteInternPeriod,
   ]);
 
   return <PlatformContext.Provider value={value}>{children}</PlatformContext.Provider>;

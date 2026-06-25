@@ -116,6 +116,10 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin() || isMentor();
     }
 
+    match /internPeriods/{docId} {
+      allow read, write: if isAdmin();
+    }
+
     match /verifications/{docId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Download, GraduationCap, Star, UserCheck, Users } from "lucide-react";
+import { Download, GraduationCap, Star, UserCheck, Users, CalendarCheck, Trash2 } from "lucide-react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePlatform } from "@/context/PlatformContext";
 import DashboardSidebar from "@/components/DashboardSidebar";
+import type { InternPeriodSnapshot } from "@/context/PlatformContext";
 
 type ReportFeedbackEntry = {
   source: string;
@@ -52,6 +53,9 @@ const AdminReports = () => {
     mentorFeedbackSubmissions,
     submissions,
     dailyNotes,
+    internPeriods,
+    saveInternPeriod,
+    deleteInternPeriod,
   } = usePlatform();
 
   const internUsers = useMemo(
@@ -62,15 +66,24 @@ const AdminReports = () => {
     () => [...users.filter((user) => user.role === "Mentor")].sort((a, b) => a.name.localeCompare(b.name)),
     [users],
   );
-  const [reportTab, setReportTab] = useState<"intern" | "mentor">("intern");
+  const [reportTab, setReportTab] = useState<"intern" | "mentor" | "periods">("intern");
   const [selectedInternId, setSelectedInternId] = useState("");
   const [adminComment, setAdminComment] = useState("");
+  const [periodInternId, setPeriodInternId] = useState("");
+  const [closingPeriod, setClosingPeriod] = useState(false);
+  const [periodAdminComment, setPeriodAdminComment] = useState("");
 
   useEffect(() => {
     if (!selectedInternId && internUsers.length > 0) {
       setSelectedInternId(internUsers[0].id);
     }
   }, [internUsers, selectedInternId]);
+
+  useEffect(() => {
+    if (!periodInternId && internUsers.length > 0) {
+      setPeriodInternId(internUsers[0].id);
+    }
+  }, [internUsers, periodInternId]);
 
   const selectedIntern = useMemo(
     () => internUsers.find((user) => user.id === selectedInternId) ?? internUsers[0] ?? null,
@@ -229,6 +242,86 @@ const AdminReports = () => {
     });
   }, [mentorUsers, mentorFeedbackSubmissions, attendanceSessions]);
 
+  const handleClosePeriod = async (periodNumber: 1 | 2 | 3) => {
+    const intern = internUsers.find((u) => u.id === periodInternId);
+    if (!intern || !sessionUser) return;
+
+    // Check period not already closed for this intern
+    const existing = internPeriods.find(
+      (p) => p.internId === intern.id && p.periodNumber === periodNumber,
+    );
+    if (existing) {
+      alert(`Month ${periodNumber} is already closed for ${intern.name}.`);
+      return;
+    }
+
+    if (!window.confirm(`Close Month ${periodNumber} for ${intern.name}? This will save a score snapshot. The original data is NOT deleted.`)) return;
+
+    setClosingPeriod(true);
+    try {
+      // Calculate scores from existing live data
+      const internAttendance = attendanceSessions.flatMap((s) => {
+        const rec = s.records.find((r) => r.internId === intern.id);
+        return rec ? [rec.status] : [];
+      });
+      const attended = internAttendance.filter((s) => s === "Present").length;
+      const missed = internAttendance.filter((s) => s === "Absent").length;
+      const attendancePct = attended + missed > 0 ? Math.round((attended / (attended + missed)) * 100) : 0;
+
+      const internSubs = submissions.filter((s) => s.internId === intern.id);
+      const totalSubs = internSubs.length;
+      const approvedSubs = internSubs.filter((s) => s.status === "Approved").length;
+      const pendingSubs = internSubs.filter((s) => s.status === "Pending").length;
+      const subScore = totalSubs > 0 ? Math.round((approvedSubs / totalSubs) * 100) : 0;
+
+      const mentorRatings = [
+        ...feedback.filter((e) => e.internId === intern.id).map((e) => e.rating),
+        ...mentorToInternFeedbackSubmissions.filter((e) => e.internId === intern.id).map((e) => e.rating),
+      ];
+      const ratingAvg = mentorRatings.length > 0
+        ? Number((mentorRatings.reduce((s, r) => s + r, 0) / mentorRatings.length).toFixed(1))
+        : 0;
+      const ratingScore = Math.round(ratingAvg * 10);
+
+      const scoreParts = [
+        ...(attended + missed > 0 ? [attendancePct] : []),
+        ...(totalSubs > 0 ? [subScore] : []),
+        ...(mentorRatings.length > 0 ? [ratingScore] : []),
+      ];
+      const overall = scoreParts.length > 0
+        ? Math.round(scoreParts.reduce((s, v) => s + v, 0) / scoreParts.length)
+        : 0;
+
+      await saveInternPeriod({
+        internId: intern.id,
+        internName: intern.name,
+        internEmail: intern.email,
+        periodNumber,
+        closedAt: new Date().toISOString(),
+        closedBy: sessionUser.name,
+        attendancePercentage: attendancePct,
+        sessionsAttended: attended,
+        sessionsMissed: missed,
+        totalSubmissions: totalSubs,
+        approvedSubmissions: approvedSubs,
+        pendingSubmissions: pendingSubs,
+        submissionScore: subScore,
+        mentorRatingAvg: ratingAvg,
+        weeklyRatingScore: ratingScore,
+        overallScore: overall,
+        adminComment: periodAdminComment.trim() || undefined,
+      });
+
+      setPeriodAdminComment("");
+      alert(`Month ${periodNumber} snapshot saved for ${intern.name}.`);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save period snapshot.");
+    } finally {
+      setClosingPeriod(false);
+    }
+  };
+
   if (!loading && !sessionUser) return <Navigate to="/login" replace />;
   if (!loading && sessionUser?.role !== "Admin") return <Navigate to="/login" replace />;
   if (!sessionUser) return null;
@@ -334,6 +427,10 @@ const AdminReports = () => {
                 <TabsTrigger value="mentor" className="flex items-center gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
                   <UserCheck className="w-4 h-4" />
                   Mentor Report
+                </TabsTrigger>
+                <TabsTrigger value="periods" className="flex items-center gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
+                  <CalendarCheck className="w-4 h-4" />
+                  Monthly Periods
                 </TabsTrigger>
               </TabsList>
 
@@ -617,6 +714,206 @@ const AdminReports = () => {
                       </Card>
                     </motion.div>
                   ))
+                )}
+              </TabsContent>
+
+              {/* ── Monthly Periods Tab ── */}
+              <TabsContent value="periods" className="space-y-6">
+
+                {/* Close Period — control panel */}
+                <Card className="border-white/10 bg-white/5 text-white">
+                  <CardContent className="p-6 space-y-4">
+                    <div className="flex items-center gap-3 mb-1">
+                      <CalendarCheck className="w-5 h-5 text-primary" />
+                      <div>
+                        <h2 className="text-lg font-semibold">Close a Monthly Period</h2>
+                        <p className="text-sm text-white/55">Saves a score snapshot for an intern at the end of Month 1, 2, or 3. Original data is never deleted.</p>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <label className="text-xs uppercase tracking-wide text-white/50">Intern</label>
+                        <select
+                          value={periodInternId}
+                          onChange={(e) => setPeriodInternId(e.target.value)}
+                          className="h-11 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white outline-none"
+                        >
+                          {internUsers.map((u) => (
+                            <option key={u.id} value={u.id} className="text-slate-900">{u.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs uppercase tracking-wide text-white/50">Admin remark (optional)</label>
+                        <textarea
+                          value={periodAdminComment}
+                          onChange={(e) => setPeriodAdminComment(e.target.value)}
+                          rows={2}
+                          placeholder="Overall performance note for this month..."
+                          className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-white/30 text-sm resize-none outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Which months are already closed for selected intern */}
+                    {(() => {
+                      const closedNums = internPeriods
+                        .filter((p) => p.internId === periodInternId)
+                        .map((p) => p.periodNumber);
+                      return (
+                        <div className="flex flex-wrap gap-3">
+                          {([1, 2, 3] as const).map((n) => {
+                            const isClosed = closedNums.includes(n);
+                            return (
+                              <Button
+                                key={n}
+                                type="button"
+                                disabled={isClosed || closingPeriod}
+                                onClick={() => handleClosePeriod(n)}
+                                className={isClosed
+                                  ? "bg-white/10 text-white/40 cursor-not-allowed"
+                                  : "bg-primary hover:bg-primary/80"}
+                              >
+                                <CalendarCheck className="w-4 h-4" />
+                                {isClosed ? `Month ${n} — Closed ✓` : `Close Month ${n}`}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+
+                {/* Per-intern period snapshots */}
+                {internUsers.map((intern) => {
+                  const periods = internPeriods
+                    .filter((p) => p.internId === intern.id)
+                    .sort((a, b) => a.periodNumber - b.periodNumber);
+
+                  if (periods.length === 0) return null;
+
+                  const overallAvg = periods.length === 3
+                    ? Math.round(periods.reduce((s, p) => s + p.overallScore, 0) / 3)
+                    : null;
+
+                  return (
+                    <motion.div key={intern.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                      <Card className="border-white/10 bg-white/5 text-white">
+                        <CardContent className="p-6 space-y-4">
+                          {/* Intern header */}
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <p className="text-lg font-bold">{intern.name}</p>
+                              <p className="text-sm text-white/50">{intern.email}{intern.internId ? ` · ${intern.internId}` : ""}</p>
+                            </div>
+                            {overallAvg !== null && (
+                              <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-center">
+                                <p className="text-2xl font-bold text-primary">{overallAvg}/100</p>
+                                <p className="text-xs text-white/50 mt-0.5">3-Month Overall</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Monthly snapshots */}
+                          <div className="grid gap-4 md:grid-cols-3">
+                            {periods.map((period) => (
+                              <div key={period.id} className="rounded-xl border border-white/10 bg-slate-950/40 p-4 space-y-3">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="font-semibold text-sm">Month {period.periodNumber}</p>
+                                  <div className="flex items-center gap-2">
+                                    <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/20 text-xs">
+                                      {period.overallScore}/100
+                                    </Badge>
+                                    <button
+                                      type="button"
+                                      onClick={async () => {
+                                        if (!window.confirm(`Delete Month ${period.periodNumber} snapshot for ${intern.name}?`)) return;
+                                        await deleteInternPeriod(period.id);
+                                      }}
+                                      className="text-white/30 hover:text-red-400 transition-colors"
+                                      title="Delete snapshot"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="space-y-1.5 text-xs">
+                                  <div className="flex justify-between text-white/60">
+                                    <span>Attendance</span>
+                                    <span className="font-semibold text-white">{period.attendancePercentage}%</span>
+                                  </div>
+                                  <div className="flex justify-between text-white/60">
+                                    <span>Present / Absent</span>
+                                    <span className="text-white">{period.sessionsAttended} / {period.sessionsMissed}</span>
+                                  </div>
+                                  <div className="flex justify-between text-white/60">
+                                    <span>Submissions</span>
+                                    <span className="font-semibold text-white">{period.submissionScore}%</span>
+                                  </div>
+                                  <div className="flex justify-between text-white/60">
+                                    <span>Approved / Total</span>
+                                    <span className="text-white">{period.approvedSubmissions} / {period.totalSubmissions}</span>
+                                  </div>
+                                  <div className="flex justify-between text-white/60">
+                                    <span>Mentor Rating</span>
+                                    <span className="font-semibold text-amber-300">{period.mentorRatingAvg}/10 ({period.weeklyRatingScore}%)</span>
+                                  </div>
+                                </div>
+
+                                {period.adminComment && (
+                                  <p className="text-xs text-white/50 italic border-t border-white/10 pt-2">"{period.adminComment}"</p>
+                                )}
+                                <p className="text-xs text-white/30">Closed {new Date(period.closedAt).toLocaleDateString()} by {period.closedBy}</p>
+                              </div>
+                            ))}
+
+                            {/* Placeholder cards for missing months */}
+                            {([1, 2, 3] as const)
+                              .filter((n) => !periods.find((p) => p.periodNumber === n))
+                              .map((n) => (
+                                <div key={n} className="rounded-xl border border-white/5 bg-white/3 p-4 flex items-center justify-center text-center">
+                                  <p className="text-xs text-white/25">Month {n}<br />Not closed yet</p>
+                                </div>
+                              ))}
+                          </div>
+
+                          {/* 3-month summary bar if all 3 closed */}
+                          {overallAvg !== null && (
+                            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-2">
+                              <p className="text-xs uppercase tracking-wide text-white/50 font-medium">3-Month Score Comparison</p>
+                              <div className="flex items-end gap-3">
+                                {periods.map((p) => (
+                                  <div key={p.id} className="flex-1 text-center">
+                                    <div
+                                      className="rounded-t-lg bg-primary mx-auto"
+                                      style={{ height: `${Math.max(8, p.overallScore)}px`, width: "100%", backgroundColor: "#0f766e" }}
+                                    />
+                                    <p className="text-xs text-white/60 mt-1">M{p.periodNumber}</p>
+                                    <p className="text-xs font-bold text-white">{p.overallScore}</p>
+                                  </div>
+                                ))}
+                                <div className="flex-1 text-center border-l border-white/10 pl-3">
+                                  <p className="text-xs text-white/50">Avg</p>
+                                  <p className="text-lg font-bold text-primary">{overallAvg}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+
+                {internUsers.every((u) => !internPeriods.some((p) => p.internId === u.id)) && (
+                  <Card className="border-white/10 bg-white/5 text-white">
+                    <CardContent className="p-8 text-center text-white/50 text-sm">
+                      No period snapshots yet. Use the panel above to close Month 1 for each intern when the first month ends.
+                    </CardContent>
+                  </Card>
                 )}
               </TabsContent>
             </Tabs>
