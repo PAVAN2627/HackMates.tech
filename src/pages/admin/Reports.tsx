@@ -250,6 +250,12 @@ const AdminReports = () => {
             margin: 8mm;
           }
 
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+
           body * {
             visibility: hidden !important;
           }
@@ -406,7 +412,7 @@ const AdminReports = () => {
                     </div>
 
                     {/* Overall score — prominent */}
-                    <div className="rounded-2xl bg-slate-950 text-white p-5 flex flex-wrap items-center justify-between gap-4">
+                    <div className="rounded-2xl bg-slate-950 text-white p-5 flex flex-wrap items-center justify-between gap-4" style={{ backgroundColor: "#020617", color: "#ffffff" }}>
                       <div>
                         <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">Overall Performance Score</p>
                         <p className="text-5xl font-bold">{report.overallScore}<span className="text-2xl text-slate-400 ml-1">/100</span></p>
@@ -414,16 +420,16 @@ const AdminReports = () => {
                       </div>
                       <div className="flex gap-3 flex-wrap">
                         <div className="text-center">
-                          <p className="text-2xl font-bold text-emerald-400">{report.attendancePercentage}%</p>
-                          <p className="text-xs text-slate-400 mt-0.5">Attendance</p>
+                          <p className="text-2xl font-bold text-emerald-400" style={{ color: "#34d399" }}>{report.attendancePercentage}%</p>
+                          <p className="text-xs text-slate-400 mt-0.5" style={{ color: "#94a3b8" }}>Attendance</p>
                         </div>
                         <div className="text-center">
-                          <p className="text-2xl font-bold text-sky-400">{report.submissionScore}%</p>
-                          <p className="text-xs text-slate-400 mt-0.5">Submissions</p>
+                          <p className="text-2xl font-bold text-sky-400" style={{ color: "#38bdf8" }}>{report.submissionScore}%</p>
+                          <p className="text-xs text-slate-400 mt-0.5" style={{ color: "#94a3b8" }}>Submissions</p>
                         </div>
                         <div className="text-center">
-                          <p className="text-2xl font-bold text-amber-400">{report.weeklyRatingScore > 0 ? `${report.weeklyRatingScore}%` : "—"}</p>
-                          <p className="text-xs text-slate-400 mt-0.5">Mentor Rating</p>
+                          <p className="text-2xl font-bold text-amber-400" style={{ color: "#fbbf24" }}>{report.weeklyRatingScore > 0 ? `${report.weeklyRatingScore}%` : "—"}</p>
+                          <p className="text-xs text-slate-400 mt-0.5" style={{ color: "#94a3b8" }}>Mentor Rating</p>
                         </div>
                       </div>
                     </div>
@@ -431,16 +437,16 @@ const AdminReports = () => {
                     {/* Stats grid */}
                     <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
                       {[
-                        { label: "Sessions", value: report.lecturesAttended + report.lecturesMissed, color: "text-slate-900" },
-                        { label: "Present", value: report.lecturesAttended, color: "text-emerald-700" },
-                        { label: "Absent", value: report.lecturesMissed, color: "text-rose-700" },
-                        { label: "Submissions", value: report.totalSubmissions, color: "text-slate-900" },
-                        { label: "Approved", value: report.approvedSubmissions, color: "text-emerald-700" },
-                        { label: "Pending", value: report.pendingSubmissions, color: "text-amber-700" },
+                        { label: "Sessions", value: report.lecturesAttended + report.lecturesMissed, color: "#0f172a" },
+                        { label: "Present", value: report.lecturesAttended, color: "#047857" },
+                        { label: "Absent", value: report.lecturesMissed, color: "#be123c" },
+                        { label: "Submissions", value: report.totalSubmissions, color: "#0f172a" },
+                        { label: "Approved", value: report.approvedSubmissions, color: "#047857" },
+                        { label: "Pending", value: report.pendingSubmissions, color: "#b45309" },
                       ].map((s) => (
-                        <div key={s.label} className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center">
-                          <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
-                          <p className="text-xs text-slate-500 mt-0.5">{s.label}</p>
+                        <div key={s.label} className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center" style={{ backgroundColor: "#f8fafc", borderColor: "#e2e8f0" }}>
+                          <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
+                          <p className="text-xs text-slate-500 mt-0.5" style={{ color: "#64748b" }}>{s.label}</p>
                         </div>
                       ))}
                     </div>
@@ -448,7 +454,7 @@ const AdminReports = () => {
                     {/* Charts */}
                     <div className="grid grid-cols-2 gap-4">
                       {/* Attendance pie */}
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4" style={{ backgroundColor: "#f8fafc", borderColor: "#e2e8f0" }}>
                         <p className="text-xs uppercase tracking-wide text-slate-500 mb-3 font-medium">Attendance</p>
                         <div className="flex items-center gap-4">
                           <ResponsiveContainer width={160} height={160}>
@@ -479,7 +485,7 @@ const AdminReports = () => {
                       </div>
 
                       {/* Score breakdown bar */}
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4" style={{ backgroundColor: "#f8fafc", borderColor: "#e2e8f0" }}>
                         <p className="text-xs uppercase tracking-wide text-slate-500 mb-3 font-medium">Score Breakdown</p>
                         <ResponsiveContainer width="100%" height={160}>
                           <BarChart
