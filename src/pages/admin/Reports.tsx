@@ -102,13 +102,14 @@ const AdminReports = () => {
     const lastClosed = closedForIntern[0];
     // Current period number (1 if none closed, 2 if M1 closed, 3 if M2 closed)
     const currentPeriodNumber = lastClosed ? (lastClosed.periodNumber + 1) : 1;
-    // Only show data from after the last closed period
-    const periodStartDate = lastClosed ? lastClosed.closedAt : null;
+    // Cutoff: the exact moment the period was closed
+    // Data created AFTER this timestamp belongs to the new period
+    const periodCutoffDate = lastClosed ? lastClosed.closedAt : null;
 
     const attendanceHistory = attendanceSessions
       .flatMap((session) => {
-        // Filter session by period start date
-        if (periodStartDate && session.date <= periodStartDate.slice(0, 10)) return [];
+        // Only include sessions created after the period was closed
+        if (periodCutoffDate && (session.createdAt ?? session.date) <= periodCutoffDate) return [];
         const record = session.records.find((entry) => entry.internId === selectedIntern.id);
         if (!record) {
           return [];
@@ -136,7 +137,7 @@ const AdminReports = () => {
     const mentorRatings: ReportFeedbackEntry[] = [
       ...feedback
         .filter((entry) => entry.internId === selectedIntern.id)
-        .filter((entry) => !periodStartDate || entry.date > periodStartDate.slice(0, 10))
+        .filter((entry) => !periodCutoffDate || entry.date > periodCutoffDate.slice(0, 10))
         .map((entry) => ({
           source: "Mentor feedback",
           date: entry.date,
@@ -146,7 +147,7 @@ const AdminReports = () => {
         })),
       ...mentorToInternFeedbackSubmissions
         .filter((entry) => entry.internId === selectedIntern.id)
-        .filter((entry) => !periodStartDate || entry.submittedAt > periodStartDate)
+        .filter((entry) => !periodCutoffDate || entry.submittedAt > periodCutoffDate)
         .map((entry) => ({
           source: "Form feedback",
           date: entry.submittedAt,
@@ -159,7 +160,7 @@ const AdminReports = () => {
     const feedbackAverage = averageScore(mentorRatings.map((entry) => entry.rating));
     const submissionsList = submissions
       .filter((s) => s.internId === selectedIntern.id)
-      .filter((s) => !periodStartDate || (s.submittedAt ?? "") > periodStartDate)
+      .filter((s) => !periodCutoffDate || (s.submittedAt ?? "") > periodCutoffDate)
       .sort((a, b) => (b.submittedAt ?? "").localeCompare(a.submittedAt ?? ""));
     const submissionCounts = submissionsList.reduce(
       (acc, cur) => {
@@ -222,7 +223,7 @@ const AdminReports = () => {
 
     return {
       currentPeriodNumber,
-      periodStartDate,
+      periodCutoffDate,
       attendanceHistory,
       lecturesAttended,
       lecturesMissed,
@@ -479,8 +480,8 @@ const AdminReports = () => {
                   </div>
                   <div className="rounded-xl border border-white/10 bg-slate-950/30 p-4 text-sm text-white/60">
                     The report uses live data from attendance sessions, feedback entries, and performance records.
-                    {report?.periodStartDate && (
-                      <p className="mt-1 text-white/40 text-xs">Showing data from after: {new Date(report.periodStartDate).toLocaleDateString()}</p>
+                    {report?.periodCutoffDate && (
+                      <p className="mt-1 text-white/40 text-xs">Month {report.currentPeriodNumber} started: {new Date(report.periodCutoffDate).toLocaleString()}</p>
                     )}
                   </div>
                 </div>
