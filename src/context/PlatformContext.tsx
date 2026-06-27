@@ -1319,6 +1319,7 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
       techStack: input.techStack?.trim() || "",
       enabledFields,
       taskCreatedBy: input.taskCreatedBy || "Intern",
+      createdAt: new Date().toISOString(),
       submittedAt: input.taskCreatedBy === "Mentor" ? "" : new Date().toISOString(),
       status: "Pending" as const,
       attachments,

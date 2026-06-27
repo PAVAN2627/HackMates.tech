@@ -160,8 +160,14 @@ const AdminReports = () => {
     const feedbackAverage = averageScore(mentorRatings.map((entry) => entry.rating));
     const submissionsList = submissions
       .filter((s) => s.internId === selectedIntern.id)
-      .filter((s) => !periodCutoffDate || (s.submittedAt ?? "") > periodCutoffDate)
-      .sort((a, b) => (b.submittedAt ?? "").localeCompare(a.submittedAt ?? ""));
+      .filter((s) => {
+        if (!periodCutoffDate) return true;
+        // Use createdAt if available (new submissions), then submittedAt, then dueDate
+        const dateRef = (s as { createdAt?: string }).createdAt || s.submittedAt || s.dueDate || "";
+        if (dateRef) return dateRef > periodCutoffDate.slice(0, 10);
+        return true; // No date at all — include in current period
+      })
+      .sort((a, b) => (b.submittedAt ?? b.dueDate ?? "").localeCompare(a.submittedAt ?? a.dueDate ?? ""));
     const submissionCounts = submissionsList.reduce(
       (acc, cur) => {
         acc.total += 1;
