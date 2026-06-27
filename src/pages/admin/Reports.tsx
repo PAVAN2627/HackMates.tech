@@ -108,24 +108,22 @@ const AdminReports = () => {
 
     const attendanceHistory = attendanceSessions
       .flatMap((session) => {
-        // Only include sessions created after the period was closed
-        if (periodCutoffDate && (session.createdAt ?? session.date) <= periodCutoffDate) return [];
-        const record = session.records.find((entry) => entry.internId === selectedIntern.id);
-        if (!record) {
-          return [];
+        // Use full ISO createdAt for precise filtering; fall back to date string + "T00:00:00Z"
+        if (periodCutoffDate) {
+          const sessionTime = session.createdAt ?? `${session.date}T00:00:00.000Z`;
+          if (sessionTime <= periodCutoffDate) return [];
         }
-
-        return [
-          {
-            sessionId: session.id,
-            sessionTitle: session.title,
-            mentorName: session.mentorName,
-            date: session.date,
-            startTime: session.startTime,
-            status: record.status,
-            markedAt: record.markedAt,
-          },
-        ];
+        const record = session.records.find((entry) => entry.internId === selectedIntern.id);
+        if (!record) return [];
+        return [{
+          sessionId: session.id,
+          sessionTitle: session.title,
+          mentorName: session.mentorName,
+          date: session.date,
+          startTime: session.startTime,
+          status: record.status,
+          markedAt: record.markedAt,
+        }];
       })
       .sort((a, b) => b.date.localeCompare(a.date));
 
@@ -137,7 +135,11 @@ const AdminReports = () => {
     const mentorRatings: ReportFeedbackEntry[] = [
       ...feedback
         .filter((entry) => entry.internId === selectedIntern.id)
-        .filter((entry) => !periodCutoffDate || entry.date > periodCutoffDate.slice(0, 10))
+        .filter((entry) => {
+          if (!periodCutoffDate) return true;
+          // feedback.date is "YYYY-MM-DD", compare as date-only
+          return `${entry.date}T23:59:59.999Z` > periodCutoffDate;
+        })
         .map((entry) => ({
           source: "Mentor feedback",
           date: entry.date,
@@ -162,12 +164,20 @@ const AdminReports = () => {
       .filter((s) => s.internId === selectedIntern.id)
       .filter((s) => {
         if (!periodCutoffDate) return true;
-        // Use createdAt if available (new submissions), then submittedAt, then dueDate
-        const dateRef = (s as { createdAt?: string }).createdAt || s.submittedAt || s.dueDate || "";
-        if (dateRef) return dateRef > periodCutoffDate.slice(0, 10);
-        return true; // No date at all — include in current period
+        // Priority: createdAt (most reliable) → submittedAt → exclude if neither
+        const createdAt = (s as { createdAt?: string }).createdAt;
+        if (createdAt) return createdAt > periodCutoffDate;
+        // Intern-submitted: use submittedAt
+        if (s.submittedAt) return s.submittedAt > periodCutoffDate;
+        // Old mentor-created tasks with no createdAt/submittedAt — exclude from new period
+        // (they belong to the closed period's data)
+        return false;
       })
-      .sort((a, b) => (b.submittedAt ?? b.dueDate ?? "").localeCompare(a.submittedAt ?? a.dueDate ?? ""));
+      .sort((a, b) => {
+        const aDate = (a as { createdAt?: string }).createdAt || a.submittedAt || a.dueDate || "";
+        const bDate = (b as { createdAt?: string }).createdAt || b.submittedAt || b.dueDate || "";
+        return bDate.localeCompare(aDate);
+      });
     const submissionCounts = submissionsList.reduce(
       (acc, cur) => {
         acc.total += 1;
