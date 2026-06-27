@@ -194,7 +194,9 @@ const Verify = () => {
                         <>
                           <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                             <span className="text-sm text-muted-foreground">Certificate Type:</span>
-                            <span className="text-sm font-semibold text-foreground">{result.certificateType}</span>
+                            <span className={`text-sm font-semibold px-2 py-0.5 rounded w-fit ${result.certificateType === "Winner" ? "bg-amber-500/20 text-amber-500" : "bg-blue-500/20 text-blue-500"}`}>
+                              {result.certificateType}
+                            </span>
                           </div>
                           {result.eventName && (
                             <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
@@ -203,8 +205,14 @@ const Verify = () => {
                             </div>
                           )}
                           <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                            <span className="text-sm text-muted-foreground">Recipient:</span>
-                            <span className="text-sm font-semibold text-foreground">{result.type}</span>
+                            <span className="text-sm text-muted-foreground">Date of Issue:</span>
+                            <span className="text-sm font-semibold text-foreground">
+                              {result.issueDate ? new Date(result.issueDate).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "—"}
+                            </span>
+                          </div>
+                          <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                            <span className="text-sm text-muted-foreground">Status:</span>
+                            <span className="text-sm font-semibold px-2 py-0.5 rounded w-fit bg-green-500/20 text-green-500">Verified</span>
                           </div>
                         </>
                       ) : (
@@ -236,29 +244,27 @@ const Verify = () => {
                           })()}
                         </>
                       )}
-                      <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                        <span className="text-sm text-muted-foreground">Issue Date:</span>
-                        <span className="text-sm font-semibold text-foreground">
-                          {result.issueDate ? new Date(result.issueDate).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "—"}
-                        </span>
-                      </div>
-                      <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                        <span className="text-sm text-muted-foreground">Status:</span>
-                        <span className={`text-sm font-semibold px-2 py-0.5 rounded w-fit ${
-                          result.status === "Active"
-                            ? "bg-green-500/20 text-green-500"
-                            : result.status === "Completed"
-                            ? "bg-blue-500/20 text-blue-500"
-                            : "bg-red-500/20 text-red-500"
-                        }`}>
-                          {result.status}
-                        </span>
-                      </div>
-                      {result.notes && (
-                        <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                          <span className="text-sm text-muted-foreground">Note:</span>
-                          <span className="text-sm text-foreground">{result.notes}</span>
-                        </div>
+                      {result.source !== "achievement" && (
+                        <>
+                          <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                            <span className="text-sm text-muted-foreground">Issue Date:</span>
+                            <span className="text-sm font-semibold text-foreground">
+                              {result.issueDate ? new Date(result.issueDate).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "—"}
+                            </span>
+                          </div>
+                          <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                            <span className="text-sm text-muted-foreground">Status:</span>
+                            <span className={`text-sm font-semibold px-2 py-0.5 rounded w-fit ${
+                              result.status === "Active"
+                                ? "bg-green-500/20 text-green-500"
+                                : result.status === "Completed"
+                                ? "bg-blue-500/20 text-blue-500"
+                                : "bg-red-500/20 text-red-500"
+                            }`}>
+                              {result.status}
+                            </span>
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
