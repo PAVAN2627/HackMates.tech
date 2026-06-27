@@ -15,6 +15,7 @@ import {
   ClipboardCheck,
   BadgeCheck,
   Home,
+  Award,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -45,6 +46,7 @@ const adminNavItems: NavItem[] = [
      { id: "notes", label: "Notes", icon: BookOpen, path: "/admin/notes" },
      { id: "submissions", label: "Submissions", icon: Send, path: "/admin/submissions" },
   { id: "attendance", label: "Attendance", icon: ClipboardCheck, path: "/admin/attendance" },
+  { id: "certificates", label: "Certificates", icon: Award, path: "/admin/certificates" },
    ];
 
 const mentorNavItems: NavItem[] = [

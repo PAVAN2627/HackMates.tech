@@ -10,13 +10,16 @@ interface VerificationData {
   id: string;
   offerId: string;
   name: string;
-  type: "Employee" | "Intern";
+  type: "Employee" | "Intern" | "Participant";
   certificateType: string;
-  position: string;
+  position?: string;
+  eventName?: string;
   issueDate: string;
   validUntil?: string;
   completionDate?: string;
   status: "Active" | "Expired" | "Completed";
+  notes?: string;
+  source?: "internship" | "achievement";
 }
 
 function calcDuration(issueDate: string, validUntil: string): string {
@@ -44,19 +47,39 @@ const Verify = () => {
     setNotFound(false);
 
     try {
+      // Search internship/employment verifications
       const q = query(
         collection(db, "verifications"),
         where("offerId", "==", offerId.trim().toUpperCase())
       );
-      
       const querySnapshot = await getDocs(q);
-      
+
       if (!querySnapshot.empty) {
-        const doc = querySnapshot.docs[0];
-        setResult({ id: doc.id, ...doc.data() } as VerificationData);
-      } else {
-        setNotFound(true);
+        const docSnap = querySnapshot.docs[0];
+        setResult({ id: docSnap.id, source: "internship", ...docSnap.data() } as VerificationData);
+        return;
       }
+
+      // Search achievement certificates (Hackathon, Bootcamp, etc.)
+      const q2 = query(
+        collection(db, "achievementCerts"),
+        where("certId", "==", offerId.trim().toUpperCase())
+      );
+      const snap2 = await getDocs(q2);
+
+      if (!snap2.empty) {
+        const docSnap = snap2.docs[0];
+        const data = docSnap.data();
+        setResult({
+          id: docSnap.id,
+          offerId: data.certId,
+          source: "achievement",
+          ...data,
+        } as VerificationData);
+        return;
+      }
+
+      setNotFound(true);
     } catch (error) {
       console.error("Error verifying:", error);
       setNotFound(true);
@@ -167,25 +190,58 @@ const Verify = () => {
                         <span className="text-sm text-muted-foreground">Name:</span>
                         <span className="text-sm font-semibold text-foreground">{result.name}</span>
                       </div>
+                      {result.source === "achievement" ? (
+                        <>
+                          <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                            <span className="text-sm text-muted-foreground">Certificate Type:</span>
+                            <span className="text-sm font-semibold text-foreground">{result.certificateType}</span>
+                          </div>
+                          {result.eventName && (
+                            <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                              <span className="text-sm text-muted-foreground">Event / Program:</span>
+                              <span className="text-sm font-semibold text-foreground">{result.eventName}</span>
+                            </div>
+                          )}
+                          <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                            <span className="text-sm text-muted-foreground">Recipient:</span>
+                            <span className="text-sm font-semibold text-foreground">{result.type}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                            <span className="text-sm text-muted-foreground">Role:</span>
+                            <span className={`text-sm font-semibold px-2 py-0.5 rounded w-fit ${
+                              result.type === "Employee"
+                                ? "bg-blue-500/20 text-blue-500"
+                                : "bg-purple-500/20 text-purple-500"
+                            }`}>
+                              {result.type === "Employee" ? "Mentor / Employee" : "Intern"}
+                            </span>
+                          </div>
+                          {result.position && (
+                            <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                              <span className="text-sm text-muted-foreground">Position:</span>
+                              <span className="text-sm font-semibold text-foreground">{result.position}</span>
+                            </div>
+                          )}
+                          {result.type === "Intern" && (() => {
+                            const dur = calcDuration(result.issueDate, result.validUntil || "");
+                            return dur ? (
+                              <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                                <span className="text-sm text-muted-foreground">Duration:</span>
+                                <span className="text-sm font-semibold text-foreground">{dur}</span>
+                              </div>
+                            ) : null;
+                          })()}
+                        </>
+                      )}
                       <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                        <span className="text-sm text-muted-foreground">Role:</span>
-                        <span className={`text-sm font-semibold px-2 py-0.5 rounded w-fit ${
-                          result.type === "Employee"
-                            ? "bg-blue-500/20 text-blue-500"
-                            : "bg-purple-500/20 text-purple-500"
-                        }`}>
-                          {result.type === "Employee" ? "Mentor / Employee" : "Intern"}
+                        <span className="text-sm text-muted-foreground">Issue Date:</span>
+                        <span className="text-sm font-semibold text-foreground">
+                          {result.issueDate ? new Date(result.issueDate).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "—"}
                         </span>
                       </div>
-                      {result.type === "Intern" && (() => {
-                        const dur = calcDuration(result.issueDate, result.validUntil || "");
-                        return dur ? (
-                          <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                            <span className="text-sm text-muted-foreground">Duration:</span>
-                            <span className="text-sm font-semibold text-foreground">{dur}</span>
-                          </div>
-                        ) : null;
-                      })()}
                       <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                         <span className="text-sm text-muted-foreground">Status:</span>
                         <span className={`text-sm font-semibold px-2 py-0.5 rounded w-fit ${
@@ -198,6 +254,12 @@ const Verify = () => {
                           {result.status}
                         </span>
                       </div>
+                      {result.notes && (
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                          <span className="text-sm text-muted-foreground">Note:</span>
+                          <span className="text-sm text-foreground">{result.notes}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

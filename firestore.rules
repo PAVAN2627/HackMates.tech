@@ -120,6 +120,11 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    match /achievementCerts/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
     match /verifications/{docId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
