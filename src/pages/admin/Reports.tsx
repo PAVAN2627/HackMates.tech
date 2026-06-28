@@ -164,13 +164,12 @@ const AdminReports = () => {
       .filter((s) => s.internId === selectedIntern.id)
       .filter((s) => {
         if (!periodCutoffDate) return true;
-        // Priority: createdAt (most reliable) → submittedAt → exclude if neither
         const createdAt = (s as { createdAt?: string }).createdAt;
+        // Only createdAt is reliable for period assignment
+        // If createdAt exists: include only if created after the period cutoff
         if (createdAt) return createdAt > periodCutoffDate;
-        // Intern-submitted: use submittedAt
-        if (s.submittedAt) return s.submittedAt > periodCutoffDate;
-        // Old mentor-created tasks with no createdAt/submittedAt — exclude from new period
-        // (they belong to the closed period's data)
+        // No createdAt means the submission was created before we started tracking it
+        // → it belongs to Month 1 regardless of its current status, exclude from new periods
         return false;
       })
       .sort((a, b) => {
@@ -293,8 +292,18 @@ const AdminReports = () => {
 
     setClosingPeriod(true);
     try {
-      // Calculate scores from existing live data
+      // Get the previous period cutoff for this intern (to filter only current period data)
+      const prevPeriods = internPeriods
+        .filter((p) => p.internId === intern.id && p.periodNumber < periodNumber)
+        .sort((a, b) => b.periodNumber - a.periodNumber);
+      const prevCutoff = prevPeriods[0]?.closedAt ?? null;
+
+      // Calculate scores from live data, scoped to current period only
       const internAttendance = attendanceSessions.flatMap((s) => {
+        if (prevCutoff) {
+          const sessionTime = s.createdAt ?? `${s.date}T00:00:00.000Z`;
+          if (sessionTime <= prevCutoff) return [];
+        }
         const rec = s.records.find((r) => r.internId === intern.id);
         return rec ? [rec.status] : [];
       });
@@ -302,15 +311,35 @@ const AdminReports = () => {
       const missed = internAttendance.filter((s) => s === "Absent").length;
       const attendancePct = attended + missed > 0 ? Math.round((attended / (attended + missed)) * 100) : 0;
 
-      const internSubs = submissions.filter((s) => s.internId === intern.id);
+      // Filter submissions: only those created in this period
+      const internSubs = submissions.filter((s) => {
+        if (s.internId !== intern.id) return false;
+        const createdAt = (s as { createdAt?: string }).createdAt;
+        if (prevCutoff) {
+          // Must have been created after the previous period closed
+          if (createdAt) return createdAt > prevCutoff;
+          // No createdAt — belongs to Month 1 (previous periods), exclude
+          return false;
+        }
+        // No previous period — include all
+        return true;
+      });
       const totalSubs = internSubs.length;
       const approvedSubs = internSubs.filter((s) => s.status === "Approved").length;
       const pendingSubs = internSubs.filter((s) => s.status === "Pending").length;
       const subScore = totalSubs > 0 ? Math.round((approvedSubs / totalSubs) * 100) : 0;
 
       const mentorRatings = [
-        ...feedback.filter((e) => e.internId === intern.id).map((e) => e.rating),
-        ...mentorToInternFeedbackSubmissions.filter((e) => e.internId === intern.id).map((e) => e.rating),
+        ...feedback.filter((e) => {
+          if (e.internId !== intern.id) return false;
+          if (prevCutoff) return `${e.date}T23:59:59.999Z` > prevCutoff;
+          return true;
+        }).map((e) => e.rating),
+        ...mentorToInternFeedbackSubmissions.filter((e) => {
+          if (e.internId !== intern.id) return false;
+          if (prevCutoff) return e.submittedAt > prevCutoff;
+          return true;
+        }).map((e) => e.rating),
       ];
       const ratingAvg = mentorRatings.length > 0
         ? Number((mentorRatings.reduce((s, r) => s + r, 0) / mentorRatings.length).toFixed(1))
