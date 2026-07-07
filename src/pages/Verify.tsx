@@ -194,7 +194,12 @@ const Verify = () => {
                         <>
                           <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                             <span className="text-sm text-muted-foreground">Certificate Type:</span>
-                            <span className={`text-sm font-semibold px-2 py-0.5 rounded w-fit ${result.certificateType === "Winner" ? "bg-amber-500/20 text-amber-500" : "bg-blue-500/20 text-blue-500"}`}>
+                            <span className={`text-sm font-semibold px-2 py-0.5 rounded w-fit ${
+                              result.certificateType === "Winner" ? "bg-amber-500/20 text-amber-500" :
+                              result.certificateType === "1st Runner Up" ? "bg-orange-500/20 text-orange-500" :
+                              result.certificateType === "2nd Runner Up" ? "bg-slate-400/20 text-slate-400" :
+                              "bg-blue-500/20 text-blue-500"
+                            }`}>
                               {result.certificateType}
                             </span>
                           </div>

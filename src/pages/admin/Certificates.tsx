@@ -15,7 +15,7 @@ interface AchievementCert {
   id: string;
   certId: string;
   name: string;
-  certificateType: "Winner" | "Participant";
+  certificateType: "Winner" | "1st Runner Up" | "2nd Runner Up" | "Participant";
   eventName: string;
   issueDate: string;
 }
@@ -26,7 +26,7 @@ const sc = "w-full rounded-md border border-white/10 bg-slate-900 px-3 py-2 text
 const emptyForm = (): Omit<AchievementCert, "id"> => ({
   certId: "",
   name: "",
-  certificateType: "Participant",
+  certificateType: "Participant" as AchievementCert["certificateType"],
   eventName: "",
   issueDate: new Date().toISOString().slice(0, 10),
 });
@@ -183,8 +183,10 @@ const AdminCertificates = () => {
                       <div className="space-y-1.5">
                         <label className="text-xs text-white/50 uppercase tracking-wide">Certificate Type</label>
                         <select className={sc} value={form.certificateType} onChange={(e) => setForm((f) => ({ ...f, certificateType: e.target.value as AchievementCert["certificateType"] }))}>
-                          <option value="Participant">Participant</option>
                           <option value="Winner">Winner</option>
+                          <option value="1st Runner Up">1st Runner Up</option>
+                          <option value="2nd Runner Up">2nd Runner Up</option>
+                          <option value="Participant">Participant</option>
                         </select>
                       </div>
                       <div className="space-y-1.5">
@@ -267,7 +269,12 @@ const AdminCertificates = () => {
                         </div>
 
                         <div className="flex gap-2">
-                          <Badge className={cert.certificateType === "Winner" ? "bg-amber-500/15 text-amber-300 border-amber-500/20" : "bg-blue-500/15 text-blue-300 border-blue-500/20"}>
+                          <Badge className={
+                            cert.certificateType === "Winner" ? "bg-amber-500/15 text-amber-300 border-amber-500/20" :
+                            cert.certificateType === "1st Runner Up" ? "bg-orange-500/15 text-orange-300 border-orange-500/20" :
+                            cert.certificateType === "2nd Runner Up" ? "bg-slate-400/15 text-slate-300 border-slate-400/20" :
+                            "bg-blue-500/15 text-blue-300 border-blue-500/20"
+                          }>
                             {cert.certificateType}
                           </Badge>
                           <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/20">Verified</Badge>
