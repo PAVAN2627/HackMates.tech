@@ -177,5 +177,11 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Public site-wide stats (view counter)
+    match /siteStats/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
   }
 }

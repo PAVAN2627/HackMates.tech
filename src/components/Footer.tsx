@@ -1,8 +1,48 @@
 import { motion } from "framer-motion";
-import { Linkedin, Instagram, Mail, MapPin, Phone } from "lucide-react";
+import { Linkedin, Instagram, Mail, MapPin, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { db } from "@/lib/firebase";
+import { doc, getDoc, setDoc, increment } from "firebase/firestore";
 
-const Footer = () => (
+function useViewCounter() {
+  const [views, setViews] = useState<number | null>(null);
+
+  useEffect(() => {
+    const SESSION_KEY = "hm_visited";
+    const counterRef = doc(db, "siteStats", "views");
+
+    const run = async () => {
+      try {
+        // Only count once per browser session
+        if (!sessionStorage.getItem(SESSION_KEY)) {
+          sessionStorage.setItem(SESSION_KEY, "1");
+          await setDoc(counterRef, { count: increment(1) }, { merge: true });
+        }
+        const snap = await getDoc(counterRef);
+        if (snap.exists()) {
+          setViews((snap.data() as { count: number }).count);
+        }
+      } catch {
+        // silently fail — counter is non-critical
+      }
+    };
+
+    run();
+  }, []);
+
+  return views;
+}
+
+function formatViews(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toLocaleString();
+}
+
+const Footer = () => {
+  const views = useViewCounter();
+  return (
   <footer className="relative z-10 bg-card border-t border-border">
     <div className="container mx-auto px-6 py-12">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
@@ -127,10 +167,17 @@ const Footer = () => (
             <Link to="/privacy-policy" className="hover:text-primary transition-colors">Privacy Policy</Link>
             <Link to="/terms-of-service" className="hover:text-primary transition-colors">Terms of Service</Link>
           </div>
+          {views !== null && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Eye className="w-3.5 h-3.5 text-primary/60" />
+              <span>{formatViews(views)} visitors</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
   </footer>
-);
+  );
+};
 
 export default Footer;
