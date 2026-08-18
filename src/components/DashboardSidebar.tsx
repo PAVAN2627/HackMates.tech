@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -69,7 +69,7 @@ const internNavItems: NavItem[] = [
   { id: "attendance", label: "Attendance", icon: ClipboardCheck, section: "attendance" },
 ];
 
-export default function DashboardSidebar({
+export default memo(function DashboardSidebar({
   role,
   userName,
   onLogout,
@@ -229,4 +229,4 @@ export default function DashboardSidebar({
       )}
     </>
   );
-}
+});

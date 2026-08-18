@@ -47,6 +47,9 @@ const AdminUsers = () => {
   const [verifDocId, setVerifDocId] = useState<string | null>(null);
   const [verifForm, setVerifForm] = useState<VerifForm>(emptyVerif());
   const [savingVerif, setSavingVerif] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [qrModalId, setQrModalId] = useState<string>("");
+  const qrRef = useRef<any>(null);
 
   const interns = useMemo(() => users.filter((u) => u.role === "Intern"), [users]);
   const mentors = useMemo(() => users.filter((u) => u.role === "Mentor"), [users]);
@@ -167,14 +170,32 @@ const AdminUsers = () => {
   };
 
   const downloadQRCode = (offerId: string) => {
-    const qrElement = document.getElementById(`qr-${offerId}`);
-    if (!qrElement) return;
+    const qrElement = qrRef.current;
+    if (!qrElement) {
+      console.error("QR ref not found");
+      return;
+    }
     const canvas = qrElement.querySelector("canvas");
-    if (!canvas) return;
-    const link = document.createElement("a");
-    link.download = `${offerId}-qr.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
+    if (!canvas) {
+      console.error("Canvas not found");
+      return;
+    }
+    try {
+      const link = document.createElement("a");
+      link.download = `${offerId}-qr.png`;
+      link.href = canvas.toDataURL("image/png");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setShowQRModal(false);
+    } catch (err) {
+      console.error("Download failed:", err);
+    }
+  };
+
+  const openQRModal = (offerId: string) => {
+    setQrModalId(offerId);
+    setShowQRModal(true);
   };
 
   return (
@@ -302,9 +323,9 @@ const AdminUsers = () => {
                                     type="button"
                                     variant="outline"
                                     className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
-                                    onClick={() => verifForm.offerId && downloadQRCode(verifForm.offerId)}
+                                    onClick={() => verifForm.offerId && openQRModal(verifForm.offerId)}
                                     disabled={!verifForm.offerId.trim()}
-                                    title="Download QR code for this ID"
+                                    title="Generate QR code for this ID"
                                   >
                                     <QrCode className="w-4 h-4 mr-1" />Generate QR
                                   </Button>
@@ -312,18 +333,6 @@ const AdminUsers = () => {
                                     <X className="w-4 h-4" />
                                   </Button>
                                 </div>
-                                {/* Hidden QR Code - used for download */}
-                                {verifForm.offerId && (
-                                  <div className="hidden">
-                                    <QRCode
-                                      id={`qr-${verifForm.offerId}`}
-                                      value={`https://hackmates.tech/verify?id=${verifForm.offerId}`}
-                                      size={256}
-                                      level="H"
-                                      includeMargin={true}
-                                    />
-                                  </div>
-                                )}
                               </div>
                             </CardContent>
                           )}
@@ -415,6 +424,50 @@ const AdminUsers = () => {
           </main>
         </div>
       </div>
+
+      {/* QR Modal */}
+      {showQRModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <Card className="border-white/10 bg-slate-900 text-white max-w-md w-full">
+            <CardContent className="p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">QR Code: {qrModalId}</h3>
+                <Button variant="ghost" size="icon" onClick={() => setShowQRModal(false)} className="text-white/60 hover:text-white">
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+              <div className="bg-white p-4 rounded-lg flex justify-center" ref={qrRef}>
+                <QRCode
+                  value={`https://hackmates.tech/verify?id=${qrModalId}`}
+                  size={256}
+                  level="H"
+                  includeMargin={true}
+                />
+              </div>
+              <p className="text-xs text-white/60 text-center">
+                URL: https://hackmates.tech/verify?id={qrModalId}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white"
+                  onClick={() => downloadQRCode(qrModalId)}
+                >
+                  <QrCode className="w-4 h-4 mr-2" />Download QR
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-white/10 text-white hover:bg-white/10"
+                  onClick={() => setShowQRModal(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
