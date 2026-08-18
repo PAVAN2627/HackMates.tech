@@ -272,20 +272,12 @@ const Verify = () => {
                       {result.source !== "achievement" && (
                         <>
                           {result.status === "Completed" ? (
-                            <>
-                              <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                                <span className="text-sm text-muted-foreground">Issued Date:</span>
-                                <span className="text-sm font-semibold text-foreground">
-                                  {result.issueDate ? new Date(result.issueDate).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "—"}
-                                </span>
-                              </div>
-                              <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                                <span className="text-sm text-muted-foreground">Till Date:</span>
-                                <span className="text-sm font-semibold text-foreground">
-                                  {result.validUntil ? new Date(result.validUntil).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "—"}
-                                </span>
-                              </div>
-                            </>
+                            <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                              <span className="text-sm text-muted-foreground">Certificate Issued Date:</span>
+                              <span className="text-sm font-semibold text-foreground">
+                                {result.validUntil ? new Date(result.validUntil).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "—"}
+                              </span>
+                            </div>
                           ) : (
                             <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                               <span className="text-sm text-muted-foreground">Issue Date:</span>
