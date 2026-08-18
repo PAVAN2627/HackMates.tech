@@ -10,7 +10,7 @@ import DashboardSidebar from "@/components/DashboardSidebar";
 import { useState, FormEvent, useMemo, useRef } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, updateDoc, doc, setDoc } from "firebase/firestore";
-import QRCode from "qrcode.react";
+import { QRCodeSVG as QRCode } from "qrcode.react";
 
 interface VerifForm {
   offerId: string;

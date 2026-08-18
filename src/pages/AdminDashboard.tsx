@@ -4,7 +4,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CheckCircle2, Edit, Loader2, LogOut, Plus, Shield, Trash2, Users2, BadgeCheck, AlertCircle, Sparkles, QrCode } from "lucide-react";
 import { addDoc, collection, deleteDoc, doc, getDocs, updateDoc } from "firebase/firestore";
-import QRCode from "qrcode.react";
+import { QRCodeSVG as QRCode } from "qrcode.react";
 
 import { db } from "@/lib/firebase";
 import { usePlatform } from "../context/PlatformContext";
