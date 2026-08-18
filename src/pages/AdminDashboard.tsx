@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { CheckCircle2, Edit, Loader2, LogOut, Plus, Shield, Trash2, Users2, BadgeCheck, AlertCircle, Sparkles } from "lucide-react";
+import { CheckCircle2, Edit, Loader2, LogOut, Plus, Shield, Trash2, Users2, BadgeCheck, AlertCircle, Sparkles, QrCode } from "lucide-react";
 import { addDoc, collection, deleteDoc, doc, getDocs, updateDoc } from "firebase/firestore";
+import QRCode from "qrcode.react";
 
 import { db } from "@/lib/firebase";
 import { usePlatform } from "../context/PlatformContext";
@@ -192,6 +193,19 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error("Error deleting verification:", error);
     }
+  };
+
+  const downloadQRCode = (offerId: string) => {
+    const qrElement = document.getElementById(`qr-${offerId}`);
+    if (!qrElement) return;
+
+    const canvas = qrElement.querySelector("canvas");
+    if (!canvas) return;
+
+    const link = document.createElement("a");
+    link.download = `${offerId}-qr.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
   };
 
   return (
@@ -430,6 +444,16 @@ const AdminDashboard = () => {
                               <p className="text-xs text-white/50 mt-1">Issued {entry.issueDate}{entry.validUntil ? ` • Valid until ${entry.validUntil}` : ""}</p>
                             </div>
                             <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+                                onClick={() => downloadQRCode(entry.offerId)}
+                                title={`Download QR code for ${entry.offerId}`}
+                              >
+                                <QrCode className="w-4 h-4" />
+                                QR
+                              </Button>
                               <Button type="button" variant="outline" className="border-white/10 bg-white/5 text-white hover:bg-white/10" onClick={() => handleEditVerification(entry)}>
                                 <Edit className="w-4 h-4" />
                                 Edit
@@ -438,6 +462,16 @@ const AdminDashboard = () => {
                                 <Trash2 className="w-4 h-4" />
                                 Delete
                               </Button>
+                            </div>
+                            {/* Hidden QR Code - used for download */}
+                            <div className="hidden">
+                              <QRCode
+                                id={`qr-${entry.offerId}`}
+                                value={`https://hackmates.tech/verify?id=${entry.offerId}`}
+                                size={256}
+                                level="H"
+                                includeMargin={true}
+                              />
                             </div>
                           </div>
                         ))}

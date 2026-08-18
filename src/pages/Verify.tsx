@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Search, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
+import { useSearchParams } from "react-router-dom";
 
 interface VerificationData {
   id: string;
@@ -27,12 +28,15 @@ function calcDuration(issueDate: string, validUntil: string): string {
   const start = new Date(issueDate);
   const end = new Date(validUntil);
   if (isNaN(start.getTime()) || isNaN(end.getTime())) return "";
-  const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-  if (months <= 0) return "";
-  return months === 1 ? "1 month" : `${months} months`;
+  const diffMs = end.getTime() - start.getTime();
+  if (diffMs <= 0) return "";
+  const weeks = Math.round(diffMs / (1000 * 60 * 60 * 24 * 7));
+  if (weeks <= 0) return "";
+  return weeks === 1 ? "1 week" : `${weeks} weeks`;
 }
 
 const Verify = () => {
+  const [searchParams] = useSearchParams();
   const [offerId, setOfferId] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<VerificationData | null>(null);
@@ -87,6 +91,22 @@ const Verify = () => {
       setLoading(false);
     }
   };
+
+  // Auto-verify from URL query parameter
+  useEffect(() => {
+    const idFromUrl = searchParams.get("id");
+    if (idFromUrl) {
+      setOfferId(idFromUrl.toUpperCase());
+      // Trigger verification automatically
+      const formEvent = new Event("submit", { bubbles: true });
+      setTimeout(() => {
+        const formElement = document.querySelector("form");
+        if (formElement) {
+          formElement.dispatchEvent(formEvent);
+        }
+      }, 100);
+    }
+  }, [searchParams]);
 
   return (
     <div className="min-h-screen bg-background relative">
