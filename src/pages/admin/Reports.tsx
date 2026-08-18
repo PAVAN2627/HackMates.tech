@@ -1227,8 +1227,8 @@ const AdminReports = () => {
                               </div>
                             </div>
                             <div className="border-t border-emerald-300 pt-2 flex justify-between text-xs text-slate-600">
-                              <span>Generated: {new Date().toLocaleDateString()}</span>
-                              <span>Report: 5 Pages</span>
+                              <span>Generated: {new Date().toLocaleDateString()} • {new Date().toLocaleTimeString()}</span>
+                              <span>Periods: {finalPeriods.length}/3 Closed</span>
                             </div>
                           </div>
 
