@@ -66,12 +66,13 @@ const AdminReports = () => {
     () => [...users.filter((user) => user.role === "Mentor")].sort((a, b) => a.name.localeCompare(b.name)),
     [users],
   );
-  const [reportTab, setReportTab] = useState<"intern" | "mentor" | "periods">("intern");
+  const [reportTab, setReportTab] = useState<"intern" | "mentor" | "periods" | "final">("intern");
   const [selectedInternId, setSelectedInternId] = useState("");
   const [adminComment, setAdminComment] = useState("");
   const [periodInternId, setPeriodInternId] = useState("");
   const [closingPeriod, setClosingPeriod] = useState(false);
   const [periodAdminComment, setPeriodAdminComment] = useState("");
+  const [selectedFinalInternId, setSelectedFinalInternId] = useState("");
 
   useEffect(() => {
     if (!selectedInternId && internUsers.length > 0) {
@@ -84,6 +85,12 @@ const AdminReports = () => {
       setPeriodInternId(internUsers[0].id);
     }
   }, [internUsers, periodInternId]);
+
+  useEffect(() => {
+    if (!selectedFinalInternId && internUsers.length > 0) {
+      setSelectedFinalInternId(internUsers[0].id);
+    }
+  }, [internUsers, selectedFinalInternId]);
 
   const selectedIntern = useMemo(
     () => internUsers.find((user) => user.id === selectedInternId) ?? internUsers[0] ?? null,
@@ -355,6 +362,7 @@ const AdminReports = () => {
         ? Math.round(scoreParts.reduce((s, v) => s + v, 0) / scoreParts.length)
         : 0;
 
+      // Save individual month report with periodNumber
       await saveInternPeriod({
         internId: intern.id,
         internName: intern.name,
@@ -376,7 +384,7 @@ const AdminReports = () => {
       });
 
       setPeriodAdminComment("");
-      alert(`Month ${periodNumber} snapshot saved for ${intern.name}.`);
+      alert(`Month ${periodNumber} snapshot saved for ${intern.name}. ✅ Individual month report created.`);
     } catch (err) {
       console.error(err);
       alert("Failed to save period snapshot.");
@@ -481,7 +489,7 @@ const AdminReports = () => {
           </header>
 
           <main className="mx-auto w-full max-w-7xl px-6 py-8 flex-1">
-            <Tabs value={reportTab} onValueChange={(v) => setReportTab(v as "intern" | "mentor")} className="space-y-6">
+            <Tabs value={reportTab} onValueChange={(v) => setReportTab(v as "intern" | "mentor" | "periods" | "final")} className="space-y-6">
               <TabsList className="bg-white/5 border border-white/10 text-white h-auto p-1 no-print">
                 <TabsTrigger value="intern" className="flex items-center gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
                   <GraduationCap className="w-4 h-4" />
@@ -494,6 +502,10 @@ const AdminReports = () => {
                 <TabsTrigger value="periods" className="flex items-center gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
                   <CalendarCheck className="w-4 h-4" />
                   Monthly Periods
+                </TabsTrigger>
+                <TabsTrigger value="final" className="flex items-center gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-white">
+                  <Download className="w-4 h-4" />
+                  Final Report (All 3 Months)
                 </TabsTrigger>
               </TabsList>
 
@@ -984,6 +996,209 @@ const AdminReports = () => {
                     </CardContent>
                   </Card>
                 )}
+              </TabsContent>
+
+              {/* ── Final Report Tab (All 3 Months Combined) ── */}
+              <TabsContent value="final" className="space-y-6">
+                <Card className="border-white/10 bg-white/5 text-white no-print">
+                  <CardContent className="p-6 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <Download className="w-5 h-5 text-primary" />
+                      <div>
+                        <h2 className="text-lg font-semibold">Final Report - All 3 Months</h2>
+                        <p className="text-sm text-white/55">View and save a combined report showing all 3 month snapshots for an intern.</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs uppercase tracking-wide text-white/50">Select intern</label>
+                      <select
+                        value={selectedFinalInternId}
+                        onChange={(e) => setSelectedFinalInternId(e.target.value)}
+                        className="h-11 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white outline-none"
+                      >
+                        {internUsers.map((u) => (
+                          <option key={u.id} value={u.id} className="text-slate-900">{u.name} {u.internId ? `(${u.internId})` : ""}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Final Report Print Area */}
+                {(() => {
+                  const finalIntern = internUsers.find((u) => u.id === selectedFinalInternId);
+                  const finalPeriods = internPeriods
+                    .filter((p) => p.internId === selectedFinalInternId)
+                    .sort((a, b) => a.periodNumber - b.periodNumber);
+
+                  if (!finalIntern || finalPeriods.length === 0) {
+                    return (
+                      <Card className="border-white/10 bg-white/5 text-white">
+                        <CardContent className="p-8 text-center text-white/60">
+                          {!finalIntern ? "Select an intern to view their final report." : "No period snapshots available for this intern. Periods must be closed first."}
+                        </CardContent>
+                      </Card>
+                    );
+                  }
+
+                  const overallAvg = finalPeriods.length === 3
+                    ? Math.round(finalPeriods.reduce((s, p) => s + p.overallScore, 0) / 3)
+                    : Math.round(finalPeriods.reduce((s, p) => s + p.overallScore, 0) / finalPeriods.length);
+
+                  return (
+                    <motion.section
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="report-print-area space-y-6"
+                    >
+                      <Card className="border-white/10 bg-white text-slate-900 shadow-xl print:shadow-none print:border-slate-200">
+                        <CardContent className="p-6 md:p-8 space-y-6">
+                          {/* Header */}
+                          <div className="flex flex-wrap items-start justify-between gap-4 pb-4 border-b border-slate-200">
+                            <div className="space-y-1">
+                              <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200 text-xs">HackMates · Final Internship Report</Badge>
+                              <Badge className="bg-blue-500/10 text-blue-700 border-blue-200 text-xs">All 3 Months Combined</Badge>
+                              <h2 className="text-2xl font-bold text-slate-950">{finalIntern.name}</h2>
+                              <p className="text-sm text-slate-500">
+                                {finalIntern.email}{finalIntern.internId ? ` · ${finalIntern.internId}` : ""}
+                              </p>
+                            </div>
+                            <div className="text-right text-xs text-slate-500 space-y-1">
+                              <p>Generated: {new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}</p>
+                              <p>Role: {finalIntern.role}</p>
+                              <p>Total Periods: {finalPeriods.length}/3</p>
+                            </div>
+                          </div>
+
+                          {/* Overall 3-month score */}
+                          <div className="rounded-2xl bg-slate-950 text-white p-6 space-y-4" style={{ backgroundColor: "#020617" }}>
+                            <div>
+                              <p className="text-xs uppercase tracking-widest text-slate-400 mb-2">Overall 3-Month Performance Score</p>
+                              <p className="text-6xl font-bold">{overallAvg}<span className="text-3xl text-slate-400 ml-2">/100</span></p>
+                              <p className="text-sm text-slate-400 mt-3">Average of all completed months</p>
+                            </div>
+                          </div>
+
+                          {/* Monthly breakdown */}
+                          <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-slate-950">Monthly Breakdown</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              {finalPeriods.map((period) => (
+                                <div key={period.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <p className="font-bold text-slate-950">Month {period.periodNumber}</p>
+                                    <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-200">
+                                      {period.overallScore}/100
+                                    </Badge>
+                                  </div>
+
+                                  <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between border-b border-slate-200 pb-2">
+                                      <span className="text-slate-600">Attendance</span>
+                                      <span className="font-semibold text-slate-900">{period.attendancePercentage}%</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-200 pb-2">
+                                      <span className="text-slate-600">Sessions: {period.sessionsAttended} / {period.sessionsAttended + period.sessionsMissed}</span>
+                                      <span className="font-semibold text-emerald-600">✓</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-200 pb-2">
+                                      <span className="text-slate-600">Submissions</span>
+                                      <span className="font-semibold text-slate-900">{period.submissionScore}%</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-200 pb-2">
+                                      <span className="text-slate-600">Approved: {period.approvedSubmissions} / {period.totalSubmissions}</span>
+                                      <span className="font-semibold text-emerald-600">✓</span>
+                                    </div>
+                                    <div className="flex justify-between pt-2">
+                                      <span className="text-slate-600">Mentor Rating</span>
+                                      <span className="font-semibold text-amber-600">{period.mentorRatingAvg}/10</span>
+                                    </div>
+                                  </div>
+
+                                  {period.adminComment && (
+                                    <div className="rounded border border-slate-300 bg-white p-2 text-xs italic text-slate-700">
+                                      "{period.adminComment}"
+                                    </div>
+                                  )}
+
+                                  <p className="text-xs text-slate-400 pt-2 border-t border-slate-200">
+                                    Closed: {new Date(period.closedAt).toLocaleDateString()} by {period.closedBy}
+                                  </p>
+                                </div>
+                              ))}
+
+                              {/* Show placeholder for missing months */}
+                              {finalPeriods.length < 3 && (
+                                <>
+                                  {[1, 2, 3].filter((n) => !finalPeriods.find((p) => p.periodNumber === n)).map((n) => (
+                                    <div key={n} className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex items-center justify-center text-center">
+                                      <div className="text-slate-400">
+                                        <p className="font-semibold text-sm">Month {n}</p>
+                                        <p className="text-xs mt-1">Not closed yet</p>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Comparison chart */}
+                          {finalPeriods.length > 0 && (
+                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                              <p className="text-sm font-bold text-slate-950">Performance Trend</p>
+                              <ResponsiveContainer width="100%" height={200}>
+                                <BarChart data={finalPeriods.map((p) => ({ name: `Month ${p.periodNumber}`, score: p.overallScore }))}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                                  <YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                                  <Bar dataKey="score" radius={[4, 4, 0, 0]} fill="#0f766e" />
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                          )}
+
+                          {/* Summary stats */}
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                            <p className="text-sm font-bold text-slate-950">3-Month Summary</p>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                              <div className="text-center">
+                                <p className="text-xl font-bold text-slate-950">
+                                  {finalPeriods.reduce((sum, p) => sum + p.sessionsAttended, 0)}
+                                </p>
+                                <p className="text-xs text-slate-500 mt-1">Total Present</p>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-xl font-bold text-slate-950">
+                                  {finalPeriods.reduce((sum, p) => sum + p.sessionsMissed, 0)}
+                                </p>
+                                <p className="text-xs text-slate-500 mt-1">Total Absent</p>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-xl font-bold text-slate-950">
+                                  {finalPeriods.reduce((sum, p) => sum + p.totalSubmissions, 0)}
+                                </p>
+                                <p className="text-xs text-slate-500 mt-1">Total Submissions</p>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-xl font-bold text-slate-950">
+                                  {finalPeriods.reduce((sum, p) => sum + p.approvedSubmissions, 0)}
+                                </p>
+                                <p className="text-xs text-slate-500 mt-1">Approved</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Footer */}
+                          <p className="text-xs text-slate-400 pt-4 border-t border-slate-200">
+                            This is the final comprehensive report combining all {finalPeriods.length} completed month(s) of the internship. Overall score = average of all month scores.
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </motion.section>
+                  );
+                })()}
               </TabsContent>
             </Tabs>
           </main>
