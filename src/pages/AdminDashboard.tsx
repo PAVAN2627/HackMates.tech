@@ -227,19 +227,6 @@ const AdminDashboard = () => {
     }
   }, []);
 
-  const downloadQRCode = (offerId: string) => {
-    const qrElement = document.getElementById(`qr-${offerId}`);
-    if (!qrElement) return;
-
-    const canvas = qrElement.querySelector("canvas");
-    if (!canvas) return;
-
-    const link = document.createElement("a");
-    link.download = `${offerId}-qr.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-  };
-
   return (
     <div className="min-h-screen bg-background relative overflow-x-hidden flex">
       <DashboardSidebar
