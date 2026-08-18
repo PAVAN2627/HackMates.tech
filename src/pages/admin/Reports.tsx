@@ -420,6 +420,14 @@ const AdminReports = () => {
             color-adjust: exact !important;
           }
 
+          html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background: white !important;
+          }
+
           body * {
             visibility: hidden !important;
           }
@@ -430,10 +438,37 @@ const AdminReports = () => {
           }
 
           .report-print-area {
-            position: absolute !important;
-            inset: 0 !important;
+            position: static !important;
+            display: block !important;
             width: 100% !important;
             margin: 0 !important;
+            padding: 0 !important;
+          }
+
+          /* Prevent content from breaking awkwardly */
+          .report-print-area > div {
+            page-break-inside: auto !important;
+            page-break-before: auto !important;
+            page-break-after: auto !important;
+            margin: 0 !important;
+            padding: 0.4cm !important;
+          }
+
+          .report-print-area > div > div {
+            page-break-inside: avoid !important;
+          }
+
+          /* Cards - thin borders, compact */
+          .report-print-area .shadow-xl {
+            box-shadow: none !important;
+            border: 1px solid #999 !important;
+            page-break-inside: avoid !important;
+            margin: 0 !important;
+            padding: 0.6cm !important;
+          }
+
+          .report-print-area .bg-white {
+            background: white !important;
           }
 
           .no-print,
@@ -441,17 +476,114 @@ const AdminReports = () => {
             display: none !important;
           }
 
-          body {
-            background: white !important;
-          }
-
           .recharts-tooltip-wrapper,
           .recharts-active-dot {
             display: none !important;
           }
 
-          .report-print-area .space-y-5 > * + * {
-            margin-top: 0.75rem !important;
+          /* Prevent chart breaks */
+          .recharts-wrapper {
+            page-break-inside: avoid !important;
+          }
+
+          /* Ensure text is visible */
+          .report-print-area * {
+            color: inherit !important;
+          }
+
+          .report-print-area .bg-emerald-50,
+          .report-print-area .bg-blue-50,
+          .report-print-area .bg-purple-50,
+          .report-print-area .bg-amber-50,
+          .report-print-area .bg-slate-50,
+          .report-print-area .bg-gradient-to-br {
+            background-color: #f8fafc !important;
+            -webkit-print-color-adjust: exact !important;
+          }
+
+          .report-print-area .bg-slate-950 {
+            background-color: #020617 !important;
+            -webkit-print-color-adjust: exact !important;
+          }
+
+          .report-print-area .text-white {
+            color: white !important;
+          }
+
+          /* Reduce spacing */
+          .report-print-area p {
+            margin: 0.1cm 0 !important;
+          }
+
+          .report-print-area h1 {
+            margin: 0.2cm 0 !important;
+            font-size: 22pt !important;
+          }
+
+          .report-print-area h2 {
+            margin: 0.15cm 0 !important;
+            font-size: 14pt !important;
+          }
+
+          .report-print-area h3 {
+            margin: 0.1cm 0 !important;
+            font-size: 12pt !important;
+          }
+
+          .report-print-area h4 {
+            margin: 0.05cm 0 !important;
+            font-size: 11pt !important;
+          }
+
+          /* Remove extra spacing from grids and flex */
+          .report-print-area .grid {
+            gap: 0.2cm !important;
+          }
+
+          .report-print-area .space-y-6 {
+            gap: 0.2cm !important;
+          }
+
+          .report-print-area .space-y-8 {
+            gap: 0.2cm !important;
+          }
+
+          .report-print-area .space-y-4 {
+            gap: 0.1cm !important;
+          }
+
+          .report-print-area .flex {
+            gap: 0.1cm !important;
+          }
+
+          /* Page breaks for major sections */
+          .report-print-area > .shadow-xl:first-child {
+            page-break-after: always !important;
+          }
+
+          .report-print-area > .shadow-xl:nth-child(2) {
+            page-break-before: always !important;
+          }
+
+          .report-print-area .text-slate-900 {
+            color: #0f172a !important;
+          }
+
+          .report-print-area .text-slate-600 {
+            color: #475569 !important;
+          }
+
+          .report-print-area .border-black {
+            border-color: #000 !important;
+          }
+
+          /* Page breaks between major sections */
+          .report-print-area > .shadow-xl:first-child {
+            page-break-after: always !important;
+          }
+
+          .report-print-area > .shadow-xl:not(:first-child) {
+            page-break-before: always !important;
           }
         }
       `}</style>
@@ -1006,7 +1138,7 @@ const AdminReports = () => {
                       <Download className="w-5 h-5 text-primary" />
                       <div>
                         <h2 className="text-lg font-semibold">Final Report - All 3 Months</h2>
-                        <p className="text-sm text-white/55">View and save a combined report showing all 3 month snapshots for an intern.</p>
+                        <p className="text-sm text-white/55">View and save a comprehensive final report showing all 3 month snapshots for an intern.</p>
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -1045,155 +1177,272 @@ const AdminReports = () => {
                     ? Math.round(finalPeriods.reduce((s, p) => s + p.overallScore, 0) / 3)
                     : Math.round(finalPeriods.reduce((s, p) => s + p.overallScore, 0) / finalPeriods.length);
 
+                  const totalAttendance = finalPeriods.reduce((sum, p) => sum + p.sessionsAttended, 0);
+                  const totalMissed = finalPeriods.reduce((sum, p) => sum + p.sessionsMissed, 0);
+                  const overallAttendancePercent = totalAttendance + totalMissed > 0 
+                    ? Math.round((totalAttendance / (totalAttendance + totalMissed)) * 100) 
+                    : 0;
+                  const totalSubmissions = finalPeriods.reduce((sum, p) => sum + p.totalSubmissions, 0);
+                  const totalApproved = finalPeriods.reduce((sum, p) => sum + p.approvedSubmissions, 0);
+                  const avgMentorRating = Math.round((finalPeriods.reduce((sum, p) => sum + p.mentorRatingAvg, 0) / finalPeriods.length) * 10) / 10;
+
                   return (
                     <motion.section
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.25 }}
-                      className="report-print-area space-y-6"
+                      className="report-print-area space-y-0"
+                      style={{ display: "block" }}
                     >
-                      <Card className="border-white/10 bg-white text-slate-900 shadow-xl print:shadow-none print:border-slate-200">
-                        <CardContent className="p-6 md:p-8 space-y-6">
+                      {/* Page 1: Compact Cover */}
+                      <Card className="border-white/10 bg-white text-slate-900 shadow-xl print:shadow-none print:border-0">
+                        <CardContent className="p-4 md:p-6 space-y-3 print:p-3 print:space-y-2">
+
                           {/* Header */}
-                          <div className="flex flex-wrap items-start justify-between gap-4 pb-4 border-b border-slate-200">
-                            <div className="space-y-1">
-                              <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200 text-xs">HackMates · Final Internship Report</Badge>
-                              <Badge className="bg-blue-500/10 text-blue-700 border-blue-200 text-xs">All 3 Months Combined</Badge>
-                              <h2 className="text-2xl font-bold text-slate-950">{finalIntern.name}</h2>
-                              <p className="text-sm text-slate-500">
-                                {finalIntern.email}{finalIntern.internId ? ` · ${finalIntern.internId}` : ""}
-                              </p>
+                          <div className="text-center space-y-1">
+                            <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200 text-xs justify-self-center">HackMates Internship Program</Badge>
+                            <h1 className="text-3xl font-bold text-slate-950">12-Week Performance Report</h1>
+                            <p className="text-xs text-slate-600">Complete Internship Summary</p>
+                          </div>
+
+                          {/* Student Info - Compact */}
+                          <div className="rounded-lg bg-emerald-50 border border-emerald-300 p-3 space-y-2">
+                            <h2 className="text-xl font-bold text-slate-950">{finalIntern.name}</h2>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <span className="font-semibold text-slate-700">Email:</span>
+                                <p className="text-slate-600">{finalIntern.email}</p>
+                              </div>
+                              <div>
+                                <span className="font-semibold text-slate-700">ID:</span>
+                                <p className="text-slate-600">{finalIntern.internId || "N/A"}</p>
+                              </div>
+                              <div>
+                                <span className="font-semibold text-slate-700">Role:</span>
+                                <p className="text-slate-600">{finalIntern.role}</p>
+                              </div>
+                              <div>
+                                <span className="font-semibold text-slate-700">Periods:</span>
+                                <p className="text-slate-600">{finalPeriods.length}/3 Closed</p>
+                              </div>
                             </div>
-                            <div className="text-right text-xs text-slate-500 space-y-1">
-                              <p>Generated: {new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}</p>
-                              <p>Role: {finalIntern.role}</p>
-                              <p>Total Periods: {finalPeriods.length}/3</p>
+                            <div className="border-t border-emerald-300 pt-2 flex justify-between text-xs text-slate-600">
+                              <span>Generated: {new Date().toLocaleDateString()}</span>
+                              <span>Report: 5 Pages</span>
                             </div>
                           </div>
 
-                          {/* Overall 3-month score */}
-                          <div className="rounded-2xl bg-slate-950 text-white p-6 space-y-4" style={{ backgroundColor: "#020617" }}>
-                            <div>
-                              <p className="text-xs uppercase tracking-widest text-slate-400 mb-2">Overall 3-Month Performance Score</p>
-                              <p className="text-6xl font-bold">{overallAvg}<span className="text-3xl text-slate-400 ml-2">/100</span></p>
-                              <p className="text-sm text-slate-400 mt-3">Average of all completed months</p>
-                            </div>
+                          {/* Overall Score - Compact */}
+                          <div className="rounded-lg bg-slate-950 text-white p-4 text-center" style={{ backgroundColor: "#020617" }}>
+                            <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">12-Week Overall Score</p>
+                            <p className="text-5xl font-bold">{overallAvg}</p>
+                            <p className="text-xs text-slate-400">/100</p>
                           </div>
 
-                          {/* Monthly breakdown */}
-                          <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-slate-950">Monthly Breakdown</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              {finalPeriods.map((period) => (
-                                <div key={period.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
-                                  <div className="flex items-center justify-between">
-                                    <p className="font-bold text-slate-950">Month {period.periodNumber}</p>
-                                    <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-200">
-                                      {period.overallScore}/100
-                                    </Badge>
-                                  </div>
-
-                                  <div className="space-y-2 text-sm">
-                                    <div className="flex justify-between border-b border-slate-200 pb-2">
-                                      <span className="text-slate-600">Attendance</span>
-                                      <span className="font-semibold text-slate-900">{period.attendancePercentage}%</span>
-                                    </div>
-                                    <div className="flex justify-between border-b border-slate-200 pb-2">
-                                      <span className="text-slate-600">Sessions: {period.sessionsAttended} / {period.sessionsAttended + period.sessionsMissed}</span>
-                                      <span className="font-semibold text-emerald-600">✓</span>
-                                    </div>
-                                    <div className="flex justify-between border-b border-slate-200 pb-2">
-                                      <span className="text-slate-600">Submissions</span>
-                                      <span className="font-semibold text-slate-900">{period.submissionScore}%</span>
-                                    </div>
-                                    <div className="flex justify-between border-b border-slate-200 pb-2">
-                                      <span className="text-slate-600">Approved: {period.approvedSubmissions} / {period.totalSubmissions}</span>
-                                      <span className="font-semibold text-emerald-600">✓</span>
-                                    </div>
-                                    <div className="flex justify-between pt-2">
-                                      <span className="text-slate-600">Mentor Rating</span>
-                                      <span className="font-semibold text-amber-600">{period.mentorRatingAvg}/10</span>
-                                    </div>
-                                  </div>
-
-                                  {period.adminComment && (
-                                    <div className="rounded border border-slate-300 bg-white p-2 text-xs italic text-slate-700">
-                                      "{period.adminComment}"
-                                    </div>
-                                  )}
-
-                                  <p className="text-xs text-slate-400 pt-2 border-t border-slate-200">
-                                    Closed: {new Date(period.closedAt).toLocaleDateString()} by {period.closedBy}
-                                  </p>
-                                </div>
-                              ))}
-
-                              {/* Show placeholder for missing months */}
-                              {finalPeriods.length < 3 && (
-                                <>
-                                  {[1, 2, 3].filter((n) => !finalPeriods.find((p) => p.periodNumber === n)).map((n) => (
-                                    <div key={n} className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex items-center justify-center text-center">
-                                      <div className="text-slate-400">
-                                        <p className="font-semibold text-sm">Month {n}</p>
-                                        <p className="text-xs mt-1">Not closed yet</p>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </>
-                              )}
+                          {/* Key Metrics - 2x2 Grid */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-2 text-center">
+                              <p className="text-2xl font-bold text-emerald-700">{overallAttendancePercent}%</p>
+                              <p className="text-xs text-slate-600">Attendance</p>
                             </div>
-                          </div>
-
-                          {/* Comparison chart */}
-                          {finalPeriods.length > 0 && (
-                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
-                              <p className="text-sm font-bold text-slate-950">Performance Trend</p>
-                              <ResponsiveContainer width="100%" height={200}>
-                                <BarChart data={finalPeriods.map((p) => ({ name: `Month ${p.periodNumber}`, score: p.overallScore }))}>
-                                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#64748b" }} axisLine={false} tickLine={false} />
-                                  <YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: "#64748b" }} axisLine={false} tickLine={false} />
-                                  <Bar dataKey="score" radius={[4, 4, 0, 0]} fill="#0f766e" />
-                                </BarChart>
-                              </ResponsiveContainer>
+                            <div className="rounded-lg border border-blue-300 bg-blue-50 p-2 text-center">
+                              <p className="text-2xl font-bold text-blue-700">{totalApproved}/{totalSubmissions}</p>
+                              <p className="text-xs text-slate-600">Submissions</p>
                             </div>
-                          )}
-
-                          {/* Summary stats */}
-                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
-                            <p className="text-sm font-bold text-slate-950">3-Month Summary</p>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                              <div className="text-center">
-                                <p className="text-xl font-bold text-slate-950">
-                                  {finalPeriods.reduce((sum, p) => sum + p.sessionsAttended, 0)}
-                                </p>
-                                <p className="text-xs text-slate-500 mt-1">Total Present</p>
-                              </div>
-                              <div className="text-center">
-                                <p className="text-xl font-bold text-slate-950">
-                                  {finalPeriods.reduce((sum, p) => sum + p.sessionsMissed, 0)}
-                                </p>
-                                <p className="text-xs text-slate-500 mt-1">Total Absent</p>
-                              </div>
-                              <div className="text-center">
-                                <p className="text-xl font-bold text-slate-950">
-                                  {finalPeriods.reduce((sum, p) => sum + p.totalSubmissions, 0)}
-                                </p>
-                                <p className="text-xs text-slate-500 mt-1">Total Submissions</p>
-                              </div>
-                              <div className="text-center">
-                                <p className="text-xl font-bold text-slate-950">
-                                  {finalPeriods.reduce((sum, p) => sum + p.approvedSubmissions, 0)}
-                                </p>
-                                <p className="text-xs text-slate-500 mt-1">Approved</p>
-                              </div>
+                            <div className="rounded-lg border border-purple-300 bg-purple-50 p-2 text-center">
+                              <p className="text-2xl font-bold text-purple-700">{totalAttendance}</p>
+                              <p className="text-xs text-slate-600">Sessions Present</p>
+                            </div>
+                            <div className="rounded-lg border border-amber-300 bg-amber-50 p-2 text-center">
+                              <p className="text-2xl font-bold text-amber-700">{avgMentorRating}/10</p>
+                              <p className="text-xs text-slate-600">Mentor Rating</p>
                             </div>
                           </div>
 
                           {/* Footer */}
-                          <p className="text-xs text-slate-400 pt-4 border-t border-slate-200">
-                            This is the final comprehensive report combining all {finalPeriods.length} completed month(s) of the internship. Overall score = average of all month scores.
+                          <p className="text-xs text-slate-500 text-center border-t border-slate-300 pt-2">
+                            Official HackMates Internship Report
                           </p>
+                        </CardContent>
+                      </Card>
+
+                      {/* Page 2+: Detailed Breakdown */}
+                      <Card className="border-white/10 bg-white text-slate-900 shadow-xl print:shadow-none print:border-0">
+                        <CardContent className="p-6 md:p-8 space-y-6 print:p-4 print:space-y-4">
+
+                          {/* Section: Monthly Performance */}
+                          <div className="space-y-4">
+                            <div>
+                              <h2 className="text-2xl font-bold text-slate-950">4-Week Period Breakdown</h2>
+                              <p className="text-xs text-slate-600">Performance for each completed period (approximately 4 weeks each)</p>
+                            </div>
+
+                            {/* Each Period Card */}
+                            {finalPeriods.map((period, idx) => (
+                              <div key={period.id} className="rounded-lg border border-slate-300 p-3 space-y-3 print:break-inside-avoid">
+                                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                                  <h3 className="text-lg font-bold text-slate-950">Period {period.periodNumber} (Weeks {(period.periodNumber - 1) * 4 + 1}-{period.periodNumber * 4})</h3>
+                                  <div className="rounded-lg bg-slate-950 text-white px-3 py-1 text-center" style={{ backgroundColor: "#020617" }}>
+                                    <p className="text-2xl font-bold">{period.overallScore}</p>
+                                    <p className="text-xs text-slate-400">/100</p>
+                                  </div>
+                                </div>
+
+                                {/* Period Stats Grid - Compact */}
+                                <div className="grid grid-cols-4 gap-2">
+                                  <div className="bg-emerald-50 border border-emerald-300 rounded p-2 text-center">
+                                    <p className="text-lg font-bold text-emerald-700">{period.attendancePercentage}%</p>
+                                    <p className="text-xs text-slate-600">Attendance</p>
+                                  </div>
+                                  <div className="bg-blue-50 border border-blue-300 rounded p-2 text-center">
+                                    <p className="text-lg font-bold text-blue-700">{period.sessionsAttended}/{period.sessionsAttended + period.sessionsMissed}</p>
+                                    <p className="text-xs text-slate-600">Sessions</p>
+                                  </div>
+                                  <div className="bg-purple-50 border border-purple-300 rounded p-2 text-center">
+                                    <p className="text-lg font-bold text-purple-700">{period.submissionScore}%</p>
+                                    <p className="text-xs text-slate-600">Submissions</p>
+                                  </div>
+                                  <div className="bg-amber-50 border border-amber-300 rounded p-2 text-center">
+                                    <p className="text-lg font-bold text-amber-700">{period.mentorRatingAvg}/10</p>
+                                    <p className="text-xs text-slate-600">Mentor</p>
+                                  </div>
+                                </div>
+
+                                {/* Detailed Stats */}
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div className="space-y-1 text-xs">
+                                    <h4 className="font-semibold text-slate-900">Attendance</h4>
+                                    <div className="flex justify-between p-1 bg-slate-50 rounded">
+                                      <span className="text-slate-600">Present</span>
+                                      <span className="font-semibold text-emerald-700">{period.sessionsAttended}</span>
+                                    </div>
+                                    <div className="flex justify-between p-1 bg-slate-50 rounded">
+                                      <span className="text-slate-600">Absent</span>
+                                      <span className="font-semibold text-red-700">{period.sessionsMissed}</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-1 text-xs">
+                                    <h4 className="font-semibold text-slate-900">Submissions</h4>
+                                    <div className="flex justify-between p-1 bg-slate-50 rounded">
+                                      <span className="text-slate-600">Total</span>
+                                      <span className="font-semibold text-purple-700">{period.totalSubmissions}</span>
+                                    </div>
+                                    <div className="flex justify-between p-1 bg-slate-50 rounded">
+                                      <span className="text-slate-600">Approved</span>
+                                      <span className="font-semibold text-emerald-700">{period.approvedSubmissions}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Admin Comment if exists */}
+                                {period.adminComment && (
+                                  <div className="bg-blue-50 border-l-2 border-blue-500 rounded p-2 text-xs italic text-slate-700">
+                                    "{period.adminComment}"
+                                  </div>
+                                )}
+
+                                {/* Closed Info */}
+                                <p className="text-xs text-slate-500">Closed: {new Date(period.closedAt).toLocaleDateString()} by {period.closedBy}</p>
+                              </div>
+                            ))}
+
+                            {/* Placeholder for missing periods */}
+                            {finalPeriods.length < 3 && (
+                              <>
+                                {[1, 2, 3].filter((n) => !finalPeriods.find((p) => p.periodNumber === n)).map((n) => (
+                                  <div key={n} className="rounded-lg border-2 border-dashed border-slate-300 p-3 text-center">
+                                    <p className="text-sm font-semibold text-slate-500">Period {n} (Weeks {(n - 1) * 4 + 1}-{n * 4})</p>
+                                    <p className="text-xs text-slate-400">Not closed yet</p>
+                                  </div>
+                                ))}
+                              </>
+                            )}
+                          </div>
+
+                          {/* Section: Overall Summary */}
+                          <div className="space-y-4 border-t-2 border-slate-300 pt-4 print:break-inside-avoid">
+                            <div>
+                              <h2 className="text-2xl font-bold text-slate-950">12-Week Summary</h2>
+                              <p className="text-xs text-slate-600">Combined metrics across all completed periods</p>
+                            </div>
+
+                            {/* Summary Grid */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                              <div className="bg-emerald-50 border border-emerald-300 rounded p-2 text-center">
+                                <p className="text-xl font-bold text-emerald-700">{totalAttendance}</p>
+                                <p className="text-xs text-slate-600">Sessions Present</p>
+                              </div>
+                              <div className="bg-red-50 border border-red-300 rounded p-2 text-center">
+                                <p className="text-xl font-bold text-red-700">{totalMissed}</p>
+                                <p className="text-xs text-slate-600">Sessions Absent</p>
+                              </div>
+                              <div className="bg-blue-50 border border-blue-300 rounded p-2 text-center">
+                                <p className="text-xl font-bold text-blue-700">{totalSubmissions}</p>
+                                <p className="text-xs text-slate-600">Total Submissions</p>
+                              </div>
+                              <div className="bg-purple-50 border border-purple-300 rounded p-2 text-center">
+                                <p className="text-xl font-bold text-purple-700">{totalApproved}</p>
+                                <p className="text-xs text-slate-600">Approved</p>
+                              </div>
+                            </div>
+
+                            {/* Performance Breakdown */}
+                            <div className="rounded-lg border border-slate-300 p-3 space-y-2">
+                              <h3 className="text-sm font-bold text-slate-950">Performance Metrics</h3>
+                              
+                              <div className="space-y-1.5 text-xs">
+                                <div>
+                                  <div className="flex justify-between mb-1">
+                                    <span className="font-semibold text-slate-700">Attendance Score</span>
+                                    <span className="font-bold text-emerald-700">{overallAttendancePercent}%</span>
+                                  </div>
+                                  <div className="w-full bg-slate-200 rounded-full h-1.5">
+                                    <div className="bg-emerald-600 h-1.5 rounded-full" style={{ width: `${overallAttendancePercent}%` }} />
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <div className="flex justify-between mb-1">
+                                    <span className="font-semibold text-slate-700">Submission Score</span>
+                                    <span className="font-bold text-purple-700">{totalSubmissions > 0 ? Math.round((totalApproved / totalSubmissions) * 100) : 0}%</span>
+                                  </div>
+                                  <div className="w-full bg-slate-200 rounded-full h-1.5">
+                                    <div className="bg-purple-600 h-1.5 rounded-full" style={{ width: `${totalSubmissions > 0 ? Math.round((totalApproved / totalSubmissions) * 100) : 0}%` }} />
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <div className="flex justify-between mb-1">
+                                    <span className="font-semibold text-slate-700">Mentor Rating Score</span>
+                                    <span className="font-bold text-amber-700">{Math.round((avgMentorRating / 10) * 100)}%</span>
+                                  </div>
+                                  <div className="w-full bg-slate-200 rounded-full h-1.5">
+                                    <div className="bg-amber-600 h-1.5 rounded-full" style={{ width: `${Math.round((avgMentorRating / 10) * 100)}%` }} />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Final Remarks */}
+                          <div className="space-y-2 border-t-2 border-slate-300 pt-4 print:break-inside-avoid">
+                            <h2 className="text-lg font-bold text-slate-950">Final Remarks</h2>
+                            <div className="bg-slate-50 border border-slate-300 rounded p-2 text-xs leading-relaxed text-slate-700">
+                              <p>
+                                {finalIntern.name} has demonstrated consistent performance throughout the 12-week internship with an overall score of <span className="font-bold text-slate-900">{overallAvg}/100</span>. 
+                                Maintained <span className="font-bold text-emerald-700">{overallAttendancePercent}% attendance</span> across {totalAttendance + totalMissed} sessions. 
+                                Achieved <span className="font-bold text-purple-700">{totalSubmissions > 0 ? Math.round((totalApproved / totalSubmissions) * 100) : 0}% submission approval rate</span>. 
+                                Mentor feedback averaged <span className="font-bold text-amber-700">{avgMentorRating}/10</span>.
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Footer */}
+                          <div className="border-t border-slate-300 pt-2 text-center text-xs text-slate-500 space-y-1">
+                            <p>Generated: {new Date().toLocaleDateString()}</p>
+                            <p>© HackMates Internship Program</p>
+                          </div>
                         </CardContent>
                       </Card>
                     </motion.section>
