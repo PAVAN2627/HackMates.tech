@@ -271,12 +271,29 @@ const Verify = () => {
                       )}
                       {result.source !== "achievement" && (
                         <>
-                          <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                            <span className="text-sm text-muted-foreground">Issue Date:</span>
-                            <span className="text-sm font-semibold text-foreground">
-                              {result.issueDate ? new Date(result.issueDate).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "—"}
-                            </span>
-                          </div>
+                          {result.status === "Completed" ? (
+                            <>
+                              <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                                <span className="text-sm text-muted-foreground">Issued Date:</span>
+                                <span className="text-sm font-semibold text-foreground">
+                                  {result.issueDate ? new Date(result.issueDate).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "—"}
+                                </span>
+                              </div>
+                              <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                                <span className="text-sm text-muted-foreground">Till Date:</span>
+                                <span className="text-sm font-semibold text-foreground">
+                                  {result.validUntil ? new Date(result.validUntil).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "—"}
+                                </span>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                              <span className="text-sm text-muted-foreground">Issue Date:</span>
+                              <span className="text-sm font-semibold text-foreground">
+                                {result.issueDate ? new Date(result.issueDate).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "—"}
+                              </span>
+                            </div>
+                          )}
                           <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                             <span className="text-sm text-muted-foreground">Status:</span>
                             <span className={`text-sm font-semibold px-2 py-0.5 rounded w-fit ${
