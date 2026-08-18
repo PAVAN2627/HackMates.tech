@@ -1,15 +1,16 @@
 import { Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Trash2, Plus, Loader2, Mail, Pencil, Save, X, Hash } from "lucide-react";
+import { Trash2, Plus, Loader2, Mail, Pencil, Save, X, Hash, QrCode } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePlatform } from "@/context/PlatformContext";
 import DashboardSidebar from "@/components/DashboardSidebar";
-import { useState, FormEvent, useMemo } from "react";
+import { useState, FormEvent, useMemo, useRef } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, updateDoc, doc, setDoc } from "firebase/firestore";
+import QRCode from "qrcode.react";
 
 interface VerifForm {
   offerId: string;
@@ -165,6 +166,17 @@ const AdminUsers = () => {
     } finally { setSavingVerif(false); }
   };
 
+  const downloadQRCode = (offerId: string) => {
+    const qrElement = document.getElementById(`qr-${offerId}`);
+    if (!qrElement) return;
+    const canvas = qrElement.querySelector("canvas");
+    if (!canvas) return;
+    const link = document.createElement("a");
+    link.download = `${offerId}-qr.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  };
+
   return (
     <div className="min-h-screen bg-background relative overflow-x-hidden flex">
       <DashboardSidebar role="Admin" userName={sessionUser.email} onLogout={handleLogout} activeSection="users" onSectionChange={() => {}} />
@@ -286,10 +298,32 @@ const AdminUsers = () => {
                                   <Button type="button" onClick={() => handleSaveVerif(user.id, "Intern")} disabled={savingVerif} className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white">
                                     {savingVerif ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}Save
                                   </Button>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
+                                    onClick={() => verifForm.offerId && downloadQRCode(verifForm.offerId)}
+                                    disabled={!verifForm.offerId.trim()}
+                                    title="Download QR code for this ID"
+                                  >
+                                    <QrCode className="w-4 h-4 mr-1" />Generate QR
+                                  </Button>
                                   <Button type="button" variant="outline" className="border-white/10 text-white hover:bg-white/10" onClick={() => setEditingVerifUserId(null)}>
                                     <X className="w-4 h-4" />
                                   </Button>
                                 </div>
+                                {/* Hidden QR Code - used for download */}
+                                {verifForm.offerId && (
+                                  <div className="hidden">
+                                    <QRCode
+                                      id={`qr-${verifForm.offerId}`}
+                                      value={`https://hackmates.tech/verify?id=${verifForm.offerId}`}
+                                      size={256}
+                                      level="H"
+                                      includeMargin={true}
+                                    />
+                                  </div>
+                                )}
                               </div>
                             </CardContent>
                           )}
