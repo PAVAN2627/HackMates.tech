@@ -22,6 +22,14 @@ interface TeamMember {
   instagram?: string;
 }
 
+interface Intern {
+  name: string;
+  id: string;
+  photo: string;
+  portfolio?: string;
+  linkedin?: string;
+}
+
 const team: TeamMember[] = [
   {
     name: "Pavan Mali",
@@ -103,8 +111,44 @@ const team: TeamMember[] = [
   },
 ];
 
+const interns: Intern[] = [
+  {
+    name: "Preeti Dhanawade",
+    id: "HM-FWD-001",
+    photo: "/Interns/preeti.jpeg",
+    portfolio: "https://www.preetidhanawade.xyz/",
+    linkedin: "https://www.linkedin.com/in/preeti-dhanawade-212b612a3/",
+  },
+  {
+    name: "Vaibhav Sawant",
+    id: "HM-FWD-002",
+    photo: "/Interns/vaibhav.jpeg",
+    portfolio: "https://vaibhavsawant.xyz/",
+    linkedin: "https://www.linkedin.com/in/vaibhav-sawant-4b46113a2/",
+  },
+  {
+    name: "Samiksha Bhosale",
+    id: "HM-FWD-003",
+    photo: "/Interns/samiksha.jpeg",
+    linkedin: "https://www.linkedin.com/in/samiksha-bhosale-a82471385/",
+  },
+  {
+    name: "Harshal Shinde",
+    id: "HM-FWD-004",
+    photo: "/Interns/harshal.jpeg",
+    linkedin: "https://www.linkedin.com/in/harshal-shinde-2952663aa/",
+  },
+  {
+    name: "Nandini Shinde",
+    id: "HM-FWD-005",
+    photo: "/Interns/nandini.jpeg",
+    linkedin: "https://www.linkedin.com/in/nandini-shinde-5b6a683a4/",
+  },
+];
+
 const TeamSection = () => {
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [activeTab, setActiveTab] = useState<"core" | "interns">("core");
   const founder = team.find((m) => m.isFounder)!;
   const others = team.filter((m) => !m.isFounder);
 
@@ -123,7 +167,32 @@ const TeamSection = () => {
           </h2>
         </motion.div>
 
+        {/* Tabs */}
+        <div className="flex justify-center gap-4 mb-16">
+          <button
+            onClick={() => setActiveTab("core")}
+            className={`font-mono text-sm px-6 py-2 rounded-lg transition-all ${
+              activeTab === "core"
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            }`}
+          >
+            Core Team
+          </button>
+          <button
+            onClick={() => setActiveTab("interns")}
+            className={`font-mono text-sm px-6 py-2 rounded-lg transition-all ${
+              activeTab === "interns"
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            }`}
+          >
+            Interns
+          </button>
+        </div>
+
         {/* Founder - Featured Card */}
+        {activeTab === "core" && (
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -167,8 +236,10 @@ const TeamSection = () => {
             </div>
           </div>
         </motion.div>
+        )}
 
         {/* Other Members */}
+        {activeTab === "core" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
           {others.map((member, i) => (
             <motion.div
@@ -211,6 +282,63 @@ const TeamSection = () => {
             </motion.div>
           ))}
         </div>
+        )}
+
+        {/* Interns Grid */}
+        {activeTab === "interns" && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 max-w-7xl mx-auto">
+          {interns.map((intern, i) => (
+            <motion.div
+              key={intern.id}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              whileHover={{ y: -8 }}
+              className="card-elevated rounded-xl overflow-hidden hover:border-glow transition-all duration-300"
+            >
+              {/* Photo */}
+              <div className="relative h-64 flex items-center justify-center bg-background">
+                <img src={intern.photo} alt={intern.name} className="w-full h-full object-cover" />
+              </div>
+
+              {/* Info */}
+              <div className="p-4 space-y-3">
+                <div>
+                  <h3 className="font-display font-semibold text-foreground text-lg">{intern.name}</h3>
+                  <p className="font-mono text-xs text-primary">{intern.id}</p>
+                </div>
+
+                {/* Links */}
+                <div className="flex gap-3 pt-2 border-t border-border">
+                  {intern.portfolio && (
+                    <a 
+                      href={intern.portfolio} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                      aria-label="Portfolio"
+                    >
+                      <Globe className="w-5 h-5" />
+                    </a>
+                  )}
+                  {intern.linkedin && (
+                    <a 
+                      href={intern.linkedin} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                      aria-label="LinkedIn"
+                    >
+                      <Linkedin className="w-5 h-5" />
+                    </a>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+        )}
 
         {/* Member Detail Modal */}
         {selectedMember && (

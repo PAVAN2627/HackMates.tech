@@ -12,6 +12,23 @@ interface Hackathon {
 
 const hackathons: Hackathon[] = [
   {
+    name: "Internship Batch 1",
+    year: "2026",
+    location: "HackMates",
+    coverImage: "/gallery/internshipbatch1/1.png",
+    images: [
+      "/gallery/internshipbatch1/1.png",
+      "/gallery/internshipbatch1/2.png",
+      "/gallery/internshipbatch1/3.png",
+      "/gallery/internshipbatch1/4.png",
+      "/gallery/internshipbatch1/5.png",
+      "/gallery/internshipbatch1/6.png",
+      "/gallery/internshipbatch1/7.png",
+      "/gallery/internshipbatch1/8.png",
+      "/gallery/internshipbatch1/9.png",
+    ],
+  },
+  {
     name: "RIFT Hackathon",
     year: "2026",
     location: "PW Pune",

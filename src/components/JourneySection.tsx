@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, Calendar, Award, TrendingUp, Medal, Star, ExternalLink, X } from "lucide-react";
+import { Trophy, Calendar, Award, TrendingUp, Medal, Star, ExternalLink, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 
 interface Milestone {
@@ -20,6 +20,21 @@ interface Milestone {
 }
 
 const milestones: Milestone[] = [
+  {
+    year: "2026",
+    month: "Aug",
+    day: "19",
+    title: "Internship Batch 1 🎓",
+    event: "HackMates Internship Batch 1 — 12-Week Program",
+    description: "Congratulations to all our interns on successfully completing the 12-Week Full Stack Web Development Internship at HackMates!",
+    projectDescription: "HackMates proudly presents its First Batch of the 12-Week Full Stack Web Development Internship Program, focused on MERN Stack Web Development. 🚀\n\nDuring this internship, our interns Harshal Shinde, Nandini Shinde, Samiksha Bhosale, Preeti Dhanawade, and Vaibhav Sawant gained hands-on experience in modern web development and learned technologies including HTML, CSS, JavaScript, React.js, Node.js, Express.js, MongoDB, REST APIs, Git & GitHub, frontend-backend integration, database management, authentication, responsive design, and real-world project development. 💻\n\nThroughout the journey, they worked on projects, solved practical problems, collaborated with mentors, and developed a strong understanding of how modern full-stack web applications are built.\n\nThis first batch marks an important milestone for HackMates, and we are proud to see our interns complete their journey with new skills, experiences, and confidence. 🌱🎓",
+    result: "milestone",
+    icon: Star,
+    image: "/Journey/internshipbatch1/1.png",
+    project: "Internship Program",
+    tech: ["React", "TypeScript", "Node.js", "Firebase", "HTML", "CSS", "JavaScript", "MERN"],
+    teamMembers: ["Preeti Dhanawade", "Vaibhav Sawant", "Samiksha Bhosale", "Harshal Shinde", "Nandini Shinde"],
+  },
   {
     year: "2025",
     month: "Jun",
@@ -122,6 +137,35 @@ const resultBadge = {
 
 const JourneySection = () => {
   const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Sort milestones by date (newest first)
+  const sortedMilestones = [...milestones].sort((a, b) => {
+    const dateA = new Date(`${a.year}-${String(a.month).padStart(2, "0")}-${String(a.day).padStart(2, "0")}`);
+    const dateB = new Date(`${b.year}-${String(b.month).padStart(2, "0")}-${String(b.day).padStart(2, "0")}`);
+    return dateB.getTime() - dateA.getTime();
+  });
+
+  const nextImage = () => {
+    if (selectedMilestone && selectedMilestone.project === "Internship Program") {
+      // Internship batch has 9 images (1-9.png)
+      setCurrentImageIndex((prev) => (prev + 1) % 9);
+    }
+  };
+
+  const prevImage = () => {
+    if (selectedMilestone && selectedMilestone.project === "Internship Program") {
+      setCurrentImageIndex((prev) => (prev === 0 ? 8 : prev - 1));
+    }
+  };
+
+  const getInternshipImages = (): string[] => {
+    const images: string[] = [];
+    for (let i = 1; i <= 9; i++) {
+      images.push(`/Journey/internshipbatch1/${i}.png`);
+    }
+    return images;
+  };
 
   return (
     <section id="journey" className="py-24 bg-secondary/30 particles-bg">
@@ -145,7 +189,7 @@ const JourneySection = () => {
           {/* Vertical line */}
           <div className="absolute left-8 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-primary/50 via-accent/30 to-primary/50 md:-translate-x-px" />
 
-          {milestones.map((m, i) => {
+          {sortedMilestones.map((m, i) => {
             const badge = resultBadge[m.result];
 
             return (
@@ -211,7 +255,7 @@ const JourneySection = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-50 modal-overlay flex items-center justify-center p-4"
-              onClick={() => setSelectedMilestone(null)}
+              onClick={() => { setSelectedMilestone(null); setCurrentImageIndex(0); }}
             >
               <motion.div
                 initial={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -221,15 +265,37 @@ const JourneySection = () => {
                 className="card-elevated rounded-2xl max-w-3xl w-full overflow-hidden max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Image */}
+                {/* Image - With slider for internship batch */}
                 <div className="relative bg-background flex items-center justify-center p-6">
                   <img 
-                    src={selectedMilestone.image} 
+                    src={selectedMilestone.project === "Internship Program" ? getInternshipImages()[currentImageIndex] : selectedMilestone.image}
                     alt={selectedMilestone.title} 
                     className="w-full h-auto object-contain max-h-[400px]" 
                   />
+
+                  {/* Navigation for internship images */}
+                  {selectedMilestone.project === "Internship Program" && (
+                    <>
+                      <button
+                        onClick={prevImage}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/40 transition-colors"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={nextImage}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/40 transition-colors"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-black/50 backdrop-blur-sm">
+                        <p className="font-mono text-xs text-white">{currentImageIndex + 1} / 9</p>
+                      </div>
+                    </>
+                  )}
+
                   <button
-                    onClick={() => setSelectedMilestone(null)}
+                    onClick={() => { setSelectedMilestone(null); setCurrentImageIndex(0); }}
                     className="absolute top-4 right-4 w-8 h-8 rounded-full bg-card/80 flex items-center justify-center text-foreground hover:bg-card transition-colors"
                   >
                     <X className="w-4 h-4" />
