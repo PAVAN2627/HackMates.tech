@@ -141,7 +141,7 @@ const interns: Intern[] = [
   {
     name: "Nandini Shinde",
     id: "HM-FWD-005",
-    photo: "/Interns/nandini.jpeg",
+    photo: "/Interns/Nandini.jpeg",
     linkedin: "https://www.linkedin.com/in/nandini-shinde-5b6a683a4/",
   },
 ];
