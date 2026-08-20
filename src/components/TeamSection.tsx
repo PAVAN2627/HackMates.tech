@@ -298,8 +298,8 @@ const TeamSection = () => {
               className="card-elevated rounded-xl overflow-hidden hover:border-glow transition-all duration-300"
             >
               {/* Photo */}
-              <div className="relative h-64 flex items-center justify-center bg-background">
-                <img src={intern.photo} alt={intern.name} className="w-full h-full object-cover" />
+              <div className="relative h-64 bg-background flex items-center justify-center">
+                <img src={intern.photo} alt={intern.name} className="w-full h-full object-contain p-2" />
               </div>
 
               {/* Info */}
