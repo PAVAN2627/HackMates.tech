@@ -307,18 +307,10 @@ const AdminBatchManagement = () => {
     setDeletingAttendance(batch.id);
 
     try {
-      // Get all attendance sessions
+      // Get all attendance sessions - we'll delete them all since batch is completed
       const allAttendanceSnap = await getDocs(collection(db, "attendanceSessions"));
       
-      // Filter sessions that contain any of the batch interns
-      const batchInternIds = batch.interns.map(i => i.internId);
-      const sessionsToDelete = allAttendanceSnap.docs.filter(doc => {
-        const session = doc.data();
-        const records = session.records || [];
-        return records.some((record: any) => batchInternIds.includes(record.internId));
-      });
-
-      setAttendanceDeleteCount(sessionsToDelete.length);
+      setAttendanceDeleteCount(allAttendanceSnap.docs.length);
       setShowAttendanceConfirm(true);
     } catch (err) {
       setArchiveError(
@@ -336,25 +328,17 @@ const AdminBatchManagement = () => {
 
     setDeletingAttendance(selectedBatchForAttendance.id);
     try {
-      // Get all attendance sessions
+      // Delete all attendance sessions
       const allAttendanceSnap = await getDocs(collection(db, "attendanceSessions"));
-      
-      // Filter sessions that contain any of the batch interns
-      const batchInternIds = selectedBatchForAttendance.interns.map(i => i.internId);
-      const sessionsToDelete = allAttendanceSnap.docs.filter(doc => {
-        const session = doc.data();
-        const records = session.records || [];
-        return records.some((record: any) => batchInternIds.includes(record.internId));
-      });
 
       let deletedCount = 0;
-      for (const docSnapshot of sessionsToDelete) {
+      for (const docSnapshot of allAttendanceSnap.docs) {
         await deleteDoc(docSnapshot.ref);
         deletedCount++;
       }
 
       setSuccess(
-        `Successfully deleted ${deletedCount} attendance session(s) for ${selectedBatchForAttendance.interns.length} interns in batch ${selectedBatchForAttendance.batchDate}.`
+        `Successfully deleted all ${deletedCount} attendance session(s) from mentor dashboard.`
       );
       setShowAttendanceConfirm(false);
       setSelectedBatchForAttendance(null);
@@ -794,11 +778,11 @@ const AdminBatchManagement = () => {
                     {attendanceDeleteCount === 1
                       ? "attendance session"
                       : "attendance sessions"}{" "}
-                    will be deleted
+                    will be permanently deleted
                   </p>
                   <p className="text-xs text-white/60 mt-1">
-                    This will remove all attendance records from the mentor
-                    dashboard for this batch.
+                    All attendance records will be removed from the mentor
+                    dashboard.
                   </p>
                 </div>
 
