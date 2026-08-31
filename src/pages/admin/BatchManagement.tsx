@@ -13,6 +13,7 @@ import {
   Eye,
   X,
   BookOpen,
+  CalendarDays,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +33,7 @@ import {
   where,
   QueryDocumentSnapshot,
   DocumentData,
+  Timestamp,
 } from "firebase/firestore";
 
 interface ArchivedIntern {
@@ -72,6 +74,10 @@ const AdminBatchManagement = () => {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [expandedBatch, setExpandedBatch] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [deletingAttendance, setDeletingAttendance] = useState<string | null>(null);
+  const [attendanceDeleteCount, setAttendanceDeleteCount] = useState(0);
+  const [showAttendanceConfirm, setShowAttendanceConfirm] = useState(false);
+  const [selectedBatchForAttendance, setSelectedBatchForAttendance] = useState<CompletedBatch | null>(null);
 
   // Fetch completed batches
   useEffect(() => {
@@ -293,6 +299,67 @@ const AdminBatchManagement = () => {
       );
     } finally {
       setDeleting(null);
+    }
+  };
+
+  const handleDeleteBatchAttendance = async (batch: CompletedBatch) => {
+    setSelectedBatchForAttendance(batch);
+    setDeletingAttendance(batch.id);
+
+    try {
+      // Query all attendance sessions for this batch date
+      const attendanceSnap = await getDocs(
+        query(
+          collection(db, "attendanceSessions"),
+          where("date", "==", batch.batchDate)
+        )
+      );
+
+      setAttendanceDeleteCount(attendanceSnap.docs.length);
+      setShowAttendanceConfirm(true);
+    } catch (err) {
+      setArchiveError(
+        err instanceof Error
+          ? err.message
+          : "Failed to check attendance records."
+      );
+    } finally {
+      setDeletingAttendance(null);
+    }
+  };
+
+  const handleConfirmDeleteAttendance = async () => {
+    if (!selectedBatchForAttendance) return;
+
+    setDeletingAttendance(selectedBatchForAttendance.id);
+    try {
+      const attendanceSnap = await getDocs(
+        query(
+          collection(db, "attendanceSessions"),
+          where("date", "==", selectedBatchForAttendance.batchDate)
+        )
+      );
+
+      let deletedCount = 0;
+      for (const docSnapshot of attendanceSnap.docs) {
+        await deleteDoc(docSnapshot.ref);
+        deletedCount++;
+      }
+
+      setSuccess(
+        `Successfully deleted ${deletedCount} attendance session(s) for batch ${selectedBatchForAttendance.batchDate}.`
+      );
+      setShowAttendanceConfirm(false);
+      setSelectedBatchForAttendance(null);
+      setAttendanceDeleteCount(0);
+    } catch (err) {
+      setArchiveError(
+        err instanceof Error
+          ? err.message
+          : "Failed to delete attendance records."
+      );
+    } finally {
+      setDeletingAttendance(null);
     }
   };
 
@@ -527,6 +594,20 @@ const AdminBatchManagement = () => {
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                onClick={() => handleDeleteBatchAttendance(batch)}
+                                disabled={deletingAttendance === batch.id}
+                                className="text-yellow-400 hover:bg-yellow-500/10"
+                                title="Delete attendance records for this batch"
+                              >
+                                {deletingAttendance === batch.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <CalendarDays className="w-4 h-4" />
+                                )}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => handleDeleteBatch(batch.id)}
                                 disabled={deleting === batch.id}
                                 className="text-red-400 hover:bg-red-500/10"
@@ -666,6 +747,91 @@ const AdminBatchManagement = () => {
                       <>
                         <Archive className="w-4 h-4 mr-2" />
                         Confirm Archive
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      )}
+      {/* Attendance Deletion Confirmation Dialog */}
+      {showAttendanceConfirm && selectedBatchForAttendance && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+          >
+            <Card className="border-white/10 bg-slate-900 text-white max-w-md w-full">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-6 h-6 text-yellow-400 shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="text-lg font-semibold">
+                      Delete Attendance Records
+                    </h3>
+                    <p className="text-sm text-white/70 mt-1">
+                      Delete all attendance sessions for batch{" "}
+                      <span className="font-semibold text-white">
+                        {selectedBatchForAttendance.batchDate}
+                      </span>
+                      ?
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded border border-white/10 bg-white/5 p-3">
+                  <p className="text-sm font-semibold text-white">
+                    {attendanceDeleteCount}{" "}
+                    {attendanceDeleteCount === 1
+                      ? "attendance session"
+                      : "attendance sessions"}{" "}
+                    will be deleted
+                  </p>
+                  <p className="text-xs text-white/60 mt-1">
+                    This will remove all attendance records from the mentor
+                    dashboard for this batch.
+                  </p>
+                </div>
+
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded p-3">
+                  <p className="text-xs text-yellow-200 flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>
+                      <span className="font-semibold">Warning:</span> This action
+                      cannot be undone. Mentors will no longer see these attendance
+                      records.
+                    </span>
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-4">
+                  <Button
+                    variant="outline"
+                    className="border-white/10 text-white hover:bg-white/10"
+                    onClick={() => {
+                      setShowAttendanceConfirm(false);
+                      setSelectedBatchForAttendance(null);
+                      setAttendanceDeleteCount(0);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleConfirmDeleteAttendance}
+                    disabled={deletingAttendance === selectedBatchForAttendance.id}
+                    className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                  >
+                    {deletingAttendance === selectedBatchForAttendance.id ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete Attendance
                       </>
                     )}
                   </Button>
