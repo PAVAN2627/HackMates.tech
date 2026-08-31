@@ -307,15 +307,18 @@ const AdminBatchManagement = () => {
     setDeletingAttendance(batch.id);
 
     try {
-      // Query all attendance sessions for this batch date
-      const attendanceSnap = await getDocs(
-        query(
-          collection(db, "attendanceSessions"),
-          where("date", "==", batch.batchDate)
-        )
-      );
+      // Get all attendance sessions
+      const allAttendanceSnap = await getDocs(collection(db, "attendanceSessions"));
+      
+      // Filter sessions that contain any of the batch interns
+      const batchInternIds = batch.interns.map(i => i.internId);
+      const sessionsToDelete = allAttendanceSnap.docs.filter(doc => {
+        const session = doc.data();
+        const records = session.records || [];
+        return records.some((record: any) => batchInternIds.includes(record.internId));
+      });
 
-      setAttendanceDeleteCount(attendanceSnap.docs.length);
+      setAttendanceDeleteCount(sessionsToDelete.length);
       setShowAttendanceConfirm(true);
     } catch (err) {
       setArchiveError(
@@ -333,21 +336,25 @@ const AdminBatchManagement = () => {
 
     setDeletingAttendance(selectedBatchForAttendance.id);
     try {
-      const attendanceSnap = await getDocs(
-        query(
-          collection(db, "attendanceSessions"),
-          where("date", "==", selectedBatchForAttendance.batchDate)
-        )
-      );
+      // Get all attendance sessions
+      const allAttendanceSnap = await getDocs(collection(db, "attendanceSessions"));
+      
+      // Filter sessions that contain any of the batch interns
+      const batchInternIds = selectedBatchForAttendance.interns.map(i => i.internId);
+      const sessionsToDelete = allAttendanceSnap.docs.filter(doc => {
+        const session = doc.data();
+        const records = session.records || [];
+        return records.some((record: any) => batchInternIds.includes(record.internId));
+      });
 
       let deletedCount = 0;
-      for (const docSnapshot of attendanceSnap.docs) {
+      for (const docSnapshot of sessionsToDelete) {
         await deleteDoc(docSnapshot.ref);
         deletedCount++;
       }
 
       setSuccess(
-        `Successfully deleted ${deletedCount} attendance session(s) for batch ${selectedBatchForAttendance.batchDate}.`
+        `Successfully deleted ${deletedCount} attendance session(s) for ${selectedBatchForAttendance.interns.length} interns in batch ${selectedBatchForAttendance.batchDate}.`
       );
       setShowAttendanceConfirm(false);
       setSelectedBatchForAttendance(null);
