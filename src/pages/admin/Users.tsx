@@ -407,6 +407,16 @@ const AdminUsers = () => {
                                   <Button type="button" onClick={() => handleSaveVerif(user.id, "Mentor")} disabled={savingVerif} className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white">
                                     {savingVerif ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}Save
                                   </Button>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
+                                    onClick={() => verifForm.offerId && openQRModal(verifForm.offerId)}
+                                    disabled={!verifForm.offerId.trim()}
+                                    title="Generate QR code for this ID"
+                                  >
+                                    <QrCode className="w-4 h-4 mr-1" />Generate QR
+                                  </Button>
                                   <Button type="button" variant="outline" className="border-white/10 text-white hover:bg-white/10" onClick={() => setEditingVerifUserId(null)}>
                                     <X className="w-4 h-4" />
                                   </Button>

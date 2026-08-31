@@ -1,7 +1,7 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Plus, Trash2, Pencil, Save, X, Award, Search, Copy, Check } from "lucide-react";
+import { Plus, Trash2, Pencil, Save, X, Award, Search, Copy, Check, QrCode, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { usePlatform } from "@/context/PlatformContext";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from "firebase/firestore";
+import { QRCodeSVG as QRCode } from "qrcode.react";
 
 interface AchievementCert {
   id: string;
@@ -44,6 +45,9 @@ const AdminCertificates = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [form, setForm] = useState(emptyForm());
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [qrModalId, setQrModalId] = useState<string>("");
+  const qrRef = useRef<any>(null);
 
   useEffect(() => {
     if (!sessionUser) return;
@@ -119,6 +123,35 @@ const AdminCertificates = () => {
     navigator.clipboard.writeText(certId);
     setCopiedId(certId);
     setTimeout(() => setCopiedId(null), 1500);
+  };
+
+  const downloadQRCode = (certId: string) => {
+    const qrElement = qrRef.current;
+    if (!qrElement) {
+      console.error("QR ref not found");
+      return;
+    }
+    const canvas = qrElement.querySelector("canvas");
+    if (!canvas) {
+      console.error("Canvas not found");
+      return;
+    }
+    try {
+      const link = document.createElement("a");
+      link.download = `${certId}-qr.png`;
+      link.href = canvas.toDataURL("image/png");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setShowQRModal(false);
+    } catch (err) {
+      console.error("Download failed:", err);
+    }
+  };
+
+  const openQRModal = (certId: string) => {
+    setQrModalId(certId);
+    setShowQRModal(true);
   };
 
   return (
@@ -208,6 +241,16 @@ const AdminCertificates = () => {
                       <Button onClick={handleSave} disabled={saving} className="bg-primary hover:bg-primary/80">
                         <Save className="w-4 h-4" />
                         {saving ? "Saving..." : editingId ? "Update" : "Issue Certificate"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
+                        onClick={() => form.certId && openQRModal(form.certId)}
+                        disabled={!form.certId.trim()}
+                        title="Generate QR code for this certificate ID"
+                      >
+                        <QrCode className="w-4 h-4 mr-1" />Generate QR
                       </Button>
                       <Button variant="outline" className="border-white/10 text-white hover:bg-white/10" onClick={closeForm}>Cancel</Button>
                     </div>
@@ -299,6 +342,50 @@ const AdminCertificates = () => {
           </main>
         </div>
       </div>
+
+      {/* QR Modal */}
+      {showQRModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <Card className="border-white/10 bg-slate-900 text-white max-w-md w-full">
+            <CardContent className="p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">QR Code: {qrModalId}</h3>
+                <Button variant="ghost" size="icon" onClick={() => setShowQRModal(false)} className="text-white/60 hover:text-white">
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+              <div className="bg-white p-4 rounded-lg flex justify-center" ref={qrRef}>
+                <QRCode
+                  value={`https://hackmates.tech/verify?id=${qrModalId}`}
+                  size={256}
+                  level="H"
+                  includeMargin={true}
+                />
+              </div>
+              <p className="text-xs text-white/60 text-center">
+                URL: https://hackmates.tech/verify?id={qrModalId}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white"
+                  onClick={() => downloadQRCode(qrModalId)}
+                >
+                  <QrCode className="w-4 h-4 mr-2" />Download QR
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-white/10 text-white hover:bg-white/10"
+                  onClick={() => setShowQRModal(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
