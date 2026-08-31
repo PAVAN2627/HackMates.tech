@@ -37,7 +37,7 @@ const dashboardMetrics = [
   { key: "submissions", label: "Submissions", icon: Send },
   { key: "feedback", label: "Feedback", icon: Star },
   { key: "notes", label: "Notes", icon: BookOpen },
-  { key: "attendance", label: "Attendance", icon: ClipboardCheck },
+  // Attendance removed - mentors no longer see this. Only admins can manage attendance by batch/lecture.
 ] as const;
 
 const lectureTimeOptions = ["6:00 PM", "6:30 PM", "7:00 PM", "7:30 PM", "8:00 PM", "8:30 PM", "9:00 PM"] as const;
