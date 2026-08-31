@@ -222,6 +222,28 @@ const AdminBatchManagement = () => {
           for (const doc_ of doubtsSnap.docs) {
             await deleteDoc(doc_);
           }
+
+          // Delete mentor feedback submissions (mentorToInternFeedbackSubmissions)
+          const mentorFeedbackSnap = await getDocs(
+            query(
+              collection(db, "mentorToInternFeedbackSubmissions"),
+              where("internId", "==", internId)
+            )
+          );
+          for (const doc_ of mentorFeedbackSnap.docs) {
+            await deleteDoc(doc_);
+          }
+
+          // Delete mentor feedback (mentorFeedbackSubmissions)
+          const mentorFeedbackSubmissionsSnap = await getDocs(
+            query(
+              collection(db, "mentorFeedbackSubmissions"),
+              where("internId", "==", internId)
+            )
+          );
+          for (const doc_ of mentorFeedbackSubmissionsSnap.docs) {
+            await deleteDoc(doc_);
+          }
         } catch (err) {
           console.error(`Error deleting data for intern ${internId}:`, err);
         }
@@ -601,7 +623,7 @@ const AdminBatchManagement = () => {
                     <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                     <span>
                       <span className="font-semibold">Verified - Will be deleted:</span> User
-                      accounts, submissions, feedback, reports, doubts
+                      accounts, submissions, feedback, mentor feedback, reports, doubts
                     </span>
                   </p>
                 </div>

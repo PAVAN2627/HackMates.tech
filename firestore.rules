@@ -130,6 +130,11 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    match /completedBatches/{docId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
     match /feedbackForms/{docId} {
       allow read: if isAdmin() || isMentor() || isIntern();
       allow create, update, delete: if isAdmin();
