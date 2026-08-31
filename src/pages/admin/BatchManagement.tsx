@@ -30,6 +30,8 @@ import {
   query,
   getDocs,
   where,
+  QueryDocumentSnapshot,
+  DocumentData,
 } from "firebase/firestore";
 
 interface ArchivedIntern {
@@ -192,16 +194,16 @@ const AdminBatchManagement = () => {
               where("internId", "==", internId)
             )
           );
-          for (const doc_ of submissionsSnap.docs) {
-            await deleteDoc(doc_);
+          for (const docSnapshot of submissionsSnap.docs) {
+            await deleteDoc(docSnapshot.ref);
           }
 
-          // Delete feedback
-          const feedbackSnap = await getDocs(
+          // Delete feedback (all statuses: open, closed, etc.)
+          const allFeedbackSnap = await getDocs(
             query(collection(db, "feedback"), where("internId", "==", internId))
           );
-          for (const doc_ of feedbackSnap.docs) {
-            await deleteDoc(doc_);
+          for (const docSnapshot of allFeedbackSnap.docs) {
+            await deleteDoc(docSnapshot.ref);
           }
 
           // Delete feedback form submissions
@@ -211,16 +213,16 @@ const AdminBatchManagement = () => {
               where("internId", "==", internId)
             )
           );
-          for (const doc_ of feedbackFormSnap.docs) {
-            await deleteDoc(doc_);
+          for (const docSnapshot of feedbackFormSnap.docs) {
+            await deleteDoc(docSnapshot.ref);
           }
 
           // Delete doubts
           const doubtsSnap = await getDocs(
             query(collection(db, "doubts"), where("internId", "==", internId))
           );
-          for (const doc_ of doubtsSnap.docs) {
-            await deleteDoc(doc_);
+          for (const docSnapshot of doubtsSnap.docs) {
+            await deleteDoc(docSnapshot.ref);
           }
 
           // Delete mentor feedback submissions (mentorToInternFeedbackSubmissions)
@@ -230,8 +232,8 @@ const AdminBatchManagement = () => {
               where("internId", "==", internId)
             )
           );
-          for (const doc_ of mentorFeedbackSnap.docs) {
-            await deleteDoc(doc_);
+          for (const docSnapshot of mentorFeedbackSnap.docs) {
+            await deleteDoc(docSnapshot.ref);
           }
 
           // Delete mentor feedback (mentorFeedbackSubmissions)
@@ -241,8 +243,19 @@ const AdminBatchManagement = () => {
               where("internId", "==", internId)
             )
           );
-          for (const doc_ of mentorFeedbackSubmissionsSnap.docs) {
-            await deleteDoc(doc_);
+          for (const docSnapshot of mentorFeedbackSubmissionsSnap.docs) {
+            await deleteDoc(docSnapshot.ref);
+          }
+
+          // Delete mentorFeedback (direct mentor feedback collection)
+          const mentorFeedbackCollectionSnap = await getDocs(
+            query(
+              collection(db, "mentorFeedback"),
+              where("internId", "==", internId)
+            )
+          );
+          for (const docSnapshot of mentorFeedbackCollectionSnap.docs) {
+            await deleteDoc(docSnapshot.ref);
           }
         } catch (err) {
           console.error(`Error deleting data for intern ${internId}:`, err);
@@ -623,7 +636,7 @@ const AdminBatchManagement = () => {
                     <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                     <span>
                       <span className="font-semibold">Verified - Will be deleted:</span> User
-                      accounts, submissions, feedback, mentor feedback, reports, doubts
+                      accounts, submissions, all feedback (open/closed), mentor feedback, reports, doubts
                     </span>
                   </p>
                 </div>
