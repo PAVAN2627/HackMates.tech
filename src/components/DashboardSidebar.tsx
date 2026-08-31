@@ -47,6 +47,7 @@ const adminNavItems: NavItem[] = [
      { id: "submissions", label: "Submissions", icon: Send, path: "/admin/submissions" },
   { id: "attendance", label: "Attendance", icon: ClipboardCheck, path: "/admin/attendance" },
   { id: "certificates", label: "Certificates", icon: Award, path: "/admin/certificates" },
+  { id: "batches", label: "Batch Management", icon: BadgeCheck, path: "/admin/batches" },
    ];
 
 const mentorNavItems: NavItem[] = [

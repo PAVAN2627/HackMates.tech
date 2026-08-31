@@ -23,6 +23,7 @@ import AdminSubmissions from "./pages/admin/Submissions";
 import AdminAttendance from "./pages/admin/Attendance";
 import AdminReports from "./pages/admin/Reports";
 import AdminCertificates from "./pages/admin/Certificates";
+import AdminBatchManagement from "./pages/admin/BatchManagement";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
@@ -55,6 +56,7 @@ const App = () => (
           <Route path="/admin/submissions" element={<AdminSubmissions />} />
           <Route path="/admin/attendance" element={<AdminAttendance />} />
           <Route path="/admin/certificates" element={<AdminCertificates />} />
+          <Route path="/admin/batches" element={<AdminBatchManagement />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
