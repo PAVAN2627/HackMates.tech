@@ -556,101 +556,146 @@ const TeamSection = () => {
                 initial={{ scale: 0.95, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="glass-card rounded-3xl max-w-xl w-full border border-teal-500/40 p-6 sm:p-8 my-auto max-h-[85vh] overflow-y-auto shadow-2xl relative bg-slate-950/95"
+                transition={{ type: "spring", damping: 25, stiffness: 320 }}
+                className="glass-card rounded-3xl max-w-2xl w-full border border-white/15 p-6 sm:p-8 my-auto max-h-[85vh] overflow-y-auto shadow-[0_0_60px_rgba(45,212,191,0.25)] relative overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex items-start justify-between gap-4 mb-6">
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={selectedMember.photo}
-                      alt={selectedMember.name}
-                      className="w-16 h-16 rounded-full object-cover border-2 border-teal-400/50 shadow-md"
-                    />
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        {selectedMember.isFounder && (
-                          <span className="font-mono text-[10px] px-2 py-0.5 rounded-full gradient-primary text-slate-950 font-bold">
-                            Founder
-                          </span>
-                        )}
-                        <span className="font-mono text-xs text-teal-300">
-                          {selectedMember.hackathons} Hackathons
-                        </span>
+                {/* Top Glowing Laser Wire */}
+                <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-teal-500 via-cyan-400 to-violet-500" />
+
+                {/* Ambient Internal Glow */}
+                <div className="absolute -top-20 -right-20 w-64 h-64 bg-teal-500/15 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                <div className="relative z-10 space-y-6">
+                  {/* Header: Avatar, Roles & Close Button */}
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-4 sm:gap-5">
+                      <div className="relative shrink-0">
+                        <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-teal-400 to-cyan-400 blur-sm opacity-70" />
+                        <img
+                          src={selectedMember.photo}
+                          alt={selectedMember.name}
+                          className="relative w-20 h-20 rounded-full object-cover border-2 border-teal-400 shadow-[0_0_20px_rgba(45,212,191,0.4)]"
+                        />
+                        <div className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-emerald-500 border-2 border-slate-950 flex items-center justify-center text-[10px] text-white">
+                          ✓
+                        </div>
                       </div>
-                      <h3 className="font-display text-2xl font-bold text-white tracking-tight">
-                        {selectedMember.name}
-                      </h3>
-                      <p className="font-mono text-xs text-slate-400">
-                        {selectedMember.role}
-                      </p>
+
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                          {selectedMember.isFounder && (
+                            <span className="font-mono text-[11px] px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 font-bold shadow-[0_0_12px_rgba(245,158,11,0.25)]">
+                              Founder & Lead
+                            </span>
+                          )}
+                          <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300">
+                            Verified Core Builder
+                          </span>
+                        </div>
+                        <h3 className="font-display text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                          {selectedMember.name}
+                        </h3>
+                        <p className="font-mono text-xs text-teal-300/80 mt-0.5">
+                          {selectedMember.role}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setSelectedMember(null)}
+                      className="w-10 h-10 rounded-full bg-slate-900/80 border border-white/15 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 transition-colors shrink-0 backdrop-blur-md"
+                      aria-label="Close modal"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Quick Builder Metrics Bar */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 text-center font-mono text-xs">
+                    <div className="p-2 rounded-xl bg-teal-500/5">
+                      <span className="text-slate-400 block text-[10px] uppercase">Hackathons</span>
+                      <span className="font-bold text-teal-300 text-sm">{selectedMember.hackathons} Completed</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-cyan-500/5">
+                      <span className="text-slate-400 block text-[10px] uppercase">Status</span>
+                      <span className="font-bold text-cyan-300 text-sm">Active Builder</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-violet-500/5 col-span-2 sm:col-span-1">
+                      <span className="text-slate-400 block text-[10px] uppercase">Ecosystem</span>
+                      <span className="font-bold text-violet-300 text-sm">HackMates Platform</span>
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => setSelectedMember(null)}
-                    className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="mb-6">
-                  <h4 className="font-mono text-xs text-teal-400 mb-2 uppercase tracking-wider">Biography & Background</h4>
-                  <p className="text-slate-200 text-sm leading-relaxed">
-                    {selectedMember.bio}
-                  </p>
-                </div>
-
-                <div className="mb-6">
-                  <h4 className="font-mono text-xs text-teal-400 mb-3 uppercase tracking-wider">Verified Skills & Tools</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedMember.skills.map((skill) => (
-                      <TechBadge key={skill} name={skill} size="md" />
-                    ))}
+                  {/* Biography */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.02] border border-white/5 relative">
+                    <h4 className="font-mono text-xs text-teal-300 uppercase tracking-wider mb-2 font-semibold">
+                      Biography & Technical Focus
+                    </h4>
+                    <p className="text-slate-200 text-sm leading-relaxed">
+                      {selectedMember.bio}
+                    </p>
                   </div>
-                </div>
 
-                <div className="mb-6 pt-4 border-t border-white/10 flex items-center gap-3 text-xs font-mono text-slate-300">
-                  <Award className="w-4 h-4 text-teal-400" />
-                  <span>{selectedMember.contributions}</span>
-                </div>
+                  {/* Key Contributions & Accolades */}
+                  <div className="p-4 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-start gap-3 text-xs md:text-sm text-slate-200 font-mono">
+                    <Award className="w-5 h-5 text-teal-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="text-teal-300 font-bold block mb-0.5">Signature Contributions</span>
+                      <span>{selectedMember.contributions}</span>
+                    </div>
+                  </div>
 
-                {/* Social Links */}
-                <div className="pt-4 border-t border-white/10 flex items-center gap-3">
-                  {selectedMember.portfolio && selectedMember.portfolio !== "#" && (
-                    <a
-                      href={selectedMember.portfolio}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl gradient-primary text-slate-950 font-mono text-xs font-bold hover:opacity-95 transition-opacity"
-                    >
-                      <Globe className="w-3.5 h-3.5" />
-                      <span>Portfolio</span>
-                    </a>
-                  )}
-                  {selectedMember.linkedin && selectedMember.linkedin !== "#" && (
-                    <a
-                      href={selectedMember.linkedin}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl glass border border-white/15 text-white font-mono text-xs font-semibold hover:border-teal-400 transition-colors"
-                    >
-                      <Linkedin className="w-3.5 h-3.5 text-blue-400" />
-                      <span>LinkedIn</span>
-                    </a>
-                  )}
-                  {selectedMember.instagram && selectedMember.instagram !== "#" && (
-                    <a
-                      href={selectedMember.instagram}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl glass border border-white/15 text-white font-mono text-xs font-semibold hover:border-teal-400 transition-colors"
-                    >
-                      <Instagram className="w-3.5 h-3.5 text-rose-400" />
-                      <span>Instagram</span>
-                    </a>
-                  )}
+                  {/* Skills Grid with Logos */}
+                  <div>
+                    <h4 className="font-mono text-xs text-teal-300 uppercase tracking-wider mb-3 font-semibold flex items-center gap-2">
+                      <Code2 className="w-4 h-4 text-teal-400" />
+                      Core Technical Skills & Stack
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedMember.skills.map((skill) => (
+                        <TechBadge key={skill} name={skill} size="md" />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Social & Portfolio Links */}
+                  <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row items-center gap-3">
+                    {selectedMember.portfolio && selectedMember.portfolio !== "#" && (
+                      <a
+                        href={selectedMember.portfolio}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full sm:flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-400 text-slate-950 font-mono text-xs font-bold shadow-[0_0_20px_rgba(45,212,191,0.35)] hover:opacity-95 transition-all"
+                      >
+                        <Globe className="w-4 h-4" />
+                        <span>View Portfolio</span>
+                      </a>
+                    )}
+                    {selectedMember.linkedin && selectedMember.linkedin !== "#" && (
+                      <a
+                        href={selectedMember.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full sm:flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#0077b5] hover:bg-[#006097] text-white font-mono text-xs font-bold transition-all shadow-md"
+                      >
+                        <Linkedin className="w-4 h-4" />
+                        <span>Connect on LinkedIn</span>
+                      </a>
+                    )}
+                    {selectedMember.instagram && selectedMember.instagram !== "#" && (
+                      <a
+                        href={selectedMember.instagram}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full sm:flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-amber-500 via-rose-500 to-purple-600 hover:opacity-95 text-white font-mono text-xs font-bold transition-all shadow-md"
+                      >
+                        <Instagram className="w-4 h-4" />
+                        <span>Instagram Profile</span>
+                      </a>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             </motion.div>

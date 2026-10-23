@@ -1135,8 +1135,24 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
         deleteWhere("submissions", "internId", uid),
         deleteWhere("feedbackFormSubmissions", "internId", uid),
         deleteWhere("mentorFeedbackSubmissions", "internId", uid),
-        // Delete verification record by internId
-        ...(internId ? [deleteWhere("verifications", "offerId", internId.toUpperCase())] : []),
+        // Preserve verification record and mark as Completed so certificate stays authentic forever
+        ...(internId
+          ? [
+              (async () => {
+                const vSnap = await getDocs(
+                  query(collection(db, "verifications"), where("offerId", "==", internId.toUpperCase()))
+                );
+                await Promise.all(
+                  vSnap.docs.map((d) =>
+                    updateDoc(d.ref, {
+                      status: "Completed",
+                      completionDate: new Date().toISOString().slice(0, 10),
+                    })
+                  )
+                );
+              })(),
+            ]
+          : []),
       ]);
     } else if (role === "Mentor") {
       await Promise.all([

@@ -88,7 +88,44 @@ const Verify = () => {
         return;
       }
 
-      // 2. Search achievement certificates (Hackathons, Bootcamps)
+      // 2. Search completedBatches for archived interns (e.g. HM-FWD-001)
+      const batchesSnap = await getDocs(collection(db, "completedBatches"));
+      for (const bDoc of batchesSnap.docs) {
+        const bData = bDoc.data();
+        const internsList = (bData.interns || []) as Array<{
+          name: string;
+          internId?: string;
+          certificateId?: string;
+          attendancePercentage?: number;
+        }>;
+        const matchedIntern = internsList.find(
+          (item) =>
+            item.certificateId?.trim().toUpperCase() === trimmed ||
+            item.internId?.trim().toUpperCase() === trimmed
+        );
+
+        if (matchedIntern) {
+          const issueDate = bData.batchDate || bData.createdAt?.slice(0, 10) || new Date().toISOString().slice(0, 10);
+          setResult({
+            id: bDoc.id,
+            offerId: matchedIntern.certificateId || matchedIntern.internId || trimmed,
+            name: matchedIntern.name,
+            type: "Intern",
+            certificateType: "Internship Completion Certificate",
+            position: "Full Stack Web Development Intern",
+            eventName: "HackMates 12-Week MERN Stack Internship",
+            issueDate,
+            validUntil: issueDate,
+            completionDate: issueDate,
+            status: "Completed",
+            notes: matchedIntern.attendancePercentage !== undefined ? `Attendance: ${matchedIntern.attendancePercentage}%` : undefined,
+            source: "internship",
+          });
+          return;
+        }
+      }
+
+      // 3. Search achievement certificates (Hackathons, Bootcamps)
       const q2 = query(
         collection(db, "achievementCerts"),
         where("certId", "==", trimmed)
@@ -104,6 +141,30 @@ const Verify = () => {
           source: "achievement",
           ...data,
         } as VerificationData);
+        return;
+      }
+
+      // 4. Search active users collection (if batch in progress or offer letter)
+      const usersQ = query(
+        collection(db, "users"),
+        where("internId", "==", trimmed)
+      );
+      const usersSnap = await getDocs(usersQ);
+      if (!usersSnap.empty) {
+        const uData = usersSnap.docs[0].data();
+        setResult({
+          id: usersSnap.docs[0].id,
+          offerId: uData.internId,
+          name: uData.name,
+          type: "Intern",
+          certificateType: "Internship Offer Letter",
+          position: uData.position || "Full Stack Web Development Intern",
+          eventName: "HackMates Internship Program",
+          issueDate: uData.issueDate || uData.createdAt?.slice(0, 10) || "",
+          validUntil: uData.validUntil || "",
+          status: "Active",
+          source: "internship",
+        });
         return;
       }
 

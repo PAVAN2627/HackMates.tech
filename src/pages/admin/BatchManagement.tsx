@@ -27,6 +27,7 @@ import {
   addDoc,
   deleteDoc,
   doc,
+  updateDoc,
   onSnapshot,
   query,
   getDocs,
@@ -186,6 +187,43 @@ const AdminBatchManagement = () => {
         interns: pendingArchive,
         createdAt: new Date().toISOString(),
       });
+
+      // Ensure completion records exist in verifications collection for public authentication
+      for (const intern of pendingArchive) {
+        const certId = (intern.certificateId || intern.internId || "").trim().toUpperCase();
+        if (certId && certId !== "N/A") {
+          try {
+            const vSnap = await getDocs(
+              query(collection(db, "verifications"), where("offerId", "==", certId))
+            );
+            if (vSnap.empty) {
+              await addDoc(collection(db, "verifications"), {
+                offerId: certId,
+                name: intern.name,
+                type: "Intern",
+                certificateType: "Internship Completion Certificate",
+                position: "Full Stack Web Development Intern",
+                issueDate: batchDate,
+                validUntil: batchDate,
+                completionDate: batchDate,
+                status: "Completed",
+                attendancePercentage: intern.attendancePercentage,
+              });
+            } else {
+              for (const d of vSnap.docs) {
+                await updateDoc(d.ref, {
+                  status: "Completed",
+                  completionDate: batchDate,
+                  certificateType: "Internship Completion Certificate",
+                  attendancePercentage: intern.attendancePercentage,
+                });
+              }
+            }
+          } catch (verifErr) {
+            console.error("Error updating verification record for archived intern:", verifErr);
+          }
+        }
+      }
 
       // Delete user accounts and related data
       for (const internId of selectedInterns) {

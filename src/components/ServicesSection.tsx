@@ -398,63 +398,79 @@ export const ServicesSection = () => {
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0, y: 20 }}
                 transition={{ type: "spring", damping: 25, stiffness: 320 }}
-                className="glass-card border border-white/15 rounded-3xl max-w-2xl w-full shadow-[0_0_60px_rgba(45,212,191,0.25)] overflow-hidden my-auto relative"
+                className="glass-card border border-white/15 rounded-3xl max-w-3xl w-full shadow-[0_0_60px_rgba(45,212,191,0.25)] overflow-hidden my-auto relative"
                 onClick={(e) => e.stopPropagation()}
               >
+                {/* Top Laser Accent Wire */}
+                <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-teal-500 via-cyan-400 to-amber-400" />
+
+                {/* Ambient Internal Glow */}
+                <div className="absolute -top-20 -right-20 w-64 h-64 bg-teal-500/15 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+
                 {/* Close Button */}
                 <button
                   onClick={() => setSelectedService(null)}
-                  className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-slate-900/80 border border-white/20 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-900 transition-colors backdrop-blur-md"
+                  className="absolute top-5 right-5 z-20 w-10 h-10 rounded-full bg-slate-900/80 border border-white/20 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 transition-colors backdrop-blur-md"
                   aria-label="Close modal"
                 >
                   <X className="w-5 h-5" />
                 </button>
 
-                <div className="p-6 md:p-8 max-h-[85vh] overflow-y-auto space-y-6">
+                <div className="p-6 sm:p-8 max-h-[85vh] overflow-y-auto space-y-6 relative z-10">
                   {/* Modal Header */}
-                  <div className="flex items-start gap-4 pr-10">
-                    <div className="w-14 h-14 rounded-2xl bg-teal-500/15 border border-teal-500/40 flex items-center justify-center text-teal-300 shrink-0 shadow-lg">
-                      <selectedService.icon className="w-7 h-7 text-teal-300" />
+                  <div className="flex items-start gap-4 pr-12">
+                    <div className="w-16 h-16 rounded-2xl bg-teal-500/15 border-2 border-teal-400/40 flex items-center justify-center text-teal-300 shrink-0 shadow-[0_0_20px_rgba(45,212,191,0.25)]">
+                      <selectedService.icon className="w-8 h-8 text-teal-300" />
                     </div>
                     <div>
-                      <span className={`font-mono text-xs px-2.5 py-0.5 rounded-full border mb-1.5 inline-block ${highlightBadges[selectedService.highlightType]}`}>
-                        {selectedService.highlight}
-                      </span>
-                      <h3 className="font-display text-2xl md:text-3xl font-bold text-white">
+                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                        <span className={`font-mono text-xs px-2.5 py-0.5 rounded-full border ${highlightBadges[selectedService.highlightType]}`}>
+                          {selectedService.highlight}
+                        </span>
+                        <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-300">
+                          SERVICE SPECIFICATION
+                        </span>
+                      </div>
+                      <h3 className="font-display text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                         {selectedService.title}
                       </h3>
-                      <p className="font-mono text-xs text-teal-300 mt-0.5">
+                      <p className="font-mono text-xs text-teal-300/80 mt-0.5">
                         {selectedService.tagline}
                       </p>
                     </div>
                   </div>
 
                   {/* Full Description */}
-                  <div className="bg-white/[0.02] border border-white/5 p-4 rounded-xl">
-                    <p className="text-slate-300 text-sm md:text-base leading-relaxed">
+                  <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.03] border border-white/10 relative overflow-hidden">
+                    <div className="absolute left-0 inset-y-0 w-1 bg-gradient-to-b from-teal-400 to-cyan-500" />
+                    <h4 className="font-mono text-xs text-teal-300 uppercase tracking-wider mb-2 font-semibold">
+                      Scope & Solution Overview
+                    </h4>
+                    <p className="text-slate-200 text-sm sm:text-base leading-relaxed">
                       {selectedService.detailedInfo.fullDescription}
                     </p>
                   </div>
 
                   {/* Pricing & Timeline Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div className="p-4 rounded-xl bg-teal-500/10 border border-teal-500/30">
-                      <h4 className="font-mono text-xs text-teal-300 uppercase tracking-wider mb-1 flex items-center gap-1.5 font-semibold">
+                      <h4 className="font-mono text-xs text-teal-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5 font-bold">
                         <Zap className="w-4 h-4 text-teal-400" />
                         Pricing Model
                       </h4>
-                      <p className="text-sm text-slate-200">
+                      <p className="text-sm text-slate-200 font-medium">
                         {selectedService.detailedInfo.pricing}
                       </p>
                     </div>
 
                     {selectedService.detailedInfo.deliveryTime && (
                       <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/30">
-                        <h4 className="font-mono text-xs text-cyan-300 uppercase tracking-wider mb-1 flex items-center gap-1.5 font-semibold">
+                        <h4 className="font-mono text-xs text-cyan-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5 font-bold">
                           <Clock className="w-4 h-4 text-cyan-400" />
                           Delivery Timeline
                         </h4>
-                        <p className="text-sm text-slate-200">
+                        <p className="text-sm text-slate-200 font-medium">
                           {selectedService.detailedInfo.deliveryTime}
                         </p>
                       </div>
@@ -463,13 +479,16 @@ export const ServicesSection = () => {
 
                   {/* Terms & Deliverables */}
                   <div>
-                    <h4 className="font-mono text-xs text-teal-400 uppercase tracking-wider mb-3 flex items-center gap-2 font-semibold">
+                    <h4 className="font-mono text-xs text-teal-300 uppercase tracking-wider mb-3 flex items-center gap-2 font-semibold">
                       <CheckCircle2 className="w-4 h-4 text-teal-400" />
-                      What Is Included & Terms
+                      What Is Included & Terms of Service
                     </h4>
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       {selectedService.detailedInfo.terms.map((term, index) => (
-                        <div key={index} className="flex items-start gap-2.5 text-xs md:text-sm text-slate-300">
+                        <div
+                          key={index}
+                          className="flex items-start gap-2.5 p-3 rounded-xl bg-white/[0.02] border border-white/5 text-xs sm:text-sm text-slate-200"
+                        >
                           <span className="w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0 mt-2" />
                           <span>{term}</span>
                         </div>
@@ -479,11 +498,11 @@ export const ServicesSection = () => {
 
                   {/* Support Statement */}
                   <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
-                    <h4 className="font-mono text-xs text-amber-300 uppercase tracking-wider mb-1 flex items-center gap-1.5 font-semibold">
+                    <h4 className="font-mono text-xs text-amber-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5 font-bold">
                       <HelpCircle className="w-4 h-4 text-amber-400" />
-                      Dedicated Mentorship & Support
+                      Dedicated Mentorship & Technical Support
                     </h4>
-                    <p className="text-xs md:text-sm text-slate-200 leading-relaxed">
+                    <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
                       {selectedService.detailedInfo.support}
                     </p>
                   </div>
@@ -494,7 +513,7 @@ export const ServicesSection = () => {
                       href={selectedService.detailedInfo.brochure}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl border border-teal-500/40 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 text-sm font-semibold transition-colors shadow-md"
+                      className="flex items-center justify-center gap-2 w-full px-5 py-3.5 rounded-xl border border-teal-500/40 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 text-sm font-semibold transition-colors shadow-md"
                     >
                       <FileText className="w-4 h-4" />
                       Download 12-Week Program Syllabus & Brochure (PDF)
@@ -504,24 +523,24 @@ export const ServicesSection = () => {
                   {/* Direct Contact CTAs */}
                   <div className="pt-4 border-t border-white/10">
                     <p className="text-xs font-mono text-slate-400 text-center mb-3">
-                      Ready to get started or request a custom proposal?
+                      Ready to get started or request a custom quote?
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <a
                         href={`https://wa.me/917249830281?text=Hi%20HackMates,%20I%20am%20interested%20in%20${encodeURIComponent(selectedService.title)}.%20Please%20share%20more%20details.`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold shadow-[0_0_20px_rgba(16,185,129,0.35)] transition-all"
+                        className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-bold shadow-[0_0_25px_rgba(16,185,129,0.35)] transition-all"
                       >
                         <MessageCircle className="w-4 h-4" />
-                        Chat on WhatsApp
+                        <span>Chat on WhatsApp</span>
                       </a>
                       <a
                         href={`mailto:hackmates.tech@gmail.com?subject=${encodeURIComponent(`Inquiry: ${selectedService.title}`)}&body=${encodeURIComponent(`Hi HackMates Team,\n\nI want to discuss requirements regarding ${selectedService.title}.\n\nMy Details:\nName:\nCollege / Organization:\nContact Number:\nRequirements:\n`)}`}
-                        className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 text-sm font-bold shadow-[0_0_20px_rgba(45,212,191,0.35)] transition-all"
+                        className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-400 text-slate-950 font-mono text-xs font-bold shadow-[0_0_20px_rgba(45,212,191,0.35)] hover:opacity-95 transition-all"
                       >
                         <Mail className="w-4 h-4" />
-                        Send Email Inquiry
+                        <span>Send Email Inquiry</span>
                       </a>
                     </div>
                   </div>
