@@ -1,12 +1,20 @@
-import { motion } from "framer-motion";
-import { Linkedin, Globe, Code2, Star, Award, Instagram, X } from "lucide-react";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { 
+  Linkedin, 
+  Globe, 
+  Code2, 
+  Star, 
+  Award, 
+  Instagram, 
+  X, 
+  Sparkles, 
+  Trophy, 
+  ExternalLink,
+  ChevronRight,
+  GraduationCap
+} from "lucide-react";
 import { useState } from "react";
-import teamMember1 from "@/assets/team-member-1.jpg";
-import teamMember2 from "@/assets/team-member-2.jpg";
-import teamMember3 from "@/assets/team-member-3.jpg";
-import teamMember4 from "@/assets/team-member-4.jpg";
-import teamMember5 from "@/assets/team-member-5.jpg";
-import teamMember6 from "@/assets/team-member-6.jpg";
+import { TechBadge } from "@/components/TechIcon";
 
 interface TeamMember {
   name: string;
@@ -30,6 +38,25 @@ interface Intern {
   linkedin?: string;
 }
 
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 25 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: "easeOut" },
+  },
+};
+
 const team: TeamMember[] = [
   {
     name: "Pavan Mali",
@@ -51,7 +78,7 @@ const team: TeamMember[] = [
     skills: ["HTML", "CSS", "JavaScript", "Bootstrap", "PHP", "MySQL", "Flask", "OpenAI API"],
     photo: "/Pavan/VijayBhope.jpeg",
     isFounder: false,
-    contributions: "8+ Projects",
+    contributions: "8+ Projects Shipped",
     hackathons: 5,
     portfolio: "https://vijaybhope.vercel.app/",
     linkedin: "https://www.linkedin.com/in/vijay-bhope-b2b113343",
@@ -60,11 +87,11 @@ const team: TeamMember[] = [
   {
     name: "Sakshi Pawar",
     role: "AI/ML Developer",
-    bio: "Specializes in computer vision and NLP. Built multiple AI solutions that won hackathon awards.",
-    skills: ["Python", "TensorFlow", "OpenCV", "PyTorch", "NLP"],
+    bio: "Specializes in computer vision and natural language processing. Built multiple winning AI models that secured top awards in national student hackathons.",
+    skills: ["Python", "TensorFlow", "OpenCV", "PyTorch", "NLP", "Machine Learning"],
     photo: "/Pavan/sakshipawar.jpeg",
     isFounder: false,
-    contributions: "8+ AI models",
+    contributions: "8+ AI Models Developed",
     hackathons: 9,
     portfolio: "#",
     linkedin: "https://www.linkedin.com/in/sakshi-pawar-03s/",
@@ -73,11 +100,11 @@ const team: TeamMember[] = [
   {
     name: "Siddhi Pisal",
     role: "Full-Stack Developer | AI Engineer",
-    bio: "Passionate about building innovative tech solutions with AI, Full-Stack Development, web development, and software engineering. My journey started with curiosity about how applications work, and has grown into a love for creating digital solutions through code.",
-    skills: ["Python", "React", "Next.js", "TypeScript", "FastAPI", "Flask", "MySQL", "PostgreSQL", "MongoDB", "Docker", "Kubernetes"],
+    bio: "Passionate about building innovative tech solutions with AI, Full-Stack Development, web development, and software engineering. Loves creating digital products through clean, modular code.",
+    skills: ["Python", "React", "Next.js", "TypeScript", "FastAPI", "Flask", "MySQL", "PostgreSQL", "MongoDB", "Docker"],
     photo: "/Pavan/siddhipisal.jpeg",
     isFounder: false,
-    contributions: "10+ Projects built",
+    contributions: "10+ Projects Built",
     hackathons: 8,
     portfolio: "https://portfolio-ten-mauve-7i0d890f9v.vercel.app/",
     linkedin: "https://www.linkedin.com/in/siddhi-pisal-98557b30a/",
@@ -87,7 +114,7 @@ const team: TeamMember[] = [
     name: "Shrutika Patil",
     role: "Full-Stack Developer | AI Engineer",
     bio: "Builds scalable applications powered by modern web technologies and machine learning. Passionate about turning complex ideas into real-world, production-ready systems.",
-    skills: ["React", "Node.js", "Python", "TensorFlow", "Docker"],
+    skills: ["React", "Node.js", "Python", "TensorFlow", "Docker", "REST APIs"],
     photo: "/Pavan/shrutikapatil.jpeg",
     isFounder: false,
     contributions: "5+ Full-Stack Projects",
@@ -99,8 +126,8 @@ const team: TeamMember[] = [
   {
     name: "Purva Mohite",
     role: "AI/ML Engineer | Full-Stack Developer",
-    bio: "Artificial Intelligence & Machine Learning specialist with a strong foundation in full-stack development and data structures. Thrives on building impactful applications that bridge the gap between cutting-edge AI research and practical software engineering. Passionate about solving complex problems with elegant, scalable solutions.",
-    skills: ["Python", "Machine Learning", "React", "Node.js", "Data Structures", "AI/ML", "Full Stack Development"],
+    bio: "Artificial Intelligence & Machine Learning specialist with a strong foundation in full-stack development and data structures. Thrives on building impactful applications that bridge the gap between AI and practical software engineering.",
+    skills: ["Python", "Machine Learning", "React", "Node.js", "Data Structures", "AI/ML"],
     photo: "/Pavan/purvamohite.jpeg",
     isFounder: false,
     contributions: "8+ AI/ML Projects",
@@ -153,261 +180,482 @@ const TeamSection = () => {
   const others = team.filter((m) => !m.isFounder);
 
   return (
-    <section id="team" className="py-24">
-      <div className="container mx-auto px-6">
+    <section id="team" className="py-14 bg-transparent relative overflow-hidden">
+      {/* Ambient Glow Orbs */}
+      <div className="absolute top-10 left-1/4 w-[450px] h-[450px] rounded-full bg-teal-500/10 blur-[130px] pointer-events-none" />
+      <div className="absolute top-1/2 -right-20 w-[450px] h-[450px] rounded-full bg-indigo-500/10 blur-[140px] pointer-events-none" />
+      <div className="absolute inset-0 tech-grid-bg opacity-20 pointer-events-none" />
+
+      <div className="container mx-auto px-6 relative z-10 max-w-6xl">
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-12"
         >
-          <p className="font-mono text-sm text-primary mb-3">team.members</p>
-          <h2 className="text-4xl md:text-5xl font-bold font-display">
-            Meet the <span className="gradient-text">Builders</span>
-          </h2>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-300 font-mono text-xs uppercase tracking-wider mb-4">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>team.collective</span>
+          </div>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold font-display text-white tracking-tight mb-4">
+            Meet the <span className="gradient-text">Builders & Innovators</span>
+          </h1>
+          <p className="text-muted-foreground max-w-xl mx-auto text-base sm:text-lg">
+            Passionate student developers, AI engineers, and hackathon competitors driving the HackMates mission.
+          </p>
         </motion.div>
 
-        {/* Tabs */}
-        <div className="flex justify-center gap-4 mb-16">
+        {/* Tab Switcher */}
+        <div className="flex justify-center gap-3 mb-14">
           <button
             onClick={() => setActiveTab("core")}
-            className={`font-mono text-sm px-6 py-2 rounded-lg transition-all ${
+            className={`relative px-5 py-2.5 rounded-full font-mono text-xs uppercase tracking-wider transition-all duration-300 flex items-center gap-2 ${
               activeTab === "core"
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                ? "text-slate-950 font-bold shadow-[0_0_20px_rgba(45,212,191,0.4)]"
+                : "glass text-slate-300 hover:text-white"
             }`}
           >
-            Core Team
+            {activeTab === "core" && (
+              <motion.span
+                layoutId="activeTeamTab"
+                className="absolute inset-0 rounded-full gradient-primary -z-10"
+                transition={{ type: "spring", stiffness: 350, damping: 30 }}
+              />
+            )}
+            <span>Core Engineers</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${activeTab === "core" ? "bg-slate-950/20 text-slate-950" : "bg-white/10 text-slate-400"}`}>
+              {team.length}
+            </span>
           </button>
+
           <button
             onClick={() => setActiveTab("interns")}
-            className={`font-mono text-sm px-6 py-2 rounded-lg transition-all ${
+            className={`relative px-5 py-2.5 rounded-full font-mono text-xs uppercase tracking-wider transition-all duration-300 flex items-center gap-2 ${
               activeTab === "interns"
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                ? "text-slate-950 font-bold shadow-[0_0_20px_rgba(45,212,191,0.4)]"
+                : "glass text-slate-300 hover:text-white"
             }`}
           >
-            Interns
+            {activeTab === "interns" && (
+              <motion.span
+                layoutId="activeTeamTab"
+                className="absolute inset-0 rounded-full gradient-primary -z-10"
+                transition={{ type: "spring", stiffness: 350, damping: 30 }}
+              />
+            )}
+            <span>Internship Batch 1</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${activeTab === "interns" ? "bg-slate-950/20 text-slate-950" : "bg-white/10 text-slate-400"}`}>
+              {interns.length}
+            </span>
           </button>
         </div>
 
-        {/* Founder - Featured Card */}
+        {/* Core Team View */}
         {activeTab === "core" && (
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="max-w-4xl mx-auto mb-12"
-        >
-          <div
-            className="card-elevated rounded-2xl overflow-hidden hover:border-glow transition-all duration-300 cursor-pointer"
-            onClick={() => setSelectedMember(founder)}
-          >
-            <div className="flex flex-col md:flex-row">
-              <div className="relative md:w-2/5 flex items-center justify-center bg-background">
-                <img src={founder.photo} alt={founder.name} className="w-full h-80 md:h-auto md:max-h-[500px] object-contain" />
-                <div className="absolute top-3 left-3">
-                  <span className="font-mono text-[10px] px-2.5 py-1 rounded-full bg-accent/90 text-accent-foreground flex items-center gap-1">
-                    <Star className="w-3 h-3" /> Founder
-                  </span>
-                </div>
-              </div>
-              <div className="p-8 md:w-3/5 flex flex-col justify-center">
-                <h3 className="font-display text-3xl font-bold text-foreground mb-2">{founder.name}</h3>
-                <p className="font-mono text-sm text-primary mb-4">{founder.role}</p>
-                <p className="text-muted-foreground text-sm mb-6 leading-relaxed">{founder.bio}</p>
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {founder.skills.map((skill) => (
-                    <span key={skill} className="font-mono text-[11px] px-3 py-1.5 rounded-full bg-primary/10 text-primary">
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-                <div className="flex items-center gap-6 text-sm text-muted-foreground mb-4">
-                  <span className="flex items-center gap-1.5"><Code2 className="w-4 h-4" /> {founder.contributions}</span>
-                  <span className="flex items-center gap-1.5"><Award className="w-4 h-4" /> {founder.hackathons} hackathons</span>
-                </div>
-                <div className="flex gap-4 mt-2">
-                  {founder.portfolio && <a href={founder.portfolio} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" aria-label="Portfolio"><Globe className="w-6 h-6" /></a>}
-                  {founder.linkedin && <a href={founder.linkedin} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" aria-label="LinkedIn"><Linkedin className="w-6 h-6" /></a>}
-                  {founder.instagram && <a href={founder.instagram} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" aria-label="Instagram"><Instagram className="w-6 h-6" /></a>}
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-        )}
-
-        {/* Other Members */}
-        {activeTab === "core" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {others.map((member, i) => (
+          <div className="space-y-12">
+            {/* Founder Spotlight Card */}
             <motion.div
-              key={member.name}
               initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              whileHover={{ y: -6 }}
-              onClick={() => setSelectedMember(member)}
-              className="card-elevated rounded-xl overflow-hidden cursor-pointer hover:border-glow transition-all duration-300"
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              onClick={() => setSelectedMember(founder)}
+              className="glass-card rounded-3xl p-8 sm:p-10 border border-teal-500/40 cursor-pointer group shadow-[0_0_40px_rgba(45,212,191,0.15)] relative overflow-hidden"
             >
-              <div className="relative h-40 flex items-center justify-center bg-background">
-                <img src={member.photo} alt={member.name} className="w-full h-full object-contain" />
-              </div>
-              <div className="p-5 pt-6">
-                <h3 className="font-display font-semibold text-foreground">{member.name}</h3>
-                <p className="font-mono text-xs text-accent mb-3">{member.role}</p>
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {member.skills.slice(0, 3).map((skill) => (
-                    <span key={skill} className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
-                      {skill}
+              {/* Card Ambient Glow */}
+              <div className="absolute top-0 right-0 w-80 h-80 bg-teal-500/15 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
+                {/* Founder Photo */}
+                <div className="relative shrink-0">
+                  <div className="absolute -inset-2 rounded-2xl bg-gradient-to-r from-teal-400 via-cyan-400 to-amber-400 opacity-60 blur-md group-hover:opacity-100 transition-opacity" />
+                  <img
+                    src={founder.photo}
+                    alt={founder.name}
+                    className="relative w-48 h-56 sm:w-56 sm:h-64 object-cover rounded-2xl border-2 border-white/20 shadow-2xl"
+                  />
+                  <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                    <span className="font-mono text-xs px-3 py-1 rounded-full gradient-primary text-slate-950 font-bold flex items-center gap-1 shadow-lg">
+                      <Star className="w-3.5 h-3.5 fill-slate-950" /> Founder & Lead
                     </span>
-                  ))}
-                  {member.skills.length > 3 && (
-                    <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                      +{member.skills.length - 3}
-                    </span>
-                  )}
+                  </div>
                 </div>
-                <div className="flex items-center justify-between text-muted-foreground">
-                  <span className="font-mono text-[10px]">{member.contributions}</span>
-                  <div className="flex gap-2">
-                    {member.portfolio && <Globe className="w-3.5 h-3.5 hover:text-primary transition-colors" />}
-                    {member.linkedin && <Linkedin className="w-3.5 h-3.5 hover:text-primary transition-colors" />}
-                    {member.instagram && <Instagram className="w-3.5 h-3.5 hover:text-primary transition-colors" />}
+
+                {/* Founder Info */}
+                <div className="flex-1 text-center md:text-left">
+                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-2">
+                    <h2 className="text-3xl sm:text-4xl font-bold font-display text-white tracking-tight">
+                      {founder.name}
+                    </h2>
+                    <span className="font-mono text-xs px-3 py-1 rounded-md bg-teal-500/15 text-teal-300 border border-teal-500/30">
+                      Team Lead
+                    </span>
+                  </div>
+
+                  <p className="font-mono text-sm text-teal-300 mb-4">
+                    {founder.role}
+                  </p>
+
+                  <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-6 max-w-2xl">
+                    {founder.bio}
+                  </p>
+
+                  {/* Skills with Logos */}
+                  <div className="mb-6">
+                    <div className="text-xs font-mono text-slate-400 mb-2 uppercase tracking-wider">
+                      Technical Skills & Stack:
+                    </div>
+                    <div className="flex flex-wrap justify-center md:justify-start gap-2">
+                      {founder.skills.map((skill) => (
+                        <TechBadge key={skill} name={skill} />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Highlights & Socials */}
+                  <div className="flex flex-wrap items-center justify-center md:justify-between gap-4 pt-4 border-t border-white/10">
+                    <div className="flex items-center gap-5 text-xs font-mono text-slate-300">
+                      <span className="flex items-center gap-1.5 text-teal-300">
+                        <Code2 className="w-4 h-4" /> {founder.contributions}
+                      </span>
+                      <span className="flex items-center gap-1.5 text-amber-400">
+                        <Trophy className="w-4 h-4" /> {founder.hackathons} Hackathons
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                      {founder.portfolio && (
+                        <a
+                          href={founder.portfolio}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label="Portfolio"
+                          className="w-9 h-9 rounded-full glass border border-white/15 flex items-center justify-center text-slate-300 hover:text-teal-300 hover:border-teal-400 transition-colors"
+                        >
+                          <Globe className="w-4 h-4" />
+                        </a>
+                      )}
+                      {founder.linkedin && (
+                        <a
+                          href={founder.linkedin}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label="LinkedIn"
+                          className="w-9 h-9 rounded-full glass border border-white/15 flex items-center justify-center text-slate-300 hover:text-teal-300 hover:border-teal-400 transition-colors"
+                        >
+                          <Linkedin className="w-4 h-4" />
+                        </a>
+                      )}
+                      {founder.instagram && (
+                        <a
+                          href={founder.instagram}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label="Instagram"
+                          className="w-9 h-9 rounded-full glass border border-white/15 flex items-center justify-center text-slate-300 hover:text-teal-300 hover:border-teal-400 transition-colors"
+                        >
+                          <Instagram className="w-4 h-4" />
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             </motion.div>
-          ))}
-        </div>
-        )}
 
-        {/* Interns Grid */}
-        {activeTab === "interns" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 max-w-7xl mx-auto">
-          {interns.map((intern, i) => (
+            {/* Other Core Members Grid */}
             <motion.div
-              key={intern.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              whileHover={{ y: -8 }}
-              className="card-elevated rounded-xl overflow-hidden hover:border-glow transition-all duration-300"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
             >
-              {/* Photo */}
-              <div className="relative h-64 bg-background flex items-center justify-center">
-                <img src={intern.photo} alt={intern.name} className="w-full h-full object-contain p-2" />
-              </div>
-
-              {/* Info */}
-              <div className="p-4 space-y-3">
-                <div>
-                  <h3 className="font-display font-semibold text-foreground text-lg">{intern.name}</h3>
-                  <p className="font-mono text-xs text-primary">{intern.id}</p>
-                </div>
-
-                {/* Links */}
-                <div className="flex gap-3 pt-2 border-t border-border">
-                  {intern.portfolio && (
-                    <a 
-                      href={intern.portfolio} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-muted-foreground hover:text-primary transition-colors"
-                      aria-label="Portfolio"
-                    >
-                      <Globe className="w-5 h-5" />
-                    </a>
-                  )}
-                  {intern.linkedin && (
-                    <a 
-                      href={intern.linkedin} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-muted-foreground hover:text-primary transition-colors"
-                      aria-label="LinkedIn"
-                    >
-                      <Linkedin className="w-5 h-5" />
-                    </a>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-        )}
-
-        {/* Member Detail Modal */}
-        {selectedMember && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={() => setSelectedMember(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", damping: 25 }}
-              className="bg-card/90 backdrop-blur-md rounded-3xl max-w-xl w-full overflow-hidden border border-border/50 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="relative h-80 flex items-center justify-center bg-background">
-                <img src={selectedMember.photo} alt={selectedMember.name} className="w-full h-full object-contain" />
-                <button
-                  onClick={() => setSelectedMember(null)}
-                  className="absolute top-6 right-6 w-10 h-10 rounded-full bg-background/20 backdrop-blur-sm flex items-center justify-center text-foreground hover:bg-background/40 transition-colors"
+              {others.map((member) => (
+                <motion.div
+                  key={member.name}
+                  variants={cardVariants}
+                  onClick={() => setSelectedMember(member)}
+                  className="glass-card rounded-2xl p-6 cursor-pointer border border-white/10 hover:border-teal-400/40 transition-all duration-300 group flex flex-col justify-between"
                 >
-                  <X className="w-5 h-5" />
-                </button>
-                {selectedMember.isFounder && (
-                  <div className="absolute top-6 left-6">
-                    <span className="font-mono text-xs px-3 py-1.5 rounded-full bg-accent text-accent-foreground inline-flex items-center gap-1.5 shadow-lg">
-                      <Star className="w-3.5 h-3.5" /> Founder
-                    </span>
+                  <div>
+                    {/* Avatar & Info */}
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="relative shrink-0">
+                        <div className="absolute -inset-1 rounded-full bg-teal-500/20 blur-sm group-hover:bg-teal-500/40 transition-colors" />
+                        <img
+                          src={member.photo}
+                          alt={member.name}
+                          className="relative w-16 h-16 rounded-full object-cover border border-white/20 shadow-md"
+                        />
+                      </div>
+                      <div>
+                        <h3 className="font-display font-bold text-lg text-white group-hover:text-teal-300 transition-colors">
+                          {member.name}
+                        </h3>
+                        <p className="font-mono text-xs text-teal-400 line-clamp-1">
+                          {member.role.split("|")[0]}
+                        </p>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-slate-300/80 leading-relaxed mb-4 line-clamp-3">
+                      {member.bio}
+                    </p>
+
+                    {/* Skill Badges with Logos */}
+                    <div className="flex flex-wrap gap-1.5 mb-5">
+                      {member.skills.slice(0, 4).map((skill) => (
+                        <TechBadge key={skill} name={skill} />
+                      ))}
+                      {member.skills.length > 4 && (
+                        <span className="font-mono text-[10px] px-2 py-1 rounded-lg bg-white/5 text-slate-400 border border-white/10">
+                          +{member.skills.length - 4}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-              <div className="p-6">
-                <h3 className="font-display text-3xl font-bold text-foreground mb-1">{selectedMember.name}</h3>
-                <p className="text-primary text-base mb-4">{selectedMember.role}</p>
-                <p className="text-sm text-muted-foreground leading-relaxed mb-4">{selectedMember.bio}</p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {selectedMember.skills.map((skill) => (
-                    <span key={skill} className="font-mono text-xs px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
-                      {skill}
+
+                  {/* Card Bottom: Stats + Socials */}
+                  <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs font-mono text-slate-400">
+                    <span className="flex items-center gap-1 text-teal-300/90 text-[11px]">
+                      <Trophy className="w-3.5 h-3.5" /> {member.hackathons} Hackathons
                     </span>
-                  ))}
-                </div>
-                <div className="flex items-center gap-6 text-sm text-muted-foreground mb-4 pb-4 border-b border-border/50">
-                  <span className="flex items-center gap-2"><Code2 className="w-4 h-4" /> {selectedMember.contributions}</span>
-                  <span className="flex items-center gap-2"><Award className="w-4 h-4" /> {selectedMember.hackathons} hackathons</span>
-                </div>
-                <div className="flex gap-6">
-                  {selectedMember.portfolio && (
-                    <a href={selectedMember.portfolio} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-                      <Globe className="w-4 h-4" /> Portfolio
-                    </a>
-                  )}
-                  {selectedMember.linkedin && (
-                    <a href={selectedMember.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-                      <Linkedin className="w-4 h-4" /> LinkedIn
-                    </a>
-                  )}
-                  {selectedMember.instagram && (
-                    <a href={selectedMember.instagram} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-                      <Instagram className="w-4 h-4" /> Instagram
-                    </a>
-                  )}
-                </div>
-              </div>
+
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      {member.portfolio && member.portfolio !== "#" && (
+                        <a
+                          href={member.portfolio}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label="Portfolio"
+                          className="text-slate-400 hover:text-teal-300 transition-colors"
+                        >
+                          <Globe className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                      {member.linkedin && member.linkedin !== "#" && (
+                        <a
+                          href={member.linkedin}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label="LinkedIn"
+                          className="text-slate-400 hover:text-teal-300 transition-colors"
+                        >
+                          <Linkedin className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                      {member.instagram && member.instagram !== "#" && (
+                        <a
+                          href={member.instagram}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label="Instagram"
+                          className="text-slate-400 hover:text-teal-300 transition-colors"
+                        >
+                          <Instagram className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
             </motion.div>
-          </motion.div>
+          </div>
         )}
+
+        {/* Interns Tab View */}
+        {activeTab === "interns" && (
+          <div className="space-y-8">
+            <div className="text-center max-w-xl mx-auto mb-8">
+              <span className="font-mono text-xs px-3 py-1 rounded-full bg-teal-500/10 text-teal-300 border border-teal-500/30 inline-flex items-center gap-1.5 mb-2">
+                <GraduationCap className="w-4 h-4" /> 12-Week Full Stack Program Completed
+              </span>
+              <p className="text-slate-300 text-sm">
+                Engineers who completed our rigorous 12-Week Full-Stack Web Development internship program with verified project deliverables.
+              </p>
+            </div>
+
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5"
+            >
+              {interns.map((intern) => (
+                <motion.div
+                  key={intern.id}
+                  variants={cardVariants}
+                  className="glass-card rounded-2xl p-5 border border-white/10 hover:border-teal-400/40 text-center flex flex-col justify-between group"
+                >
+                  <div>
+                    {/* Photo with glow */}
+                    <div className="relative mx-auto w-24 h-24 mb-4">
+                      <div className="absolute -inset-1 rounded-full bg-teal-500/20 blur-sm group-hover:bg-teal-500/50 transition-colors" />
+                      <img
+                        src={intern.photo}
+                        alt={intern.name}
+                        className="relative w-24 h-24 rounded-full object-cover border border-white/20 mx-auto shadow-md"
+                      />
+                    </div>
+
+                    <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-white/5 text-teal-300 border border-white/10 mb-2 inline-block">
+                      {intern.id}
+                    </span>
+
+                    <h4 className="font-display font-bold text-white text-base mb-1">
+                      {intern.name}
+                    </h4>
+
+                    <p className="text-xs text-slate-400 font-mono mb-4">
+                      Full-Stack Intern
+                    </p>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="pt-3 border-t border-white/5 flex items-center justify-center gap-3">
+                    {intern.portfolio && (
+                      <a
+                        href={intern.portfolio}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-mono text-slate-400 hover:text-teal-300 flex items-center gap-1 transition-colors"
+                      >
+                        <Globe className="w-3.5 h-3.5" />
+                        <span>Portfolio</span>
+                      </a>
+                    )}
+                    {intern.linkedin && (
+                      <a
+                        href={intern.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-mono text-slate-400 hover:text-teal-300 flex items-center gap-1 transition-colors"
+                      >
+                        <Linkedin className="w-3.5 h-3.5" />
+                        <span>LinkedIn</span>
+                      </a>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        )}
+
+        {/* Member Detail Modal Dialog (Higher z-index to avoid Navbar overlap) */}
+        <AnimatePresence>
+          {selectedMember && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] bg-slate-950/85 backdrop-blur-2xl flex items-center justify-center p-4 sm:p-6 overflow-y-auto pt-24 pb-12"
+              onClick={() => setSelectedMember(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="glass-card rounded-3xl max-w-xl w-full border border-teal-500/40 p-6 sm:p-8 my-auto max-h-[85vh] overflow-y-auto shadow-2xl relative bg-slate-950/95"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-start justify-between gap-4 mb-6">
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={selectedMember.photo}
+                      alt={selectedMember.name}
+                      className="w-16 h-16 rounded-full object-cover border-2 border-teal-400/50 shadow-md"
+                    />
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        {selectedMember.isFounder && (
+                          <span className="font-mono text-[10px] px-2 py-0.5 rounded-full gradient-primary text-slate-950 font-bold">
+                            Founder
+                          </span>
+                        )}
+                        <span className="font-mono text-xs text-teal-300">
+                          {selectedMember.hackathons} Hackathons
+                        </span>
+                      </div>
+                      <h3 className="font-display text-2xl font-bold text-white tracking-tight">
+                        {selectedMember.name}
+                      </h3>
+                      <p className="font-mono text-xs text-slate-400">
+                        {selectedMember.role}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setSelectedMember(null)}
+                    className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="mb-6">
+                  <h4 className="font-mono text-xs text-teal-400 mb-2 uppercase tracking-wider">Biography & Background</h4>
+                  <p className="text-slate-200 text-sm leading-relaxed">
+                    {selectedMember.bio}
+                  </p>
+                </div>
+
+                <div className="mb-6">
+                  <h4 className="font-mono text-xs text-teal-400 mb-3 uppercase tracking-wider">Verified Skills & Tools</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedMember.skills.map((skill) => (
+                      <TechBadge key={skill} name={skill} size="md" />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mb-6 pt-4 border-t border-white/10 flex items-center gap-3 text-xs font-mono text-slate-300">
+                  <Award className="w-4 h-4 text-teal-400" />
+                  <span>{selectedMember.contributions}</span>
+                </div>
+
+                {/* Social Links */}
+                <div className="pt-4 border-t border-white/10 flex items-center gap-3">
+                  {selectedMember.portfolio && selectedMember.portfolio !== "#" && (
+                    <a
+                      href={selectedMember.portfolio}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl gradient-primary text-slate-950 font-mono text-xs font-bold hover:opacity-95 transition-opacity"
+                    >
+                      <Globe className="w-3.5 h-3.5" />
+                      <span>Portfolio</span>
+                    </a>
+                  )}
+                  {selectedMember.linkedin && selectedMember.linkedin !== "#" && (
+                    <a
+                      href={selectedMember.linkedin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl glass border border-white/15 text-white font-mono text-xs font-semibold hover:border-teal-400 transition-colors"
+                    >
+                      <Linkedin className="w-3.5 h-3.5 text-blue-400" />
+                      <span>LinkedIn</span>
+                    </a>
+                  )}
+                  {selectedMember.instagram && selectedMember.instagram !== "#" && (
+                    <a
+                      href={selectedMember.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl glass border border-white/15 text-white font-mono text-xs font-semibold hover:border-teal-400 transition-colors"
+                    >
+                      <Instagram className="w-3.5 h-3.5 text-rose-400" />
+                      <span>Instagram</span>
+                    </a>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </section>
   );

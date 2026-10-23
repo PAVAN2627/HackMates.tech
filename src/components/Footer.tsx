@@ -43,9 +43,11 @@ function formatViews(n: number): string {
 const Footer = () => {
   const views = useViewCounter();
   return (
-  <footer className="relative z-10 bg-card border-t border-border">
-    <div className="container mx-auto px-6 py-12">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+  <footer className="relative z-10 bg-slate-950/90 backdrop-blur-2xl border-t border-white/10 text-slate-300 overflow-hidden">
+    {/* Subtle ambient top glow */}
+    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-teal-400/40 to-transparent" />
+    <div className="container mx-auto px-6 py-14">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
         {/* Brand Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -53,14 +55,17 @@ const Footer = () => {
           viewport={{ once: true }}
           className="space-y-4"
         >
-          <div className="flex items-center gap-2">
-            <img 
-              src="/hackmatesroundlogo.png" 
-              alt="HackMates Logo" 
-              className="w-10 h-10 rounded-full"
-            />
-            <span className="font-display text-xl font-bold text-foreground">
-              Hack<span className="text-primary">Mates</span>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="absolute -inset-1 rounded-full bg-teal-500/30 blur-sm" />
+              <img 
+                src="/hackmatesroundlogo.png" 
+                alt="HackMates Logo" 
+                className="relative w-10 h-10 rounded-full object-cover border border-white/20"
+              />
+            </div>
+            <span className="font-display text-2xl font-bold text-white tracking-tight">
+              Hack<span className="gradient-text-teal">Mates</span>
             </span>
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed">

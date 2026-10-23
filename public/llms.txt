@@ -1,0 +1,25 @@
+# HackMates
+
+> HackMates is a student developer community and innovation ecosystem in India. We build real-world AI and full-stack software products, compete in and win hackathons, and provide mentorship, pre-built academic projects, and verified engineering internships.
+
+## Primary Pages & Resources
+
+- [Home](https://hackmates.tech/): Overview of the HackMates student innovation ecosystem.
+- [Projects Catalog](https://hackmates.tech/projects): Complete directory of full-stack web, AI/ML, PHP, and Data Science software built by our engineers.
+- [Hackathon Journey & Milestones](https://hackmates.tech/journey): Chronological timeline of hackathon victories, prizes, and batches.
+- [Core Team & Interns](https://hackmates.tech/team): Meet the founders, lead engineers, and student builders.
+- [Services & Offerings](https://hackmates.tech/services): Pre-built projects, custom full-stack development, mentorship, and 12-week internship programs.
+- [Event Gallery](https://hackmates.tech/gallery): Highlights and photos from workshops and hackathons.
+- [Verify Certificate](https://hackmates.tech/verify): Official credential and internship completion verification portal.
+- [Contact Us](https://hackmates.tech/contact): Partnership inquiries, mentorship requests, and community links.
+
+## Key Capabilities & Focus Areas
+
+- **AI & Full-Stack Engineering**: Voice deepfake detection (VocalGuard), smart roommate matching (RoomBridge), career mentors, and healthcare AI.
+- **Hackathon Acceleration**: National hackathon participation, winning strategies, team matching, and rapid MVP shipping.
+- **Academic Project Development**: Production-ready software with documentation, architecture diagrams, and viva preparation for Diploma, B.E., and B.Tech students.
+- **Official Contact**: hackmates.tech@gmail.com | Maharashtra, India
+- **UDYAM Registration**: UDYAM-MH-26-1146095
+- **Official Links**:
+  - LinkedIn: https://linkedin.com/company/hackmates-tech
+  - Instagram: https://instagram.com/hackmates.tech
