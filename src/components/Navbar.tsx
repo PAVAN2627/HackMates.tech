@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Moon, Sun, LogIn, LayoutDashboard, Sparkles } from "lucide-react";
+import { Menu, X, LogIn, LayoutDashboard, Sparkles } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -22,16 +22,12 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const { sessionUser } = usePlatform();
   const sessionRole = sessionUser?.role ?? null;
-  const [dark, setDark] = useState(() => {
-    const saved = localStorage.getItem("theme");
-    return saved ? saved === "dark" : true;
-  });
   const location = useLocation();
 
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark);
-    localStorage.setItem("theme", dark ? "dark" : "light");
-  }, [dark]);
+    document.documentElement.classList.add("dark");
+    localStorage.setItem("theme", "dark");
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
@@ -119,28 +115,10 @@ const Navbar = () => {
                 )}
               </span>
             </Link>
-
-            {/* Dark/Light mode toggle */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setDark(!dark)}
-              aria-label="Toggle theme"
-              className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 border border-white/10 hover:border-teal-400/50 text-slate-300 hover:text-teal-300 transition-colors"
-            >
-              {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </motion.button>
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="lg:hidden flex items-center gap-2">
-            <button
-              onClick={() => setDark(!dark)}
-              aria-label="Toggle theme"
-              className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 border border-white/10 text-slate-300"
-            >
-              {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
+          <div className="lg:hidden flex items-center">
             <button
               onClick={() => setIsOpen(!isOpen)}
               aria-label="Toggle navigation menu"

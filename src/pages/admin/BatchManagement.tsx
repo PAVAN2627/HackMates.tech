@@ -14,6 +14,7 @@ import {
   X,
   BookOpen,
   CalendarDays,
+  Pencil,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -42,14 +43,35 @@ interface ArchivedIntern {
   internId: string;
   certificateId: string;
   attendancePercentage: number;
+  issueDate?: string;
+  validUntil?: string;
+  completionDate?: string;
+  certificateIssueDate?: string;
+  position?: string;
 }
 
 interface CompletedBatch {
   id: string;
   batchDate: string;
+  completionDate?: string;
+  issueDate?: string;
   interns: ArchivedIntern[];
   createdAt?: string;
   totalInterns: number;
+}
+
+interface EditArchivedInternState {
+  batchId: string;
+  internIndex: number;
+  originalInternId: string;
+  name: string;
+  internId: string;
+  certificateId: string;
+  attendancePercentage: number;
+  issueDate: string;
+  completionDate: string;
+  certificateIssueDate: string;
+  position: string;
 }
 
 const ic =
@@ -79,6 +101,11 @@ const AdminBatchManagement = () => {
   const [attendanceDeleteCount, setAttendanceDeleteCount] = useState(0);
   const [showAttendanceConfirm, setShowAttendanceConfirm] = useState(false);
   const [selectedBatchForAttendance, setSelectedBatchForAttendance] = useState<CompletedBatch | null>(null);
+  const [batchCompletionDate, setBatchCompletionDate] = useState("");
+  const [batchIssueDate, setBatchIssueDate] = useState("");
+  const [editingIntern, setEditingIntern] = useState<EditArchivedInternState | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState("");
 
   // Fetch completed batches
   useEffect(() => {
@@ -124,6 +151,9 @@ const AdminBatchManagement = () => {
           certificateId: intern.internId || "N/A",
           email: intern.email,
           attendancePercentage,
+          issueDate: intern.issueDate || "",
+          validUntil: intern.validUntil || "",
+          position: intern.position || "",
         };
       });
   }, [users, attendanceSessions]);
@@ -156,21 +186,57 @@ const AdminBatchManagement = () => {
     }
   };
 
-  const handleArchiveClick = () => {
+  const handleArchiveClick = async () => {
     if (selectedInterns.size === 0) {
       setArchiveError("Please select at least one intern to archive.");
       return;
     }
 
     const toArchive = interns.filter((i) => selectedInterns.has(i.id));
-    setPendingArchive(
-      toArchive.map((i) => ({
-        name: i.name,
-        internId: i.internId,
-        certificateId: i.certificateId,
-        attendancePercentage: i.attendancePercentage,
-      }))
+
+    // Lookup any missing issueDate or validUntil from verifications collection
+    const enriched = await Promise.all(
+      toArchive.map(async (i) => {
+        let iDate = i.issueDate || "";
+        let cDate = i.validUntil || "";
+        let pos = i.position || "";
+
+        if ((!iDate || !cDate) && i.internId && i.internId !== "N/A") {
+          try {
+            const vSnap = await getDocs(
+              query(collection(db, "verifications"), where("offerId", "==", i.internId.trim().toUpperCase()))
+            );
+            if (!vSnap.empty) {
+              const vd = vSnap.docs[0].data();
+              if (!iDate && vd.issueDate) iDate = vd.issueDate;
+              if (!cDate && (vd.validUntil || vd.completionDate)) cDate = vd.validUntil || vd.completionDate;
+              if (!pos && vd.position) pos = vd.position;
+            }
+          } catch (e) {
+            console.error("Error looking up verification info for archiving:", e);
+          }
+        }
+
+        return {
+          name: i.name,
+          internId: i.internId,
+          certificateId: i.certificateId,
+          attendancePercentage: i.attendancePercentage,
+          issueDate: iDate,
+          validUntil: cDate,
+          completionDate: cDate,
+          position: pos,
+        };
+      })
     );
+
+    // Compute sensible defaults
+    const foundCDate = enriched.find((x) => x.validUntil)?.validUntil || new Date().toISOString().slice(0, 10);
+    const foundIDate = enriched.find((x) => x.issueDate)?.issueDate || "";
+
+    setBatchCompletionDate(foundCDate);
+    setBatchIssueDate(foundIDate);
+    setPendingArchive(enriched);
     setShowConfirmDialog(true);
   };
 
@@ -180,11 +246,21 @@ const AdminBatchManagement = () => {
     setSuccess("");
 
     try {
+      const closeBatchDate = new Date().toISOString().slice(0, 10);
+      const effectiveCompletionDate = batchCompletionDate || closeBatchDate;
+      const effectiveIssueDate = batchIssueDate || "";
+
       // Create batch in completedBatches collection
-      const batchDate = new Date().toISOString().slice(0, 10);
       await addDoc(collection(db, "completedBatches"), {
-        batchDate,
-        interns: pendingArchive,
+        batchDate: closeBatchDate, // administrative close date
+        completionDate: effectiveCompletionDate, // official graduation date
+        issueDate: effectiveIssueDate, // official joining date
+        interns: pendingArchive.map((p) => ({
+          ...p,
+          issueDate: p.issueDate || effectiveIssueDate,
+          completionDate: p.completionDate || p.validUntil || effectiveCompletionDate,
+          validUntil: p.validUntil || effectiveCompletionDate,
+        })),
         createdAt: new Date().toISOString(),
       });
 
@@ -196,25 +272,34 @@ const AdminBatchManagement = () => {
             const vSnap = await getDocs(
               query(collection(db, "verifications"), where("offerId", "==", certId))
             );
+            const actualIssueDate = intern.issueDate || effectiveIssueDate;
+            const actualCompletionDate = intern.completionDate || intern.validUntil || effectiveCompletionDate;
+
             if (vSnap.empty) {
               await addDoc(collection(db, "verifications"), {
                 offerId: certId,
                 name: intern.name,
                 type: "Intern",
                 certificateType: "Internship Completion Certificate",
-                position: "Full Stack Web Development Intern",
-                issueDate: batchDate,
-                validUntil: batchDate,
-                completionDate: batchDate,
+                position: intern.position || "Full Stack Web Development Intern",
+                issueDate: actualIssueDate || effectiveIssueDate,
+                validUntil: actualCompletionDate,
+                completionDate: actualCompletionDate,
+                batchClosedDate: closeBatchDate,
                 status: "Completed",
                 attendancePercentage: intern.attendancePercentage,
               });
             } else {
               for (const d of vSnap.docs) {
+                const existingData = d.data();
                 await updateDoc(d.ref, {
                   status: "Completed",
-                  completionDate: batchDate,
+                  // PRESERVE original issue date from verification document if it exists!
+                  issueDate: existingData.issueDate || actualIssueDate || effectiveIssueDate,
+                  completionDate: actualCompletionDate || existingData.completionDate || existingData.validUntil || effectiveCompletionDate,
+                  validUntil: actualCompletionDate || existingData.validUntil || effectiveCompletionDate,
                   certificateType: "Internship Completion Certificate",
+                  batchClosedDate: closeBatchDate,
                   attendancePercentage: intern.attendancePercentage,
                 });
               }
@@ -389,6 +474,83 @@ const AdminBatchManagement = () => {
       );
     } finally {
       setDeletingAttendance(null);
+    }
+  };
+
+  const handleSaveArchivedIntern = async () => {
+    if (!editingIntern) return;
+    setSavingEdit(true);
+    setEditError("");
+
+    try {
+      const batchToUpdate = completedBatches.find((b) => b.id === editingIntern.batchId);
+      if (!batchToUpdate) {
+        throw new Error("Batch record could not be found.");
+      }
+
+      const updatedInterns = [...batchToUpdate.interns];
+      const updatedItem: ArchivedIntern = {
+        name: editingIntern.name.trim(),
+        internId: editingIntern.internId.trim().toUpperCase(),
+        certificateId: (editingIntern.certificateId || editingIntern.internId).trim().toUpperCase(),
+        attendancePercentage: Number(editingIntern.attendancePercentage) || 0,
+        issueDate: editingIntern.issueDate || "",
+        completionDate: editingIntern.completionDate || "",
+        certificateIssueDate: editingIntern.certificateIssueDate || editingIntern.completionDate || editingIntern.issueDate || "",
+        validUntil: editingIntern.completionDate || "",
+        position: editingIntern.position.trim() || "Full Stack Web Development Intern",
+      };
+
+      updatedInterns[editingIntern.internIndex] = updatedItem;
+
+      // 1. Update completedBatches doc
+      const batchRef = doc(db, "completedBatches", editingIntern.batchId);
+      await updateDoc(batchRef, {
+        interns: updatedInterns,
+      });
+
+      // 2. Synchronize with verifications collection for public authentication on /verify
+      const targetCertId = updatedItem.certificateId;
+      const originalCertId = editingIntern.originalInternId.trim().toUpperCase();
+
+      let vSnap = await getDocs(
+        query(collection(db, "verifications"), where("offerId", "==", targetCertId))
+      );
+      if (vSnap.empty && originalCertId && originalCertId !== targetCertId) {
+        vSnap = await getDocs(
+          query(collection(db, "verifications"), where("offerId", "==", originalCertId))
+        );
+      }
+
+      const verifData = {
+        offerId: targetCertId,
+        name: updatedItem.name,
+        type: "Intern",
+        certificateType: "Internship Completion Certificate",
+        position: updatedItem.position,
+        issueDate: updatedItem.issueDate || updatedItem.certificateIssueDate || "",
+        completionDate: updatedItem.completionDate || "",
+        validUntil: updatedItem.completionDate || "",
+        certificateIssueDate: updatedItem.certificateIssueDate || updatedItem.completionDate || "",
+        status: "Completed",
+        attendancePercentage: updatedItem.attendancePercentage,
+      };
+
+      if (!vSnap.empty) {
+        for (const d of vSnap.docs) {
+          await updateDoc(d.ref, verifData);
+        }
+      } else {
+        await addDoc(collection(db, "verifications"), verifData);
+      }
+
+      setSuccess(`Updated archived intern ${updatedItem.name} (${updatedItem.certificateId}) successfully.`);
+      setEditingIntern(null);
+    } catch (err: any) {
+      console.error("Error updating archived intern:", err);
+      setEditError(err?.message || "Failed to update archived intern.");
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -660,26 +822,73 @@ const AdminBatchManagement = () => {
                                 {batch.interns.map((intern, idx) => (
                                   <div
                                     key={idx}
-                                    className="rounded border border-white/10 bg-white/5 p-3"
+                                    className="rounded-xl border border-white/10 bg-white/[0.04] p-3.5 hover:border-white/20 transition-all space-y-2.5"
                                   >
-                                    <div className="flex items-start justify-between gap-2">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                       <div className="min-w-0 flex-1">
-                                        <p className="text-sm font-medium text-white">
-                                          {intern.name}
-                                        </p>
-                                        <p className="text-xs text-white/60 flex items-center gap-1 mt-0.5">
-                                          <Hash className="w-3 h-3 shrink-0" />
-                                          {intern.internId}
-                                        </p>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <p className="text-sm font-semibold text-white">
+                                            {intern.name}
+                                          </p>
+                                          {intern.position && (
+                                            <span className="text-xs text-white/50">
+                                              • {intern.position}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div className="flex items-center gap-3 text-xs text-white/60 mt-1 flex-wrap font-mono">
+                                          <span className="flex items-center gap-1 text-teal-300">
+                                            <Hash className="w-3 h-3" />
+                                            {intern.internId}
+                                          </span>
+                                          <span className="text-white/40">|</span>
+                                          <span>Cert ID: <strong className="text-white">{intern.certificateId || intern.internId}</strong></span>
+                                        </div>
                                       </div>
-                                      <div className="flex flex-col items-end gap-1 shrink-0">
+
+                                      <div className="flex items-center gap-2 shrink-0">
                                         <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30 text-xs">
                                           {intern.attendancePercentage}% Attendance
                                         </Badge>
-                                        <span className="text-xs text-white/40">
-                                          Cert:{" "}
-                                          {intern.certificateId.slice(-4)}
-                                        </span>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() =>
+                                            setEditingIntern({
+                                              batchId: batch.id,
+                                              internIndex: idx,
+                                              originalInternId: intern.certificateId || intern.internId,
+                                              name: intern.name,
+                                              internId: intern.internId,
+                                              certificateId: intern.certificateId || intern.internId,
+                                              attendancePercentage: intern.attendancePercentage,
+                                              issueDate: intern.issueDate || batch.issueDate || "",
+                                              completionDate: intern.completionDate || intern.validUntil || batch.completionDate || batch.batchDate || "",
+                                              certificateIssueDate: intern.certificateIssueDate || intern.completionDate || intern.issueDate || batch.completionDate || batch.batchDate || "",
+                                              position: intern.position || "Full Stack Web Development Intern",
+                                            })
+                                          }
+                                          className="h-7 text-xs border-white/15 bg-white/5 text-white hover:bg-teal-500/20 hover:text-teal-200 hover:border-teal-400/40"
+                                        >
+                                          <Pencil className="w-3 h-3 mr-1 text-teal-400" />
+                                          Edit
+                                        </Button>
+                                      </div>
+                                    </div>
+
+                                    {/* Dates Grid Display */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-white/5 text-xs font-mono">
+                                      <div className="flex flex-col">
+                                        <span className="text-white/40">Start Date</span>
+                                        <span className="text-teal-300">{intern.issueDate || batch.issueDate || "—"}</span>
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <span className="text-white/40">Completion Date</span>
+                                        <span className="text-emerald-300 font-semibold">{intern.completionDate || intern.validUntil || batch.completionDate || batch.batchDate || "—"}</span>
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <span className="text-white/40">Cert Issue Date</span>
+                                        <span className="text-cyan-300">{intern.certificateIssueDate || intern.issueDate || batch.completionDate || batch.batchDate || "—"}</span>
                                       </div>
                                     </div>
                                   </div>
@@ -739,6 +948,38 @@ const AdminBatchManagement = () => {
                       </li>
                     ))}
                   </ul>
+                </div>
+
+                {/* Explicit Completion & Joining Date Configuration */}
+                <div className="space-y-3 p-3.5 bg-white/5 border border-white/10 rounded-xl">
+                  <div>
+                    <label className="block text-xs font-medium text-emerald-400 mb-1">
+                      Official Internship Completion Date *
+                    </label>
+                    <Input
+                      type="date"
+                      value={batchCompletionDate}
+                      onChange={(e) => setBatchCompletionDate(e.target.value)}
+                      className="bg-slate-950/80 border-white/20 text-white text-xs h-9"
+                    />
+                    <p className="text-[11px] text-white/50 mt-1">
+                      The graduation date printed and verified on their Internship Completion Certificates.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-teal-300 mb-1">
+                      Internship Joining / Start Date
+                    </label>
+                    <Input
+                      type="date"
+                      value={batchIssueDate}
+                      onChange={(e) => setBatchIssueDate(e.target.value)}
+                      className="bg-slate-950/80 border-white/20 text-white text-xs h-9"
+                    />
+                    <p className="text-[11px] text-white/50 mt-1">
+                      The starting date of their internship program tenure.
+                    </p>
+                  </div>
                 </div>
 
                 <div className="bg-orange-500/10 border border-orange-500/30 rounded p-3">
@@ -862,6 +1103,194 @@ const AdminBatchManagement = () => {
                         <Trash2 className="w-4 h-4 mr-2" />
                         Delete Attendance
                       </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Edit Archived Intern Modal */}
+      {editingIntern && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-lg my-8"
+          >
+            <Card className="border-white/10 bg-slate-900 text-white shadow-2xl">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                  <div className="flex items-center gap-2">
+                    <Pencil className="w-5 h-5 text-teal-400" />
+                    <h3 className="text-lg font-bold">Edit Archived Intern</h3>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setEditingIntern(null)}
+                    className="text-white/60 hover:text-white"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                {editError && (
+                  <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-200 flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{editError}</span>
+                  </div>
+                )}
+
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <label className="block text-xs font-mono text-slate-300 mb-1">
+                      Intern Name *
+                    </label>
+                    <Input
+                      value={editingIntern.name}
+                      onChange={(e) =>
+                        setEditingIntern({ ...editingIntern, name: e.target.value })
+                      }
+                      className="bg-white/5 border-white/10 text-white"
+                      placeholder="e.g. John Doe"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-mono text-slate-300 mb-1">
+                        Intern ID *
+                      </label>
+                      <Input
+                        value={editingIntern.internId}
+                        onChange={(e) =>
+                          setEditingIntern({ ...editingIntern, internId: e.target.value })
+                        }
+                        className="bg-white/5 border-white/10 text-white font-mono uppercase"
+                        placeholder="e.g. HM-FWD-001"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-mono text-slate-300 mb-1">
+                        Certificate ID *
+                      </label>
+                      <Input
+                        value={editingIntern.certificateId}
+                        onChange={(e) =>
+                          setEditingIntern({ ...editingIntern, certificateId: e.target.value })
+                        }
+                        className="bg-white/5 border-white/10 text-white font-mono uppercase"
+                        placeholder="e.g. HM-FWD-001"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-mono text-slate-300 mb-1">
+                      Role / Position
+                    </label>
+                    <Input
+                      value={editingIntern.position}
+                      onChange={(e) =>
+                        setEditingIntern({ ...editingIntern, position: e.target.value })
+                      }
+                      className="bg-white/5 border-white/10 text-white"
+                      placeholder="e.g. Full Stack Web Development Intern"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-mono text-teal-300 mb-1">
+                        Internship Start Date
+                      </label>
+                      <Input
+                        type="date"
+                        value={editingIntern.issueDate}
+                        onChange={(e) =>
+                          setEditingIntern({ ...editingIntern, issueDate: e.target.value })
+                        }
+                        className="bg-white/5 border-white/10 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-mono text-emerald-400 mb-1">
+                        Internship Completion Date *
+                      </label>
+                      <Input
+                        type="date"
+                        value={editingIntern.completionDate}
+                        onChange={(e) =>
+                          setEditingIntern({ ...editingIntern, completionDate: e.target.value })
+                        }
+                        className="bg-white/5 border-white/10 text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-mono text-cyan-300 mb-1">
+                        Certificate Issue Date
+                      </label>
+                      <Input
+                        type="date"
+                        value={editingIntern.certificateIssueDate}
+                        onChange={(e) =>
+                          setEditingIntern({ ...editingIntern, certificateIssueDate: e.target.value })
+                        }
+                        className="bg-white/5 border-white/10 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-mono text-slate-300 mb-1">
+                        Attendance (%)
+                      </label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={editingIntern.attendancePercentage}
+                        onChange={(e) =>
+                          setEditingIntern({
+                            ...editingIntern,
+                            attendancePercentage: Number(e.target.value) || 0,
+                          })
+                        }
+                        className="bg-white/5 border-white/10 text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg bg-teal-500/10 border border-teal-500/20 p-2.5 text-xs text-teal-200">
+                    Saving these updates will immediately update the batch and sync with the public certificate verification database.
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditingIntern(null)}
+                    disabled={savingEdit}
+                    className="border-white/10 text-white hover:bg-white/10"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSaveArchivedIntern}
+                    disabled={savingEdit || !editingIntern.name || !editingIntern.internId}
+                    className="bg-teal-600 hover:bg-teal-500 text-white"
+                  >
+                    {savingEdit ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Changes"
                     )}
                   </Button>
                 </div>

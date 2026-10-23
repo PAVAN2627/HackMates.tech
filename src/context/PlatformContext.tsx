@@ -16,6 +16,10 @@ export interface AuthUserProfile {
   email: string;
   internId?: string;
   mentorId?: string;
+  position?: string;
+  issueDate?: string;
+  validUntil?: string;
+  completionDate?: string;
   createdAt?: string;
   firstLoginAt?: string;
   lastLoginAt?: string;
@@ -1062,6 +1066,9 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
       email: input.email.trim().toLowerCase(),
       ...(input.internId?.trim() ? { internId: input.internId.trim().toUpperCase() } : {}),
       ...(input.mentorId?.trim() ? { mentorId: input.mentorId.trim().toUpperCase() } : {}),
+      ...(input.position?.trim() ? { position: input.position.trim() } : {}),
+      ...(input.issueDate?.trim() ? { issueDate: input.issueDate.trim() } : {}),
+      ...(input.validUntil?.trim() ? { validUntil: input.validUntil.trim() } : {}),
       createdAt: new Date().toISOString(),
       firstLoginAt: new Date().toISOString(),
       lastLoginAt: new Date().toISOString(),

@@ -1,5 +1,5 @@
 import { useEffect, useState, memo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Menu,
@@ -79,6 +79,7 @@ export default memo(function DashboardSidebar({
 }: DashboardSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const isMobile = useIsMobile();
 
   const navItems =
@@ -92,6 +93,10 @@ export default memo(function DashboardSidebar({
 
   const handleNavClick = (item: NavItem) => {
     if (item.path) {
+      if (location.pathname === item.path) {
+        setIsOpen(false);
+        return;
+      }
       navigate(item.path);
     } else {
       onSectionChange(item.section || item.id);
@@ -147,9 +152,9 @@ export default memo(function DashboardSidebar({
 
       {/* Sidebar */}
       <motion.aside
-        initial={{ x: -300 }}
+        initial={false}
         animate={{ x: isMobile ? (isOpen ? 0 : -300) : 0 }}
-        transition={{ type: "spring", damping: 20, stiffness: 100 }}
+        transition={isMobile ? { type: "spring", damping: 25, stiffness: 200 } : { duration: 0 }}
         className="fixed left-0 top-0 h-screen w-64 bg-slate-950 border-r border-white/10 z-40 lg:fixed lg:left-0 lg:top-0 lg:translate-x-0 flex flex-col"
       >
         {/* Header */}
@@ -192,20 +197,25 @@ export default memo(function DashboardSidebar({
 
         {/* Navigation */}
         <nav className="p-4 space-y-2 overflow-y-auto">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleNavClick(item)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                activeSection === (item.section || item.id)
-                  ? "bg-primary/20 text-primary"
-                  : "text-white/70 hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              <item.icon className="w-4 h-4 flex-shrink-0" />
-              <span>{item.label}</span>
-            </button>
-          ))}
+          {navItems.map((item) => {
+            const isActive = item.path
+              ? location.pathname === item.path
+              : activeSection === (item.section || item.id);
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleNavClick(item)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                  isActive
+                    ? "bg-primary/20 text-primary"
+                    : "text-white/70 hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                <item.icon className="w-4 h-4 flex-shrink-0" />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
         </nav>
 
         {/* Logout Button */}

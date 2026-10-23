@@ -36,6 +36,7 @@ interface VerificationData {
   issueDate: string;
   validUntil?: string;
   completionDate?: string;
+  certificateIssueDate?: string;
   status: "Active" | "Expired" | "Completed";
   notes?: string;
   source?: "internship" | "achievement";
@@ -51,6 +52,17 @@ function calcDuration(issueDate: string, validUntil: string): string {
   const weeks = Math.round(diffMs / (1000 * 60 * 60 * 24 * 7));
   if (weeks <= 0) return "";
   return weeks === 1 ? "1 week" : `${weeks} weeks`;
+}
+
+function formatDisplayDate(dateStr?: string): string {
+  if (!dateStr || dateStr === "N/A") return "—";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 const Verify = () => {
@@ -84,7 +96,54 @@ const Verify = () => {
 
       if (!querySnapshot.empty) {
         const docSnap = querySnapshot.docs[0];
-        setResult({ id: docSnap.id, source: "internship", ...docSnap.data() } as VerificationData);
+        const vData = docSnap.data() as Partial<VerificationData> & { batchClosedDate?: string };
+
+        let finalIssueDate = vData.issueDate || "";
+        let finalCompletionDate = vData.completionDate || vData.validUntil || "";
+
+        // If this intern was part of an archived batch, cross-reference to ensure we have the best dates
+        try {
+          const batchesSnap = await getDocs(collection(db, "completedBatches"));
+          for (const bDoc of batchesSnap.docs) {
+            const bData = bDoc.data();
+            const internsList = (bData.interns || []) as Array<{
+              internId?: string;
+              certificateId?: string;
+              issueDate?: string;
+              validUntil?: string;
+              completionDate?: string;
+            }>;
+            const match = internsList.find(
+              (item) =>
+                item.certificateId?.trim().toUpperCase() === trimmed ||
+                item.internId?.trim().toUpperCase() === trimmed
+            );
+            if (match) {
+              if (match.issueDate && (!finalIssueDate || finalIssueDate === vData.batchClosedDate)) {
+                finalIssueDate = match.issueDate;
+              }
+              if (match.completionDate || match.validUntil || bData.completionDate) {
+                finalCompletionDate = match.completionDate || match.validUntil || bData.completionDate || finalCompletionDate;
+              }
+              if ((match as any).certificateIssueDate) {
+                (vData as any).certificateIssueDate = (match as any).certificateIssueDate;
+              }
+              break;
+            }
+          }
+        } catch (crossRefErr) {
+          console.error("Batch cross reference error:", crossRefErr);
+        }
+
+        setResult({
+          id: docSnap.id,
+          source: "internship",
+          ...vData,
+          issueDate: finalIssueDate,
+          completionDate: finalCompletionDate || vData.validUntil,
+          validUntil: finalCompletionDate || vData.validUntil,
+          certificateIssueDate: (vData as any).certificateIssueDate || finalCompletionDate || finalIssueDate,
+        } as VerificationData);
         return;
       }
 
@@ -97,6 +156,11 @@ const Verify = () => {
           internId?: string;
           certificateId?: string;
           attendancePercentage?: number;
+          issueDate?: string;
+          validUntil?: string;
+          completionDate?: string;
+          certificateIssueDate?: string;
+          position?: string;
         }>;
         const matchedIntern = internsList.find(
           (item) =>
@@ -105,18 +169,48 @@ const Verify = () => {
         );
 
         if (matchedIntern) {
-          const issueDate = bData.batchDate || bData.createdAt?.slice(0, 10) || new Date().toISOString().slice(0, 10);
+          let realIssueDate = matchedIntern.issueDate || bData.issueDate || "";
+          let realCompletionDate = matchedIntern.completionDate || matchedIntern.validUntil || bData.completionDate || "";
+          let realCertDate = matchedIntern.certificateIssueDate || realCompletionDate || realIssueDate;
+
+          // Look up if verifications collection has their original start/offer date
+          try {
+            const vSnap = await getDocs(
+              query(collection(db, "verifications"), where("offerId", "==", trimmed))
+            );
+            if (!vSnap.empty) {
+              const vD = vSnap.docs[0].data();
+              if (vD.issueDate && vD.issueDate !== bData.batchDate) {
+                realIssueDate = vD.issueDate;
+              }
+              if (vD.completionDate || vD.validUntil) {
+                realCompletionDate = vD.completionDate || vD.validUntil;
+              }
+              if (vD.certificateIssueDate) {
+                realCertDate = vD.certificateIssueDate;
+              }
+            }
+          } catch (e) {
+            console.error("Verification lookup error:", e);
+          }
+
+          // If no custom completion date was found, use batch completion date or fallback
+          if (!realCompletionDate) {
+            realCompletionDate = bData.completionDate || bData.batchDate || bData.createdAt?.slice(0, 10) || new Date().toISOString().slice(0, 10);
+          }
+
           setResult({
             id: bDoc.id,
             offerId: matchedIntern.certificateId || matchedIntern.internId || trimmed,
             name: matchedIntern.name,
             type: "Intern",
             certificateType: "Internship Completion Certificate",
-            position: "Full Stack Web Development Intern",
+            position: matchedIntern.position || "Full Stack Web Development Intern",
             eventName: "HackMates 12-Week MERN Stack Internship",
-            issueDate,
-            validUntil: issueDate,
-            completionDate: issueDate,
+            issueDate: realIssueDate,
+            validUntil: realCompletionDate,
+            completionDate: realCompletionDate,
+            certificateIssueDate: realCertDate,
             status: "Completed",
             notes: matchedIntern.attendancePercentage !== undefined ? `Attendance: ${matchedIntern.attendancePercentage}%` : undefined,
             source: "internship",
@@ -396,36 +490,67 @@ const Verify = () => {
                       </div>
                     )}
 
-                    <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10">
-                      <div className="flex items-center gap-2 text-xs font-mono text-slate-400 uppercase tracking-wider mb-1">
-                        <Calendar className="w-3.5 h-3.5 text-teal-400" />
-                        <span>Date of Issuance</span>
-                      </div>
-                      <p className="font-mono text-sm font-semibold text-slate-200">
-                        {result.issueDate
-                          ? new Date(result.issueDate).toLocaleDateString(undefined, {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            })
-                          : "—"}
-                      </p>
-                    </div>
-
-                    {result.type === "Intern" && (() => {
-                      const dur = calcDuration(result.issueDate, result.validUntil || "");
-                      return dur ? (
+                    {/* Date Information - Split for Internship Completion vs General Credential */}
+                    {result.type === "Intern" && (result.status === "Completed" || result.certificateType?.includes("Completion")) ? (
+                      <>
                         <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10">
-                          <div className="flex items-center gap-2 text-xs font-mono text-slate-400 uppercase tracking-wider mb-1">
-                            <Clock className="w-3.5 h-3.5 text-teal-400" />
-                            <span>Program Duration</span>
+                          <div className="flex items-center gap-2 text-xs font-mono text-emerald-400 uppercase tracking-wider mb-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Internship Completion Date</span>
                           </div>
-                          <p className="font-mono text-sm font-semibold text-slate-200">
-                            {dur}
+                          <p className="font-mono text-sm sm:text-base font-bold text-white">
+                            {formatDisplayDate(result.completionDate || result.validUntil)}
                           </p>
                         </div>
-                      ) : null;
-                    })()}
+
+                        <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10">
+                          <div className="flex items-center gap-2 text-xs font-mono text-teal-400 uppercase tracking-wider mb-1">
+                            <Calendar className="w-3.5 h-3.5" />
+                            <span>Internship Start / Joining Date</span>
+                          </div>
+                          <p className="font-mono text-sm sm:text-base font-semibold text-slate-200">
+                            {formatDisplayDate(result.issueDate)}
+                          </p>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10">
+                          <div className="flex items-center gap-2 text-xs font-mono text-cyan-300 uppercase tracking-wider mb-1">
+                            <Award className="w-3.5 h-3.5" />
+                            <span>Certificate Issue Date</span>
+                          </div>
+                          <p className="font-mono text-sm sm:text-base font-semibold text-slate-200">
+                            {formatDisplayDate(result.certificateIssueDate || result.completionDate || result.issueDate)}
+                          </p>
+                        </div>
+
+                        {(() => {
+                          const dur = calcDuration(result.issueDate, result.completionDate || result.validUntil || "");
+                          return (
+                            <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10">
+                              <div className="flex items-center gap-2 text-xs font-mono text-amber-300 uppercase tracking-wider mb-1">
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>Program Duration</span>
+                              </div>
+                              <p className="font-mono text-sm sm:text-base font-semibold text-slate-200">
+                                {dur || "12 Weeks (Completed Track)"}
+                              </p>
+                            </div>
+                          );
+                        })()}
+                      </>
+                    ) : (
+                      <>
+                        <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10">
+                          <div className="flex items-center gap-2 text-xs font-mono text-teal-400 uppercase tracking-wider mb-1">
+                            <Calendar className="w-3.5 h-3.5" />
+                            <span>Date of Issuance</span>
+                          </div>
+                          <p className="font-mono text-sm sm:text-base font-semibold text-slate-200">
+                            {formatDisplayDate(result.issueDate)}
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Verification Seal Note */}
