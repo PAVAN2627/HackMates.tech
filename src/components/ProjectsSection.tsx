@@ -83,6 +83,7 @@ const projects: Project[] = [
     longDescription: "HackMates is India's premier hackathon discovery and team formation platform that connects developers, designers, and innovators across the country. Features AI-powered assistant with Gemini, reliability & trust system with 4-tier badges, synergy matching algorithm for optimal team formation, comprehensive hackathon management, real-time communication, email notifications via Google Apps Script, and modern responsive design with theme support.",
     tech: ["React 18", "TypeScript", "Vite", "Firebase", "Firestore", "Tailwind CSS", "shadcn/ui", "Radix UI", "Gemini AI", "Google Apps Script"],
     features: ["AI-powered assistant for guidance", "Reliability badges and trust scores", "Synergy matching algorithm (0-100% compatibility)", "Hackathon creation and management", "Real-time messaging and chat", "Email notifications system", "Profile and team discovery", "Announcements with unread tracking"],
+    demo: "https://thehackmates.xyz",
     status: "completed",
   },
   {

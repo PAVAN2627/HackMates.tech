@@ -1,21 +1,88 @@
 import { motion } from "framer-motion";
-import { ExternalLink, Users, Zap, ShieldCheck, Sparkles, ArrowUpRight } from "lucide-react";
+import { ExternalLink, Users, Zap, ShieldCheck, Sparkles, ArrowUpRight, Globe, Lock } from "lucide-react";
 
-const liveProjects = [
+interface LiveProject {
+  id: string;
+  title: string;
+  tagline: string;
+  description: string;
+  url: string;
+  ctaLabel: string;
+  badge: string;
+  tech: string[];
+  modules: {
+    icon: typeof Globe;
+    title: string;
+    desc: string;
+  }[];
+}
+
+const liveProjects: LiveProject[] = [
   {
     id: "PROD-001",
+    title: "Official E-Governance Portal — Wai Municipal Council",
+    tagline: "Government Tech / Enterprise Web Application",
+    description:
+      "An enterprise-scale e-governance platform engineered for Wai Municipal Council. Delivers citizen-first digital services with online civic applications and real-time grievance tracking, while empowering municipal administration and staff with secure role-based workflow automation and high-performance caching infrastructure.",
+    url: "https://waimunicipalcouncil.org",
+    ctaLabel: "Launch Wai Municipal Portal",
+    badge: "Live in Production",
+    tech: [
+      "React",
+      "TypeScript",
+      "Tailwind CSS",
+      "NestJS",
+      "PostgreSQL",
+      "Redis",
+      "Nginx",
+      "Oracle Cloud",
+      "Cloudflare R2",
+    ],
+    modules: [
+      {
+        icon: Globe,
+        title: "Citizen Portal",
+        desc: "Online civic applications, grievance lodging & live status tracking.",
+      },
+      {
+        icon: Lock,
+        title: "Admin & Staff Portals",
+        desc: "Role-based municipal workflow & complaint resolution.",
+      },
+      {
+        icon: Zap,
+        title: "High-Performance Architecture",
+        desc: "Sub-second response times with Redis caching & Cloudflare R2 cloud storage.",
+      },
+    ],
+  },
+  {
+    id: "PROD-002",
     title: "HackMates Platform",
     tagline: "Find Your Ideal Hackathon Teammate & Squad",
     description:
       "India's dedicated platform designed to discover active hackathons, form complementary teams across tech and design, and connect ambitious builders. Designed, architected, and deployed by our student team.",
     url: "https://thehackmates.xyz",
-    tech: ["React 18", "TypeScript", "Firebase Auth & Firestore", "Gemini AI"],
-    stats: [
-      { icon: Users, label: "Automated Teammate Matching" },
-      { icon: Zap, label: "Live Deployment" },
-      { icon: ShieldCheck, label: "Verified Student Network" },
-    ],
+    ctaLabel: "Launch HackMates Platform",
     badge: "Live in Production",
+    tech: ["React 18", "TypeScript", "Firebase Auth & Firestore", "Gemini AI"],
+    modules: [
+      {
+        icon: Users,
+        title: "Teammate Matching",
+        desc: "Automated synergy-driven team & squad formation across tech and design.",
+      },
+      {
+        icon: Zap,
+        title: "Live Deployment",
+        desc: "Continuous production platform serving student innovators & hackathon squads.",
+      },
+      {
+        icon: ShieldCheck,
+        title: "Verified Student Network",
+        desc: "4-tier reliability trust scoring, authenticated profiles & real-time messaging.",
+      },
+    ],
   },
 ];
 
@@ -44,7 +111,7 @@ const LiveProjectsSection = () => {
         </p>
       </motion.div>
 
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto space-y-8">
         {liveProjects.map((project, i) => (
           <motion.div
             key={project.id}
@@ -64,7 +131,7 @@ const LiveProjectsSection = () => {
                   </span>
                   <span>{project.badge}</span>
                 </div>
-                <h4 className="font-display text-3xl sm:text-4xl font-bold text-white tracking-tight">
+                <h4 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
                   {project.title}
                 </h4>
                 <p className="font-mono text-sm text-teal-300 mt-1">
@@ -93,26 +160,50 @@ const LiveProjectsSection = () => {
               ))}
             </div>
 
-            {/* Features/Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8 pt-6 border-t border-white/10">
-              {project.stats.map(({ icon: Icon, label }) => (
-                <div key={label} className="flex items-center gap-2 text-xs font-mono text-slate-300">
-                  <Icon className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>{label}</span>
+            {/* Key Modules */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 pt-6 border-t border-white/10">
+              {project.modules.map(({ icon: Icon, title, desc }) => (
+                <div
+                  key={title}
+                  className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-emerald-500/30 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+                      <Icon className="w-3.5 h-3.5 text-emerald-400" />
+                    </div>
+                    <span className="font-mono text-xs font-semibold text-white tracking-wide">
+                      {title}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed font-sans pl-8 sm:pl-0">
+                    {desc}
+                  </p>
                 </div>
               ))}
             </div>
 
             {/* Launch CTA */}
-            <a
-              href={project.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl gradient-primary text-slate-950 font-mono text-sm font-bold shadow-[0_0_20px_rgba(45,212,191,0.3)] hover:opacity-95 transition-all hover-scale"
-            >
-              <span>Launch {project.title}</span>
-              <ArrowUpRight className="w-4 h-4" />
-            </a>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <a
+                href={project.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl gradient-primary text-slate-950 font-mono text-sm font-bold shadow-[0_0_20px_rgba(45,212,191,0.3)] hover:opacity-95 transition-all hover-scale"
+              >
+                <span>{project.ctaLabel}</span>
+                <ArrowUpRight className="w-4 h-4" />
+              </a>
+
+              <a
+                href={project.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-mono text-slate-400 hover:text-teal-300 transition-colors flex items-center gap-1.5"
+              >
+                <span>{project.url.replace(/^https?:\/\//, "")}</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
           </motion.div>
         ))}
       </div>
