@@ -52,7 +52,20 @@
     <meta name="twitter:creator" content="@HackMates" />
     
     <!-- Theme Color -->
-    <meta name="theme-color" content="#2dd4bf" />
+    <meta name="theme-color" content="#070b14" />
+
+    <style>
+      html, body {
+        background-color: #070b14;
+        color: #f1f5f9;
+        margin: 0;
+        padding: 0;
+      }
+      @keyframes pulse-logo {
+        0%, 100% { opacity: 0.6; transform: scale(0.96); }
+        50% { opacity: 1; transform: scale(1.04); }
+      }
+    </style>
 
     <!-- Structured Data (JSON-LD) -->
     <script type="application/ld+json">
@@ -98,23 +111,32 @@
   </head>
 
   <body>
-    <!-- Fallback / Pre-render Semantic Content for Search Crawlers & SEO Bots -->
+    <!-- React Root Mount Target -->
     <div id="root">
-      <header style="padding: 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1);">
+      <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background-color: #070b14;">
+        <div style="width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; animation: pulse-logo 1.4s ease-in-out infinite;">
+          <img src="/hackmatesroundlogo.png" alt="HackMates" width="44" height="44" style="border-radius: 50%;" />
+        </div>
+      </div>
+    </div>
+
+    <!-- No-Script Fallback for Non-JS Search Crawlers & Bots -->
+    <noscript>
+      <header style="padding: 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); background: #070b14; color: #fff;">
         <nav aria-label="Main Navigation">
           <a href="/" style="margin-right: 15px; color: #2dd4bf; font-weight: bold; text-decoration: none;">HackMates</a>
-          <a href="/journey" style="margin-right: 15px; text-decoration: none;">Journey</a>
-          <a href="/team" style="margin-right: 15px; text-decoration: none;">Team</a>
-          <a href="/projects" style="margin-right: 15px; text-decoration: none;">Projects</a>
-          <a href="/services" style="margin-right: 15px; text-decoration: none;">Services</a>
-          <a href="/gallery" style="margin-right: 15px; text-decoration: none;">Gallery</a>
-          <a href="/contact" style="margin-right: 15px; text-decoration: none;">Contact</a>
-          <a href="/verify" style="text-decoration: none;">Verify Certificate</a>
+          <a href="/journey" style="margin-right: 15px; color: #fff; text-decoration: none;">Journey</a>
+          <a href="/team" style="margin-right: 15px; color: #fff; text-decoration: none;">Team</a>
+          <a href="/projects" style="margin-right: 15px; color: #fff; text-decoration: none;">Projects</a>
+          <a href="/services" style="margin-right: 15px; color: #fff; text-decoration: none;">Services</a>
+          <a href="/gallery" style="margin-right: 15px; color: #fff; text-decoration: none;">Gallery</a>
+          <a href="/contact" style="margin-right: 15px; color: #fff; text-decoration: none;">Contact</a>
+          <a href="/verify" style="color: #fff; text-decoration: none;">Verify Certificate</a>
         </nav>
       </header>
 
-      <main style="max-width: 900px; margin: 40px auto; padding: 0 20px; line-height: 1.6;">
-        <h1 style="font-size: 2.5rem; margin-bottom: 1rem;">HackMates | Student Hackathon & Developer Community</h1>
+      <main style="max-width: 900px; margin: 40px auto; padding: 0 20px; line-height: 1.6; background: #070b14; color: #fff;">
+        <h1 style="font-size: 2.5rem; margin-bottom: 1rem; color: #2dd4bf;">HackMates | Student Hackathon & Developer Community</h1>
         <p style="font-size: 1.2rem; color: #94a3b8; margin-bottom: 2rem;">
           Where ideas transform into impactful products through hackathons, collaboration, and relentless building. Join our team of passionate developers, AI engineers, and innovators in India.
         </p>
@@ -131,21 +153,14 @@
 
         <section style="margin-bottom: 2rem;">
           <h2>Explore HackMates</h2>
-          <p>Learn more about our <a href="/journey">hackathon journey</a>, meet the <a href="/team">core team</a>, discover our <a href="/projects">featured projects</a>, or <a href="/contact">get in touch</a> to collaborate.</p>
+          <p>Learn more about our <a href="/journey" style="color: #2dd4bf;">hackathon journey</a>, meet the <a href="/team" style="color: #2dd4bf;">core team</a>, discover our <a href="/projects" style="color: #2dd4bf;">featured projects</a>, or <a href="/contact" style="color: #2dd4bf;">get in touch</a> to collaborate.</p>
         </section>
       </main>
 
-      <footer style="text-align: center; padding: 20px; font-size: 0.9rem; color: #64748b; border-top: 1px solid rgba(255,255,255,0.1);">
+      <footer style="text-align: center; padding: 20px; font-size: 0.9rem; color: #64748b; border-top: 1px solid rgba(255,255,255,0.1); background: #070b14;">
         <p>&copy; 2026 HackMates. All rights reserved. UDYAM Registration: UDYAM-MH-26-1146095. Maharashtra, India.</p>
-        <p><a href="/privacy-policy">Privacy Policy</a> | <a href="/terms-of-service">Terms of Service</a></p>
+        <p><a href="/privacy-policy" style="color: #2dd4bf;">Privacy Policy</a> | <a href="/terms-of-service" style="color: #2dd4bf;">Terms of Service</a></p>
       </footer>
-    </div>
-
-    <!-- No-Script Fallback for Non-JS Crawlers -->
-    <noscript>
-      <div style="padding: 20px; text-align: center; background: #0f172a; color: #fff;">
-        <p>JavaScript is recommended to experience the full interactive HackMates portal. Explore <a href="/projects" style="color: #2dd4bf;">Projects</a> or contact us at <a href="mailto:hackmates.tech@gmail.com" style="color: #2dd4bf;">hackmates.tech@gmail.com</a>.</p>
-      </div>
     </noscript>
 
     <script type="module" src="/src/main.tsx"></script>
